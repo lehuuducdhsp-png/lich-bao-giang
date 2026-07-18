@@ -1,6 +1,39 @@
 'use strict';
 (function(){
-  const blockedCodes=new Set(['SÁNG','CHIỀU','THỨ','TIẾT','TỔNG']);
+  const blockedCodes=new Set(['SÁNG','CHIỀU','THỨ','TIẾT','TỔNG','TÊN GV','TÊN GIÁO VIÊN']);
+
+  function safeText(cell){
+    try{
+      if(!cell)return '';
+      const value=cell.value;
+      if(value===null||value===undefined)return '';
+      if(typeof value==='string'||typeof value==='number'||typeof value==='boolean')return String(value);
+      if(value instanceof Date)return value.toISOString();
+      if(Array.isArray(value?.richText))return value.richText.map(x=>x?.text??'').join('');
+      if(value?.result!==null&&value?.result!==undefined){
+        const result=value.result;
+        if(typeof result==='object'&&Array.isArray(result?.richText))return result.richText.map(x=>x?.text??'').join('');
+        return String(result);
+      }
+      if(typeof value?.text==='string')return value.text;
+      if(typeof value?.hyperlink==='string'&&typeof value?.text==='string')return value.text;
+      return '';
+    }catch{return '';}
+  }
+
+  function formulaOf(cell){
+    try{
+      const value=cell?.value;
+      if(value&&typeof value==='object')return String(value.formula||value.sharedFormula||'');
+    }catch{}
+    return '';
+  }
+
+  function codeFromCountFormula(cell){
+    const formula=formulaOf(cell);
+    const match=formula.match(/COUNTIF\s*\([^,;]+[,;]\s*"([^"]+)"/i);
+    return match?norm(match[1]).toUpperCase():'';
+  }
 
   function keyOf(value){
     return norm(value).normalize('NFD')
@@ -12,8 +45,8 @@
   function timetableCodeCounts(ws){
     const counts=new Map();
     ws.eachRow({includeEmpty:false},row=>{
-      for(let c=4;c<=Math.min(row.cellCount,73);c++){
-        const code=norm(row.getCell(c).text).toUpperCase();
+      for(let c=4;c<=73;c++){
+        const code=norm(safeText(row.getCell(c))).toUpperCase();
         if(!code||code.length>18||blockedCodes.has(code))continue;
         if(/^\d+$/.test(code)||/^\d+\/\d+$/.test(code))continue;
         if(!/^[A-ZÀ-ỸĐ0-9.]+$/.test(code))continue;
@@ -23,23 +56,44 @@
     return counts;
   }
 
-  function findTeacherRows(ws){
+  function findTeacherRows(ws,counts){
     let header=null;
     ws.eachRow({includeEmpty:false},row=>{
       row.eachCell({includeEmpty:false},cell=>{
-        if(!header&&/^TÊN\s*GV$/i.test(norm(cell.text)))header={row:row.number,col:cell.col};
+        const text=norm(safeText(cell));
+        if(!header&&/^(TÊN\s*GV|TÊN\s*GIÁO\s*VIÊN)$/i.test(text))header={row:row.number,col:cell.col};
       });
     });
     if(!header)return [];
+
     const rows=[];
+    let consecutiveBlank=0;
     for(let r=header.row+1;r<=ws.rowCount;r++){
-      const raw=norm(ws.getCell(r,header.col).text);
-      if(!raw)continue;
+      const raw=norm(safeText(ws.getCell(r,header.col)));
+      if(!raw){
+        consecutiveBlank++;
+        if(consecutiveBlank>=8&&rows.length)break;
+        continue;
+      }
+      consecutiveBlank=0;
       if(/^(off|tc|tổng\s*lớp)/i.test(raw))break;
       if(/^CTV\b/i.test(raw)||/\bCTV$/i.test(raw))continue;
-      const countCell=ws.getCell(r,header.col+1);
-      const expected=Number(String(countCell.value??countCell.text).replace(/[^0-9.-]/g,''))||0;
-      rows.push({name:raw.replace(/^\d+[.)-]?\s*/,''),expected});
+
+      let directCode='',expected=0;
+      for(let c=header.col+1;c<=Math.min(ws.columnCount,header.col+4);c++){
+        const cell=ws.getCell(r,c);
+        const parsed=codeFromCountFormula(cell);
+        if(parsed)directCode=parsed;
+        const text=norm(safeText(cell));
+        const number=Number(text.replace(/[^0-9.-]/g,''));
+        if(Number.isFinite(number)&&number>=0)expected=Math.max(expected,number);
+      }
+      if(directCode&&counts.has(directCode))expected=counts.get(directCode);
+      rows.push({
+        name:raw.replace(/^\d+[.)-]?\s*/,''),
+        expected,
+        directCode
+      });
     }
     return rows;
   }
@@ -52,30 +106,36 @@
     const aliases=[...teacher.name.matchAll(/\(([^)]*)\)/g)].map(m=>keyOf(m[1])).filter(Boolean);
     const codeKey=keyOf(code),base=codeKey.replace(/\d+$/,'');
     let score=0;
-    if(teacher.expected>0)score+=count===teacher.expected?1400:-850;
+    if(teacher.expected>0)score+=count===teacher.expected?1400:-500;
     for(const alias of aliases){
-      if(alias===codeKey)score+=1100;
-      else if(alias.endsWith(codeKey)||codeKey.endsWith(alias))score+=650;
-      else if(last&&alias.endsWith(last)&&codeKey.endsWith(last))score+=300;
+      if(alias===codeKey)score+=1300;
+      else if(alias.endsWith(codeKey)||codeKey.endsWith(alias))score+=700;
     }
-    if(codeKey===last)score+=600;
-    if(base===last)score+=540;
-    if(last&&codeKey.endsWith(last))score+=320;
-    if(previous&&codeKey===previous[0]+last)score+=500;
-    if(previous&&base===previous[0]+last)score+=460;
-    if(previous&&codeKey===previous+last)score+=350;
-    if(tokens.includes(codeKey))score+=300;
-    if(last&&codeKey.includes(last))score+=190;
-    if(previous&&codeKey.includes(previous))score+=90;
+    if(codeKey===last)score+=700;
+    if(base===last)score+=620;
+    if(last&&codeKey.endsWith(last))score+=350;
+    if(previous&&codeKey===previous[0]+last)score+=560;
+    if(previous&&base===previous[0]+last)score+=520;
+    if(previous&&codeKey===previous+last)score+=380;
+    if(tokens.includes(codeKey))score+=320;
     return score;
   }
 
   window.teachers=function(ws){
     const counts=timetableCodeCounts(ws);
-    const summary=findTeacherRows(ws);
+    const summary=findTeacherRows(ws,counts);
     const mapped=[],used=new Set();
 
-    for(const teacher of summary.filter(x=>x.expected>0)){
+    for(const teacher of summary){
+      if(teacher.directCode&&counts.has(teacher.directCode)&&!used.has(teacher.directCode)){
+        used.add(teacher.directCode);
+        mapped.push({
+          name:teacher.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),
+          code:teacher.directCode,
+          expected:counts.get(teacher.directCode)
+        });
+        continue;
+      }
       const ranked=[...counts]
         .filter(([code])=>!used.has(code))
         .map(([code,count])=>({code,count,score:scoreTeacher(teacher,code,count)}))
@@ -86,7 +146,7 @@
         mapped.push({
           name:teacher.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),
           code:best.code,
-          expected:teacher.expected
+          expected:best.count
         });
       }
     }
@@ -105,12 +165,19 @@
       teacher.innerHTML='<option>Chọn tuần trước</option>';
       return;
     }
-    const list=window.teachers(ws);
-    teacher.disabled=false;
-    teacher.innerHTML='<option value="">Chọn giáo viên…</option>'+list.map(x=>
-      `<option value="${esc(x.code)}" data-name="${esc(x.name)}">${esc(x.name)} — ${esc(x.code)}${x.expected?` (${x.expected} tiết)`:''}</option>`
-    ).join('');
-    if(!list.length)teacher.innerHTML='<option value="">Không tìm thấy giáo viên</option>';
+    try{
+      const list=window.teachers(ws);
+      teacher.disabled=false;
+      teacher.innerHTML='<option value="">Chọn giáo viên…</option>'+list.map(x=>
+        `<option value="${esc(x.code)}" data-name="${esc(x.name)}">${esc(x.name)} — ${esc(x.code)}${x.expected?` (${x.expected} tiết)`:''}</option>`
+      ).join('');
+      if(!list.length)teacher.innerHTML='<option value="">Không tìm thấy giáo viên</option>';
+    }catch(error){
+      console.error(error);
+      teacher.disabled=false;
+      teacher.innerHTML='<option value="">Không đọc được danh sách giáo viên</option>';
+      toast('Có lỗi khi đọc danh sách giáo viên. Hãy thử chọn lại tuần.');
+    }
     $('analyze').disabled=true;
     $('compare').disabled=true;
     $('export').disabled=true;
