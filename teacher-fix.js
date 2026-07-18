@@ -89,11 +89,7 @@
         if(Number.isFinite(number)&&number>=0)expected=Math.max(expected,number);
       }
       if(directCode&&counts.has(directCode))expected=counts.get(directCode);
-      rows.push({
-        name:raw.replace(/^\d+[.)-]?\s*/,''),
-        expected,
-        directCode
-      });
+      rows.push({name:raw.replace(/^\d+[.)-]?\s*/,''),expected,directCode});
     }
     return rows;
   }
@@ -129,11 +125,7 @@
     for(const teacher of summary){
       if(teacher.directCode&&counts.has(teacher.directCode)&&!used.has(teacher.directCode)){
         used.add(teacher.directCode);
-        mapped.push({
-          name:teacher.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),
-          code:teacher.directCode,
-          expected:counts.get(teacher.directCode)
-        });
+        mapped.push({name:teacher.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),code:teacher.directCode,expected:counts.get(teacher.directCode)});
         continue;
       }
       const ranked=[...counts]
@@ -143,11 +135,7 @@
       const best=ranked[0];
       if(best&&best.score>=500){
         used.add(best.code);
-        mapped.push({
-          name:teacher.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),
-          code:best.code,
-          expected:best.count
-        });
+        mapped.push({name:teacher.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),code:best.code,expected:best.count});
       }
     }
 
@@ -160,17 +148,11 @@
   function populateTeachers(){
     const week=$('week'),teacher=$('teacher');
     const ws=wb&&wb.getWorksheet(week.value);
-    if(!ws){
-      teacher.disabled=true;
-      teacher.innerHTML='<option>Chọn tuần trước</option>';
-      return;
-    }
+    if(!ws){teacher.disabled=true;teacher.innerHTML='<option>Chọn tuần trước</option>';return;}
     try{
       const list=window.teachers(ws);
       teacher.disabled=false;
-      teacher.innerHTML='<option value="">Chọn giáo viên…</option>'+list.map(x=>
-        `<option value="${esc(x.code)}" data-name="${esc(x.name)}">${esc(x.name)} — ${esc(x.code)}${x.expected?` (${x.expected} tiết)`:''}</option>`
-      ).join('');
+      teacher.innerHTML='<option value="">Chọn giáo viên…</option>'+list.map(x=>`<option value="${esc(x.code)}" data-name="${esc(x.name)}">${esc(x.name)} — ${esc(x.code)}${x.expected?` (${x.expected} tiết)`:''}</option>`).join('');
       if(!list.length)teacher.innerHTML='<option value="">Không tìm thấy giáo viên</option>';
     }catch(error){
       console.error(error);
@@ -178,10 +160,7 @@
       teacher.innerHTML='<option value="">Không đọc được danh sách giáo viên</option>';
       toast('Có lỗi khi đọc danh sách giáo viên. Hãy thử chọn lại tuần.');
     }
-    $('analyze').disabled=true;
-    $('compare').disabled=true;
-    $('export').disabled=true;
-    clearResults();
+    $('analyze').disabled=true;$('compare').disabled=true;$('export').disabled=true;clearResults();
   }
 
   window.fillWeeks=function(){
@@ -189,14 +168,16 @@
     const week=$('week');
     week.disabled=false;
     week.innerHTML='<option value="">Chọn tuần…</option>'+list.map(s=>`<option>${esc(s.name)}</option>`).join('');
-    $('teacher').disabled=true;
-    $('analyze').disabled=true;
-    $('compare').disabled=true;
-    $('export').disabled=true;
-    clearResults();
+    $('teacher').disabled=true;$('analyze').disabled=true;$('compare').disabled=true;$('export').disabled=true;clearResults();
     if(list.length){week.value=list[0].name;populateTeachers();}
   };
 
   $('week').onchange=populateTeachers;
   if(typeof wb!=='undefined'&&wb)window.fillWeeks();
+})();
+(function(){
+  const script=document.createElement('script');
+  script.src='analysis-fix.js?v=20260718.4';
+  script.defer=true;
+  document.body.appendChild(script);
 })();
