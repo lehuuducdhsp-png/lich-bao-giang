@@ -6,6 +6,10 @@
   let bridgeWindow=null;
   let pending=null;
 
+  function currentResult(){
+    try{return result||null;}catch{return null;}
+  }
+
   function pad2(value){
     const number=Number(value);
     return Number.isFinite(number)&&number>0?String(number).padStart(2,'0'):String(value||'').trim();
@@ -18,10 +22,10 @@
   }
 
   function buildReport(mode){
-    if(!window.result||!Array.isArray(window.result.entries)||!window.result.entries.length){
+    const a=currentResult();
+    if(!a||!Array.isArray(a.entries)||!a.entries.length){
       throw new Error('Hãy nhấn Kiểm tra và bảo đảm lịch có ít nhất một tiết trước khi lưu.');
     }
-    const a=window.result;
     const yearStart=Number(document.getElementById('year')?.value)||new Date().getFullYear();
     const start=a.start instanceof Date?new Date(a.start):null;
     const end=start?new Date(start.getTime()+5*864e5):null;
@@ -77,7 +81,8 @@
 
     const syncDisabled=()=>{
       if(pending)return;
-      button.disabled=!window.result||!Array.isArray(window.result.entries)||window.result.entries.length<1||exportButton.disabled;
+      const a=currentResult();
+      button.disabled=!a||!Array.isArray(a.entries)||a.entries.length<1||exportButton.disabled;
     };
     new MutationObserver(syncDisabled).observe(exportButton,{attributes:true,attributeFilter:['disabled']});
     document.getElementById('analyze')?.addEventListener('click',()=>setTimeout(syncDisabled,50));
@@ -126,14 +131,15 @@
   function setBusy(busy,text){
     const button=document.getElementById('saveSheets');
     if(!button)return;
-    button.disabled=busy||!window.result?.entries?.length;
+    const a=currentResult();
+    button.disabled=busy||!a?.entries?.length;
     button.textContent=text||(busy?'Đang lưu…':'☁ Lưu vào Google Sheets');
   }
 
   function saveToSheets(mode){
     let report;
     try{report=buildReport(mode);}catch(error){alert(error.message||String(error));return;}
-    if(pending){toast?.('Đang có một yêu cầu lưu.');return;}
+    if(pending){toast('Đang có một yêu cầu lưu.');return;}
 
     const requestId=`lbg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const envelope={
@@ -177,7 +183,7 @@
     pending=null;
     setBusy(false,success?'✓ Đã lưu Google Sheets':'☁ Lưu vào Google Sheets');
     if(success){
-      toast?.(message||'Đã lưu vào Google Sheets.');
+      toast(message||'Đã lưu vào Google Sheets.');
       if(url&&confirm((message||'Đã lưu thành công.')+'\n\nMở Google Sheets ngay?'))window.open(url,'_blank','noopener');
       setTimeout(()=>setBusy(false),2200);
     }else{
