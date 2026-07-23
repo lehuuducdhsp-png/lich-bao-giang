@@ -2,7 +2,7 @@
 (function(){
   const WEB_APP_URL='https://script.google.com/macros/s/AKfycbxVwQlQXcR_bw_rh0jZQ0vMVdDolVJqDgXf1Wahkh-af0tvyDdScePpQFn-OyoDVhi2/exec';
   const ACCESS_KEY='LBG-2026-DUC-7c83mP9q';
-  const SAVE_TYPE='LBG_SAVE';
+  const POPUP_NAME='lbgGoogleSheetsBridge';
   let bridgeWindow=null;
   let pending=null;
 
@@ -17,7 +17,9 @@
 
   function isoDate(value){
     if(!(value instanceof Date)||Number.isNaN(value.getTime()))return '';
-    const y=value.getFullYear(),m=String(value.getMonth()+1).padStart(2,'0'),d=String(value.getDate()).padStart(2,'0');
+    const y=value.getFullYear();
+    const m=String(value.getMonth()+1).padStart(2,'0');
+    const d=String(value.getDate()).padStart(2,'0');
     return `${y}-${m}-${d}`;
   }
 
@@ -40,6 +42,7 @@
     if(!a||!Array.isArray(a.entries)||!a.entries.length){
       throw new Error('Hãy nhấn Kiểm tra và bảo đảm lịch có ít nhất một tiết trước khi lưu.');
     }
+
     const yearStart=Number(document.getElementById('year')?.value)||new Date().getFullYear();
     const start=a.start instanceof Date?new Date(a.start):null;
     const end=start?new Date(start.getTime()+5*864e5):null;
@@ -55,7 +58,10 @@
       sourceCell:String(entry.address||''),
       address:String(entry.address||'')
     }));
-    const report={
+
+    return {
+      accessKey:ACCESS_KEY,
+      key:ACCESS_KEY,
       week:a.week,
       weekNo:a.week,
       weekNumber:a.week,
@@ -66,6 +72,7 @@
       destinationSheet,
       tabName:destinationSheet,
       schoolYear:`${yearStart}-${yearStart+1}`,
+      schoolYearStart:yearStart,
       yearStart,
       yearEnd:yearStart+1,
       teacherName:String(a.teacherName||''),
@@ -80,12 +87,12 @@
       entries,
       schedule:entries
     };
-    return report;
   }
 
   function ensureButton(){
     const exportButton=document.getElementById('export');
     if(!exportButton||document.getElementById('saveSheets'))return;
+
     const button=document.createElement('button');
     button.id='saveSheets';
     button.type='button';
@@ -101,6 +108,7 @@
       const a=currentResult();
       button.disabled=!a||!Array.isArray(a.entries)||a.entries.length<1||exportButton.disabled;
     };
+
     new MutationObserver(syncDisabled).observe(exportButton,{attributes:true,attributeFilter:['disabled']});
     document.getElementById('analyze')?.addEventListener('click',()=>setTimeout(syncDisabled,50));
     document.getElementById('teacher')?.addEventListener('change',syncDisabled);
@@ -112,6 +120,7 @@
   function ensureDialog(){
     let dialog=document.getElementById('sheetSaveDialog');
     if(dialog)return dialog;
+
     dialog=document.createElement('dialog');
     dialog.id='sheetSaveDialog';
     dialog.style.cssText='border:0;border-radius:18px;padding:0;max-width:480px;width:calc(100% - 30px);box-shadow:0 24px 70px rgba(15,23,42,.28)';
@@ -153,56 +162,62 @@
     button.textContent=text||(busy?'Đang lưu…':'☁ Lưu vào Google Sheets');
   }
 
+  function hiddenInput(name,value){
+    const input=document.createElement('input');
+    input.type='hidden';
+    input.name=name;
+    input.value=value;
+    return input;
+  }
+
   function saveToSheets(mode){
     let report;
     try{report=buildReport(mode);}catch(error){alert(error.message||String(error));return;}
     if(pending){toast('Đang có một yêu cầu lưu.');return;}
 
     const requestId=`lbg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const envelope={
-      type:SAVE_TYPE,
-      action:'save',
-      command:'saveReport',
-      requestId,
-      accessKey:ACCESS_KEY,
-      key:ACCESS_KEY,
-      mode,
-      payload:{...report,accessKey:ACCESS_KEY,key:ACCESS_KEY},
-      data:{...report,accessKey:ACCESS_KEY,key:ACCESS_KEY},
-      report
-    };
+    setBusy(true,'Đang gửi sang Google Sheets…');
 
-    setBusy(true,'Đang kết nối Google Sheets…');
-    bridgeWindow=window.open(WEB_APP_URL,'lbgGoogleSheetsBridge','popup=yes,width=540,height=650,left=120,top=80');
+    bridgeWindow=window.open('about:blank',POPUP_NAME,'popup=yes,width=540,height=650,left=120,top=80');
     if(!bridgeWindow){
       setBusy(false);
-      alert('Trình duyệt đang chặn cửa sổ kết nối. Hãy cho phép cửa sổ bật lên rồi thử lại.');
+      alert('Trình duyệt đang chặn cửa sổ bật lên. Hãy cho phép cửa sổ bật lên rồi thử lại.');
       return;
     }
 
-    pending={requestId,envelope,started:Date.now(),sendTimer:null,timer:null};
-    const send=()=>{
-      if(!pending||pending.requestId!==requestId)return;
-      if(bridgeWindow.closed){finish(false,'Cửa sổ kết nối đã bị đóng trước khi lưu xong.');return;}
-      try{bridgeWindow.postMessage(envelope,'*');}catch(error){console.error(error);}
-      setBusy(true,'Đang lưu vào Google Sheets…');
-    };
+    pending={requestId,started:Date.now(),timer:null};
 
-    // Apps Script có thể tải chậm ở lần mở đầu tiên. Gửi lại yêu cầu
-    // cho đến khi trang kết nối nhận được và trả kết quả.
-    setTimeout(send,700);
-    pending.sendTimer=setInterval(send,1000);
+    const form=document.createElement('form');
+    form.method='POST';
+    form.action=WEB_APP_URL;
+    form.target=POPUP_NAME;
+    form.style.display='none';
+    form.appendChild(hiddenInput('requestId',requestId));
+    form.appendChild(hiddenInput('accessKey',ACCESS_KEY));
+    form.appendChild(hiddenInput('payload',JSON.stringify(report)));
+    document.body.appendChild(form);
+
+    try{
+      form.submit();
+      setBusy(true,'Đang lưu vào Google Sheets…');
+    }catch(error){
+      form.remove();
+      finish(false,'Không gửi được dữ liệu sang Google Sheets: '+(error.message||String(error)));
+      return;
+    }
+    form.remove();
+
     pending.timer=setTimeout(()=>{
       if(!pending||pending.requestId!==requestId)return;
-      finish(false,'Google Sheets chưa phản hồi. Hãy giữ cửa sổ kết nối mở và thử lại.');
-    },45000);
+      finish(false,'Google Sheets chưa phản hồi. Hãy kiểm tra lại Apps Script và lượt triển khai.');
+    },60000);
   }
 
   function finish(success,message,url){
     if(pending?.timer)clearTimeout(pending.timer);
-    if(pending?.sendTimer)clearInterval(pending.sendTimer);
     pending=null;
     setBusy(false,success?'✓ Đã lưu Google Sheets':'☁ Lưu vào Google Sheets');
+
     if(success){
       toast(message||'Đã lưu vào Google Sheets.');
       if(url&&confirm((message||'Đã lưu thành công.')+'\n\nMở Google Sheets ngay?'))window.open(url,'_blank','noopener');
@@ -210,6 +225,7 @@
     }else{
       alert(message||'Không thể lưu vào Google Sheets.');
     }
+
     try{if(bridgeWindow&&!bridgeWindow.closed)bridgeWindow.close();}catch{}
     bridgeWindow=null;
   }
@@ -217,13 +233,15 @@
   window.addEventListener('message',event=>{
     const host=(()=>{try{return new URL(event.origin).hostname;}catch{return '';}})();
     if(host!=='script.google.com'&&!host.endsWith('.googleusercontent.com'))return;
+
     const message=event.data||{};
     if(!pending)return;
     if(message.requestId&&message.requestId!==pending.requestId)return;
 
     const body=message.result||message.data||message.payload||message;
     const isError=message.type==='LBG_ERROR'||message.success===false||body?.success===false||Boolean(message.error||body?.error);
-    const isSuccess=message.type==='LBG_SAVED'||message.type==='LBG_SAVE_RESULT'||message.success===true||body?.success===true||body?.ok===true;
+    const isSuccess=message.type==='LBG_SAVED'||message.type==='LBG_SAVE_RESULT'||message.type==='LBG_RESULT'||message.success===true||body?.success===true||body?.ok===true;
+
     if(isError){
       finish(false,String(message.error||body?.error||body?.message||'Apps Script báo lỗi khi lưu.'));
     }else if(isSuccess){
