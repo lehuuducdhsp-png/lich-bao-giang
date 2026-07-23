@@ -1,0 +1,42 @@
+name: Enable Apps Script bridge frame
+
+on:
+  push:
+    paths:
+      - '.github/workflows/enable-sheets-frame.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Allow Apps Script iframe in CSP
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          if 'frame-src https://script.google.com https://script.googleusercontent.com' not in text:
+              old = "img-src 'self' data: blob:; object-src 'none'"
+              new = "img-src 'self' data: blob:; frame-src https://script.google.com https://script.googleusercontent.com; object-src 'none'"
+              if old not in text:
+                  raise SystemExit('Không tìm thấy vị trí CSP cần cập nhật.')
+              text = text.replace(old, new, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit patch and remove one-time workflow
+        run: |
+          rm -f .github/workflows/enable-sheets-frame.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/enable-sheets-frame.yml
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "feat: allow Google Apps Script save bridge"
+            git push
+          fi
