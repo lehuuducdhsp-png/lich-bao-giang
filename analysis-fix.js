@@ -49,6 +49,12 @@
     return '';
   }
 
+  function reportWeekNo(start){
+    const yearStart=Number(document.getElementById('year')?.value)||start.getFullYear();
+    const firstWeek=new Date(yearStart,8,7,12);
+    return Math.floor((start-firstWeek)/6048e5)+1;
+  }
+
   function safeAnalyze(ws,code,name){
     const entries=[];
     if(!ws)throw new Error('Không tìm thấy sheet tuần đã chọn.');
@@ -103,7 +109,7 @@
       total:entries.length,
       warnings,
       start,
-      week:start?weekNo(start):''
+      week:start?reportWeekNo(start):''
     };
   }
 
@@ -153,7 +159,7 @@
 })();
 (function(){
   const script=document.createElement('script');
-  script.src='sheets-sync.js?v=20260723.1';
+  script.src='sheets-sync.js?v=20260723.2';
   script.defer=true;
   document.body.appendChild(script);
 })();
