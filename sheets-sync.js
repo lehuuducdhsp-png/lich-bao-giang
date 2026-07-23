@@ -21,6 +21,20 @@
     return `${y}-${m}-${d}`;
   }
 
+  function tabStartDate(start,week,yearStart){
+    if(start instanceof Date&&!Number.isNaN(start.getTime()))return new Date(start);
+    const number=Number(week);
+    if(!Number.isFinite(number)||number<1)return null;
+    const base=new Date(yearStart,8,7,12);
+    base.setDate(base.getDate()+(number-1)*7);
+    return base;
+  }
+
+  function tabName(weekText,start,week,yearStart){
+    const date=tabStartDate(start,week,yearStart);
+    return date?`TUẦN ${weekText}_${date.getDate()}T${date.getMonth()+1}`:`TUẦN ${weekText}`;
+  }
+
   function buildReport(mode){
     const a=currentResult();
     if(!a||!Array.isArray(a.entries)||!a.entries.length){
@@ -30,6 +44,7 @@
     const start=a.start instanceof Date?new Date(a.start):null;
     const end=start?new Date(start.getTime()+5*864e5):null;
     const weekText=pad2(a.week);
+    const destinationSheet=tabName(weekText,start,a.week,yearStart);
     const entries=a.entries.map((entry,index)=>({
       index:index+1,
       day:Number(entry.day),
@@ -47,7 +62,9 @@
       weekText,
       weekLabel:String(a.sheet||''),
       sourceSheet:String(a.sheet||''),
-      sheetName:`TUẦN ${weekText}`,
+      sheetName:destinationSheet,
+      destinationSheet,
+      tabName:destinationSheet,
       schoolYear:`${yearStart}-${yearStart+1}`,
       yearStart,
       yearEnd:yearStart+1,
