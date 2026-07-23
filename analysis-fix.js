@@ -151,3 +151,9 @@
     };
   }
 })();
+(function(){
+  const script=document.createElement('script');
+  script.src='sheets-sync.js?v=20260723.1';
+  script.defer=true;
+  document.body.appendChild(script);
+})();
