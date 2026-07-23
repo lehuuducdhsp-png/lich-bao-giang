@@ -180,7 +180,7 @@
       return;
     }
 
-    pending={requestId,envelope,started:Date.now()};
+    pending={requestId,envelope,started:Date.now(),sendTimer:null,timer:null};
     const send=()=>{
       if(!pending||pending.requestId!==requestId)return;
       if(bridgeWindow.closed){finish(false,'Cửa sổ kết nối đã bị đóng trước khi lưu xong.');return;}
@@ -188,15 +188,19 @@
       setBusy(true,'Đang lưu vào Google Sheets…');
     };
 
-    setTimeout(send,1800);
+    // Apps Script có thể tải chậm ở lần mở đầu tiên. Gửi lại yêu cầu
+    // cho đến khi trang kết nối nhận được và trả kết quả.
+    setTimeout(send,700);
+    pending.sendTimer=setInterval(send,1000);
     pending.timer=setTimeout(()=>{
       if(!pending||pending.requestId!==requestId)return;
       finish(false,'Google Sheets chưa phản hồi. Hãy giữ cửa sổ kết nối mở và thử lại.');
-    },30000);
+    },45000);
   }
 
   function finish(success,message,url){
     if(pending?.timer)clearTimeout(pending.timer);
+    if(pending?.sendTimer)clearInterval(pending.sendTimer);
     pending=null;
     setBusy(false,success?'✓ Đã lưu Google Sheets':'☁ Lưu vào Google Sheets');
     if(success){
