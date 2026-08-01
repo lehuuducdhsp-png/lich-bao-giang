@@ -8,7 +8,7 @@
   const current=()=>{try{return result||null;}catch{return null;}};
   const pad2=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?String(n).padStart(2,'0'):String(v||'').trim();};
   const iso=d=>d instanceof Date&&!Number.isNaN(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
-  const tabStart=(start,week,year)=>{if(start instanceof Date&&!Number.isNaN(start.getTime()))return new Date(start);const n=Number(week);if(!Number.isFinite(n)||n<1)return null;const d=new Date(year,8,7,12);d.setDate(d.getDate()+(n-1)*7);return d;};
+  const tabStart=(start,week,year)=>{if(start instanceof Date&&!Number.isNaN(start.getTime()))return new Date(start);const n=Number(week);if(!Number.isFinite(n)||n<1)return null;const d=new Date(year,7,31,12);d.setDate(d.getDate()+(n-1)*7);return d;};
   const tabName=(weekText,start,week,year)=>{const d=tabStart(start,week,year);return d?`TUẦN ${weekText}_${d.getDate()}T${d.getMonth()+1}`:`TUẦN ${weekText}`;};
 
   function gaValuesOf(a){
