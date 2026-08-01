@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const WEB_APP_URL='https://script.google.com/macros/s/AKfycbxVwQlQXcR_bw_rh0jZQ0vMVdDolVJqDgXf1Wahkh-af0tvyDdScePpQFn-OyoDVhi2/exec';
+  const WEB_APP_URL='https://script.google.com/macros/s/AKfycbxRVd_GG4n8Ozk0CYoekM3kJ1xmHGOF5Nu-wS5jAaiwc0SRJdmWAzPiLEobixDXqCbY/exec';
   const ACCESS_KEY='LBG-2026-DUC-7c83mP9q';
   const POPUP_NAME='lbgGoogleSheetsBridge';
   let bridgeWindow=null,pending=null;
