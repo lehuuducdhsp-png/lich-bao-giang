@@ -163,3 +163,9 @@
   script.defer=true;
   document.body.appendChild(script);
 })();
+(function(){
+  const script=document.createElement('script');
+  script.src='ga-editor.js?v=20260801.1';
+  script.defer=true;
+  document.body.appendChild(script);
+})();
