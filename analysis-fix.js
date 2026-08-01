@@ -49,9 +49,24 @@
     return '';
   }
 
+  function parseLocalDate(value){
+    const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m)return null;
+    const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12);
+    return Number.isNaN(d.getTime())?null:d;
+  }
+
+  function defaultFirstWeek(yearStart){
+    const sep1=new Date(yearStart,8,1,12);
+    const day=sep1.getDay()||7;
+    sep1.setDate(sep1.getDate()-day+1);
+    return sep1;
+  }
+
   function reportWeekNo(start){
     const yearStart=Number(document.getElementById('year')?.value)||start.getFullYear();
-    const firstWeek=new Date(yearStart,7,31,12);
+    const cfg=typeof window.getSchoolYearConfig==='function'?window.getSchoolYearConfig():null;
+    const firstWeek=parseLocalDate(cfg?.startDate)||defaultFirstWeek(yearStart);
     return Math.floor((start-firstWeek)/6048e5)+1;
   }
 
@@ -101,6 +116,11 @@
     }
 
     const start=startDate(ws.name);
+    const week=start?reportWeekNo(start):'';
+    if(start&&(!Number.isInteger(week)||week<1)){
+      warnings.push('Ngày của tab TKB nằm trước ngày bắt đầu Tuần 01 đã cấu hình.');
+    }
+
     return {
       sheet:ws.name,
       code,
@@ -109,7 +129,7 @@
       total:entries.length,
       warnings,
       start,
-      week:start?reportWeekNo(start):''
+      week
     };
   }
 
@@ -132,6 +152,8 @@
       $('warnings').innerHTML='';
 
       try{
+        const cfg=typeof window.getSchoolYearConfig==='function'?window.getSchoolYearConfig():null;
+        if(cfg&&!cfg.valid)throw new Error('Cấu hình năm học chưa hợp lệ. Hãy kiểm tra hai ô ngày.');
         const ws=wb?.getWorksheet(weekSelect.value);
         result=safeAnalyze(ws,teacherCode,teacherName);
         render(result);
@@ -157,15 +179,24 @@
     };
   }
 })();
+
 (function(){
-  const script=document.createElement('script');
-  script.src='sheets-sync.js?v=20260723.2';
-  script.defer=true;
-  document.body.appendChild(script);
-})();
-(function(){
-  const script=document.createElement('script');
-  script.src='ga-editor.js?v=20260801.1';
-  script.defer=true;
-  document.body.appendChild(script);
+  function loadDependentScripts(){
+    const sync=document.createElement('script');
+    sync.src='sheets-sync.js?v=20260801.8';
+    sync.async=false;
+    document.body.appendChild(sync);
+
+    const ga=document.createElement('script');
+    ga.src='ga-editor.js?v=20260801.1';
+    ga.async=false;
+    document.body.appendChild(ga);
+  }
+
+  const config=document.createElement('script');
+  config.src='school-year-config.js?v=20260801.1';
+  config.async=false;
+  config.onload=loadDependentScripts;
+  config.onerror=loadDependentScripts;
+  document.body.appendChild(config);
 })();
