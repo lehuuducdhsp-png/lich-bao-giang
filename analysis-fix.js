@@ -51,7 +51,7 @@
 
   function reportWeekNo(start){
     const yearStart=Number(document.getElementById('year')?.value)||start.getFullYear();
-    const firstWeek=new Date(yearStart,8,7,12);
+    const firstWeek=new Date(yearStart,7,31,12);
     return Math.floor((start-firstWeek)/6048e5)+1;
   }
 
