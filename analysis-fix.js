@@ -32,19 +32,19 @@
 
   function safeSchool(ws,row){
     for(let r=row;r>=1;r--){
-      const text=norm(safeCellText(safeMaster(ws,r,2))).split('\n')[0].trim();
-      if(text&&text.length<=80&&!/^(trường|lớp|tiết|sáng|chiều)$/i.test(text))return text;
+      const value=norm(safeCellText(safeMaster(ws,r,2))).split('\n')[0].trim();
+      if(value&&value.length<=80&&!/^(trường|lớp|tiết|sáng|chiều)$/i.test(value))return value;
     }
     return '';
   }
 
   function safeClass(ws,row,col,teacherCode){
     for(let r=row-1;r>=Math.max(1,row-5);r--){
-      const text=norm(safeCellText(safeMaster(ws,r,col)));
-      if(!text||text.length>45)continue;
-      if(text.toUpperCase()===String(teacherCode||'').toUpperCase())continue;
-      if(/^(sáng|chiều|tiết|thứ|tên gv|tên giáo viên)$/i.test(text))continue;
-      return text;
+      const value=norm(safeCellText(safeMaster(ws,r,col)));
+      if(!value||value.length>45)continue;
+      if(value.toUpperCase()===String(teacherCode||'').toUpperCase())continue;
+      if(/^(sáng|chiều|tiết|thứ|tên gv|tên giáo viên)$/i.test(value))continue;
+      return value;
     }
     return '';
   }
@@ -78,8 +78,8 @@
     ws.eachRow({includeEmpty:false},row=>{
       for(let c=4;c<=73;c++){
         const cell=row.getCell(c);
-        const text=norm(safeCellText(cell)).toUpperCase();
-        if(text!==String(code).toUpperCase())continue;
+        const value=norm(safeCellText(cell)).toUpperCase();
+        if(value!==String(code).toUpperCase())continue;
         const info=colInfo(c);
         if(!info)continue;
         entries.push({
@@ -93,9 +93,7 @@
       }
     });
 
-    entries.sort((a,b)=>a.day-b.day||
-      ((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||
-      a.period-b.period);
+    entries.sort((a,b)=>a.day-b.day||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.period-b.period);
 
     const warnings=[];
     if(!entries.length)warnings.push(`Không tìm thấy ô mã ${code} trong vùng thời khóa biểu của sheet ${ws.name}.`);
@@ -117,20 +115,9 @@
 
     const start=startDate(ws.name);
     const week=start?reportWeekNo(start):'';
-    if(start&&(!Number.isInteger(week)||week<1)){
-      warnings.push('Ngày của tab TKB nằm trước ngày bắt đầu Tuần 01 đã cấu hình.');
-    }
+    if(start&&(!Number.isInteger(week)||week<1))warnings.push('Ngày của tab TKB nằm trước ngày bắt đầu Tuần 01 đã cấu hình.');
 
-    return {
-      sheet:ws.name,
-      code,
-      teacherName:name||code,
-      entries,
-      total:entries.length,
-      warnings,
-      start,
-      week
-    };
+    return {sheet:ws.name,code,teacherName:name||code,entries,total:entries.length,warnings,start,week};
   }
 
   try{analyzeNow=safeAnalyze;}catch{}
@@ -161,9 +148,7 @@
         if(result.total>0){
           toast(`Đã kiểm tra ${result.total} tiết. Có thể xuất Excel.`);
           setTimeout(()=>document.getElementById('previewCard')?.scrollIntoView({behavior:'smooth',block:'start'}),100);
-        }else{
-          toast('Không tìm thấy tiết để xuất báo giảng.');
-        }
+        }else toast('Không tìm thấy tiết để xuất báo giảng.');
       }catch(error){
         console.error(error);
         result=null;
@@ -191,6 +176,16 @@
     ga.src='ga-editor.js?v=20260801.1';
     ga.async=false;
     document.body.appendChild(ga);
+
+    const multi=document.createElement('script');
+    multi.src='multi-teacher-v5.js?v=20260803.1';
+    multi.async=false;
+    document.body.appendChild(multi);
+
+    const conflict=document.createElement('script');
+    conflict.src='conflict-check-v5.js?v=20260803.1';
+    conflict.async=false;
+    document.body.appendChild(conflict);
   }
 
   const config=document.createElement('script');
