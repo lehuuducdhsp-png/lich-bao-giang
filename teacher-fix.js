@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const blockedCodes=new Set(['SÁNG','CHIỀU','THỨ','TIẾT','TỔNG','TÊN GV','TÊN GIÁO VIÊN']);
+  const blockedCodes=new Set(['SÁNG','CHIỀU','THỨ','TIẾT','TỔNG','TÊN GV','TÊN GIÁO VIÊN','OFF']);
 
   function safeText(cell){
     try{
