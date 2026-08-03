@@ -196,6 +196,27 @@
     statsV7.src='weekly-stats-enhancement-v7.js?v=20260803.2';
     statsV7.async=false;
     document.body.appendChild(statsV7);
+
+    const supabaseConfig=document.createElement('script');
+    supabaseConfig.src='supabase-config.js?v=20260803.1';
+    supabaseConfig.async=false;
+    supabaseConfig.onload=()=>{
+      const authCore=document.createElement('script');
+      authCore.src='auth-core-v1.js?v=20260803.1';
+      authCore.async=false;
+      authCore.onload=()=>{
+        const cloudSync=document.createElement('script');
+        cloudSync.src='cloud-sync-v1.js?v=20260803.1';
+        cloudSync.async=false;
+        document.body.appendChild(cloudSync);
+        const ownerAdmin=document.createElement('script');
+        ownerAdmin.src='owner-admin-v1.js?v=20260803.1';
+        ownerAdmin.async=false;
+        document.body.appendChild(ownerAdmin);
+      };
+      document.body.appendChild(authCore);
+    };
+    document.body.appendChild(supabaseConfig);
   }
 
   const config=document.createElement('script');

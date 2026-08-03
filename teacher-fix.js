@@ -176,7 +176,7 @@
 })();
 (function(){
   const script=document.createElement('script');
-  script.src='analysis-fix.js?v=20260803.4';
+  script.src='analysis-fix.js?v=20260803.5';
   script.defer=true;
   document.body.appendChild(script);
 })();
