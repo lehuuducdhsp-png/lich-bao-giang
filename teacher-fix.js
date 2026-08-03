@@ -49,7 +49,7 @@
         const code=norm(safeText(row.getCell(c))).toUpperCase();
         if(!code||code.length>18||blockedCodes.has(code))continue;
         if(/^\d+$/.test(code)||/^\d+\/\d+$/.test(code))continue;
-        if(!/^[A-ZÀ-ỸĐ0-9. ]+$/.test(code))continue;
+        if(!/^[A-ZÀ-ỸĐ0-9.]+$/.test(code)&&!(/^[A-ZÀ-ỸĐ0-9. ]+$/.test(code)&&/(^| )CTV($| )/.test(code)))continue;
         counts.set(code,(counts.get(code)||0)+1);
       }
     });
