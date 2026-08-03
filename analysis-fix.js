@@ -188,7 +188,7 @@
       if(window.LBG_SUPABASE_CONFIG?.enabled){
         appendScript('auth-core-v1.js?v=20260803.4',()=>{
           appendScript('cloud-sync-v1.js?v=20260803.4');
-          appendScript('owner-admin-v1.js?v=20260803.3');
+          appendScript('owner-admin-v2.js?v=20260803.1');
           appendScript('sheets-sync-owner-v2.js?v=20260803.2');
         });
         loadCommonModules();
