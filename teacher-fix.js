@@ -49,7 +49,7 @@
         const code=norm(safeText(row.getCell(c))).toUpperCase();
         if(!code||code.length>18||blockedCodes.has(code))continue;
         if(/^\d+$/.test(code)||/^\d+\/\d+$/.test(code))continue;
-        if(!/^[A-ZÀ-ỸĐ0-9.]+$/.test(code))continue;
+        if(!/^[A-ZÀ-ỸĐ0-9. ]+$/.test(code))continue;
         counts.set(code,(counts.get(code)||0)+1);
       }
     });
@@ -77,7 +77,6 @@
       }
       consecutiveBlank=0;
       if(/^(off|tc|tổng\s*lớp)/i.test(raw))break;
-      if(/^CTV\b/i.test(raw)||/\bCTV$/i.test(raw))continue;
 
       let directCode='',expected=0;
       for(let c=header.col+1;c<=Math.min(ws.columnCount,header.col+4);c++){
