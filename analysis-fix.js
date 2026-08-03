@@ -193,7 +193,7 @@
     document.body.appendChild(intelligence);
 
     const statsV7=document.createElement('script');
-    statsV7.src='weekly-stats-enhancement-v7.js?v=20260803.1';
+    statsV7.src='weekly-stats-enhancement-v7.js?v=20260803.2';
     statsV7.async=false;
     document.body.appendChild(statsV7);
   }
