@@ -9,7 +9,11 @@
     tries++;
     if(window.LBGAuth){
       clearInterval(timer);
-      add('access-control-v1.js?v=20260804.1','lbgAccessControlV1',()=>add('group-management-v1.js?v=20260804.1','lbgGroupManagementV1'));
+      add('access-control-v1.js?v=20260804.1','lbgAccessControlV1',()=>{
+        add('group-management-v1.js?v=20260804.1','lbgGroupManagementV1',()=>{
+          add('group-auto-map-v1.js?v=20260804.1','lbgGroupAutoMapV1');
+        });
+      });
     }else if(tries>300){
       clearInterval(timer);
       console.error('Không tải được mô-đun nhóm vì hệ thống đăng nhập chưa sẵn sàng.');
