@@ -3,8 +3,8 @@
   if(!window.LBGAuth)return;
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').trim();
-  const escHtml=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
-  let auth=null,ctx=null,originalTeachers=null,patched=false,observer=null;
+  const escHtml=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let auth=null,ctx=null,originalTeachers=null,patched=false,observer=null,sweepScheduled=false,safetyTimer=null;
   const ownCode=()=>txt(ctx?.teacher_code).toUpperCase();
   const allowed=()=>new Set((ctx?.teacher_codes||[]).map(x=>txt(x).toUpperCase()).filter(Boolean));
 
@@ -30,7 +30,10 @@
     if(ctx.is_owner)label='Chủ sở hữu';
     else if(ctx.is_group_leader)label='Nhóm trưởng';
     else if((ctx.group_ids||[]).length>0)label='Phụ trách chuyên môn';
-    chip.innerHTML=`<b>${escHtml(name)}</b> • ${escHtml(label)}`;
+    const html=`<b>${escHtml(name)}</b> • ${escHtml(label)}`;
+    if(chip.dataset.lbgAccessHtml===html)return;
+    chip.dataset.lbgAccessHtml=html;
+    chip.innerHTML=html;
   }
 
   function patchTeachers(){
@@ -54,7 +57,8 @@
       const code=txt(opt.value).toUpperCase();
       if(!code)return;
       const ok=set.has(code);
-      opt.hidden=!ok;opt.disabled=!ok;
+      if(opt.hidden===ok)opt.hidden=!ok;
+      if(opt.disabled===ok)opt.disabled=!ok;
       if(ok&&!first)first=opt.value;
     });
     const current=txt(select.value).toUpperCase();
@@ -92,7 +96,7 @@
       card.querySelector('.head')?.insertAdjacentElement('afterend',n);
     }
     if(!code){
-      card.querySelectorAll('button,select').forEach(x=>x.disabled=true);
+      card.querySelectorAll('button,select').forEach(x=>{if(!x.disabled)x.disabled=true});
       return;
     }
     const only=new Set([code]);
@@ -104,7 +108,8 @@
     card.querySelectorAll('tbody tr').forEach(row=>{
       const text=txt(row.textContent).toUpperCase();
       const rowCodes=[...codes].filter(c=>c&&text.includes(c));
-      row.hidden=rowCodes.length>0&&!rowCodes.includes(code);
+      const shouldHide=rowCodes.length>0&&!rowCodes.includes(code);
+      if(row.hidden!==shouldHide)row.hidden=shouldHide;
     });
   }
 
@@ -116,7 +121,7 @@
   function ensureScopedWeekly(){
     if(!ctx||ctx.can_view_all_weekly_stats)return;
     const global=q('weeklyStatsV6')||findCard(/Thống kê giáo viên và tiết dạy trong tuần/i);
-    if(global)global.hidden=true;
+    if(global&&!global.hidden)global.hidden=true;
     if(q('lbgScopedWeekly'))return;
     const main=document.querySelector('main.shell');if(!main)return;
     style();
@@ -126,7 +131,7 @@
     if(global)global.insertAdjacentElement('afterend',card);else main.appendChild(card);
     q('lbgScopedRun').onclick=renderScopedWeekly;
     q('lbgScopedExport').onclick=exportScopedWeekly;
-    q('week')?.addEventListener('change',()=>{q('lbgScopedWeek').innerHTML=weekOptions();q('lbgScopedWeek').value=q('week').value});
+    q('week')?.addEventListener('change',()=>{const select=q('lbgScopedWeek');if(!select)return;select.innerHTML=weekOptions();select.value=q('week').value});
   }
 
   function scopedWeeklyData(){
@@ -145,7 +150,7 @@
   }
 
   function renderScopedWeekly(){
-    const box=q('lbgScopedResult');
+    const box=q('lbgScopedResult');if(!box)return;
     try{
       const data=scopedWeeklyData();window.__lbgScopedWeeklyData=data;
       q('lbgScopedWeeklyBadge').textContent=`${data.list.length} giáo viên`;
@@ -167,11 +172,27 @@
     }catch(e){alert(e?.message||String(e))}
   }
 
+  function sweep(){
+    patchTeachers();
+    enforceReportScope();
+    protectPayroll();
+    ensureScopedWeekly();
+    updateUserbar();
+  }
+
+  function scheduleSweep(){
+    if(sweepScheduled)return;
+    sweepScheduled=true;
+    const run=()=>{sweepScheduled=false;sweep()};
+    if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);else setTimeout(run,0);
+  }
+
   function setupObserver(){
     if(observer)return;
-    observer=new MutationObserver(()=>{patchTeachers();enforceReportScope();protectPayroll();ensureScopedWeekly();updateUserbar()});
+    observer=new MutationObserver(scheduleSweep);
     observer.observe(document.body,{childList:true,subtree:true});
-    setInterval(()=>{patchTeachers();enforceReportScope();protectPayroll();ensureScopedWeekly();updateUserbar()},1200);
+    clearInterval(safetyTimer);
+    safetyTimer=setInterval(scheduleSweep,1500);
   }
 
   async function loadContext(){
@@ -179,8 +200,9 @@
     if(error)throw error;
     ctx=data||{};
     window.LBGAccess={context:ctx,allowedTeacherCodes:allowed,isOwner:()=>Boolean(ctx?.is_owner),isGroupLeader:()=>Boolean(ctx?.is_group_leader),canViewAllWeekly:()=>Boolean(ctx?.can_view_all_weekly_stats),refresh:loadContext};
-    updateUserbar();patchTeachers();enforceReportScope();protectPayroll();ensureScopedWeekly();setupObserver();
+    sweep();setupObserver();
     document.dispatchEvent(new CustomEvent('lbg-access-ready',{detail:ctx}));
+    return ctx;
   }
 
   function setupFailure(error){
@@ -191,5 +213,5 @@
   }
 
   window.LBGAuth.onReady(a=>{auth=a;style();loadContext().catch(setupFailure)});
-  window.LBGAuth.onLogout(()=>{observer?.disconnect();observer=null;ctx=null;auth=null;q('lbgScopedWeekly')?.remove();q('lbgAccessSetupWarning')?.remove()});
+  window.LBGAuth.onLogout(()=>{observer?.disconnect();observer=null;clearInterval(safetyTimer);safetyTimer=null;sweepScheduled=false;ctx=null;auth=null;q('lbgScopedWeekly')?.remove();q('lbgAccessSetupWarning')?.remove()});
 })();
