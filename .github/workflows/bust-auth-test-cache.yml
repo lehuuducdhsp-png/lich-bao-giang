@@ -1,0 +1,41 @@
+name: Refresh auth test loader cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bust-auth-test-cache.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Bump analysis loader version
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('teacher-fix.js')
+          s=p.read_text(encoding='utf-8')
+          import re
+          updated,n=re.subn(r"analysis-fix\.js\?v=[0-9.]+","analysis-fix.js?v=20260803.10",s,count=1)
+          if n!=1:
+              raise SystemExit('Không tìm thấy analysis-fix.js trong teacher-fix.js')
+          p.write_text(updated,encoding='utf-8')
+          PY
+          node --check teacher-fix.js
+      - name: Commit and remove workflow
+        run: |
+          rm -f .github/workflows/bust-auth-test-cache.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add teacher-fix.js .github/workflows/bust-auth-test-cache.yml
+          git commit -m "fix: refresh authentication test loader cache"
+          git push origin HEAD:main
