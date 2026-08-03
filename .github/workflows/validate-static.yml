@@ -1,0 +1,45 @@
+name: Validate static modules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'access-control-v1.js'
+      - 'group-management-v1.js'
+      - 'group-auto-map-v1.js'
+      - 'groups-test-loader-v1.js'
+      - 'group-auth-test.html'
+      - 'supabase/migrations/20260804_groups_permissions.sql'
+      - '.github/workflows/validate-static.yml'
+  pull_request:
+    paths:
+      - 'access-control-v1.js'
+      - 'group-management-v1.js'
+      - 'group-auto-map-v1.js'
+      - 'groups-test-loader-v1.js'
+      - 'group-auth-test.html'
+      - 'supabase/migrations/20260804_groups_permissions.sql'
+
+permissions:
+  contents: read
+
+jobs:
+  javascript-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check access-control-v1.js
+          node --check group-management-v1.js
+          node --check group-auto-map-v1.js
+          node --check groups-test-loader-v1.js
+      - name: Check test HTML contains loader
+        run: grep -Fq 'groups-test-loader-v1.js' group-auth-test.html
+      - name: Check migration transaction
+        run: |
+          grep -Eq '^begin;' supabase/migrations/20260804_groups_permissions.sql
+          grep -Eq '^commit;' supabase/migrations/20260804_groups_permissions.sql
