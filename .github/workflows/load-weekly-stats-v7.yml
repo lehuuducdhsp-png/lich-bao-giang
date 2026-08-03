@@ -1,0 +1,53 @@
+name: Load weekly stats v7
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/load-weekly-stats-v7.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-loaders:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load v7 enhancement and refresh cache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          analysis = Path('analysis-fix.js')
+          text = analysis.read_text(encoding='utf-8')
+          anchor = "    document.body.appendChild(intelligence);\n"
+          addition = anchor + "\n    const statsV7=document.createElement('script');\n    statsV7.src='weekly-stats-enhancement-v7.js?v=20260803.1';\n    statsV7.async=false;\n    document.body.appendChild(statsV7);\n"
+          if 'weekly-stats-enhancement-v7.js' not in text:
+              if anchor not in text:
+                  raise SystemExit('Không tìm thấy vị trí nạp teacher-intelligence-v6.js.')
+              text = text.replace(anchor, addition, 1)
+              analysis.write_text(text, encoding='utf-8')
+
+          teacher = Path('teacher-fix.js')
+          t = teacher.read_text(encoding='utf-8')
+          old = 'analysis-fix.js?v=20260803.2'
+          new = 'analysis-fix.js?v=20260803.3'
+          if old in t:
+              t = t.replace(old, new, 1)
+              teacher.write_text(t, encoding='utf-8')
+          elif new not in t:
+              raise SystemExit('Không tìm thấy mã phiên bản analysis-fix cần cập nhật.')
+          PY
+      - name: Commit loader update
+        run: |
+          if git diff --quiet; then
+            echo "Bộ nạp v7 đã được cập nhật trước đó."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis-fix.js teacher-fix.js
+          git commit -m "feat: load grouped weekly stats and off-duty teacher view"
+          git push
