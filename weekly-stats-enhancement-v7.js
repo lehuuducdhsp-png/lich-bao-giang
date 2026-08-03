@@ -83,7 +83,7 @@
     }
     const week=q('weeklyStatsWeek');
     if(week&&!week.dataset.v7Bound){week.dataset.v7Bound='1';week.addEventListener('change',()=>{current=null;populateDays();q('weeklyOffView').disabled=!week.value;const p=q('weeklyOffPanel');if(p)p.hidden=true})}
-    populateDays();
+    if(q('weeklyOffDay')?.disabled&&q('weeklyStatsWeek')?.value)populateDays();
     if(q('weeklyOffView'))q('weeklyOffView').disabled=!q('weeklyStatsWeek')?.value;
 
     const run=q('weeklyStatsRun');
