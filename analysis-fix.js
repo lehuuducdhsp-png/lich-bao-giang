@@ -166,36 +166,47 @@
 })();
 
 (function(){
+  function appendScript(src,onload){
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=false;
+    if(onload)script.onload=onload;
+    document.body.appendChild(script);
+    return script;
+  }
+
+  function loadCommonModules(){
+    appendScript('ga-editor.js?v=20260801.1');
+    appendScript('multi-teacher-v5.js?v=20260803.1');
+    appendScript('conflict-check-v5.js?v=20260803.1');
+    appendScript('teacher-intelligence-v6.js?v=20260803.1');
+    appendScript('weekly-stats-enhancement-v7.js?v=20260803.2');
+  }
+
   function loadDependentScripts(){
-    const sync=document.createElement('script');
-    sync.src='sheets-sync.js?v=20260801.8';
-    sync.async=false;
-    document.body.appendChild(sync);
+    const startMode=()=>{
+      if(window.LBG_SUPABASE_CONFIG?.enabled){
+        appendScript('auth-core-v1.js?v=20260803.4',()=>{
+          appendScript('cloud-sync-v1.js?v=20260803.4');
+          appendScript('owner-admin-v1.js?v=20260803.3');
+          appendScript('sheets-sync-owner-v2.js?v=20260803.2');
+        });
+        loadCommonModules();
+      }else{
+        appendScript('sheets-sync.js?v=20260801.8');
+        loadCommonModules();
+      }
+    };
 
-    const ga=document.createElement('script');
-    ga.src='ga-editor.js?v=20260801.1';
-    ga.async=false;
-    document.body.appendChild(ga);
-
-    const multi=document.createElement('script');
-    multi.src='multi-teacher-v5.js?v=20260803.1';
-    multi.async=false;
-    document.body.appendChild(multi);
-
-    const conflict=document.createElement('script');
-    conflict.src='conflict-check-v5.js?v=20260803.1';
-    conflict.async=false;
-    document.body.appendChild(conflict);
-
-    const intelligence=document.createElement('script');
-    intelligence.src='teacher-intelligence-v6.js?v=20260803.1';
-    intelligence.async=false;
-    document.body.appendChild(intelligence);
-
-    const statsV7=document.createElement('script');
-    statsV7.src='weekly-stats-enhancement-v7.js?v=20260803.2';
-    statsV7.async=false;
-    document.body.appendChild(statsV7);
+    const supabaseConfig=document.createElement('script');
+    supabaseConfig.src='supabase-config.js?v=20260803.4';
+    supabaseConfig.async=false;
+    supabaseConfig.onload=startMode;
+    supabaseConfig.onerror=()=>{
+      appendScript('sheets-sync.js?v=20260801.8');
+      loadCommonModules();
+    };
+    document.body.appendChild(supabaseConfig);
   }
 
   const config=document.createElement('script');
