@@ -186,6 +186,11 @@
     conflict.src='conflict-check-v5.js?v=20260803.1';
     conflict.async=false;
     document.body.appendChild(conflict);
+
+    const intelligence=document.createElement('script');
+    intelligence.src='teacher-intelligence-v6.js?v=20260803.1';
+    intelligence.async=false;
+    document.body.appendChild(intelligence);
   }
 
   const config=document.createElement('script');
