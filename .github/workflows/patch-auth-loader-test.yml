@@ -1,0 +1,78 @@
+name: Patch authentication test loader
+
+on:
+  push:
+    branches: [feature-auth-sync-v1-20260803]
+    paths:
+      - '.github/workflows/patch-auth-loader-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature-auth-sync-v1-20260803
+          fetch-depth: 0
+      - name: Patch conditional loaders
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('analysis-fix.js')
+          s=p.read_text(encoding='utf-8')
+          replacement=r'''  function appendScript(src,onload){
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=false;
+    if(onload)script.onload=onload;
+    document.body.appendChild(script);
+    return script;
+  }
+
+  function loadDependentScripts(){
+    appendScript('ga-editor.js?v=20260801.1');
+    appendScript('multi-teacher-v5.js?v=20260803.1');
+    appendScript('conflict-check-v5.js?v=20260803.1');
+    appendScript('teacher-intelligence-v6.js?v=20260803.1');
+    appendScript('weekly-stats-enhancement-v7.js?v=20260803.2');
+
+    const startMode=()=>{
+      if(window.LBG_SUPABASE_CONFIG?.enabled){
+        appendScript('auth-core-v1.js?v=20260803.3',()=>{
+          appendScript('cloud-sync-v1.js?v=20260803.3');
+          appendScript('owner-admin-v1.js?v=20260803.2');
+          appendScript('sheets-sync-owner-v2.js?v=20260803.1');
+        });
+      }else{
+        appendScript('sheets-sync.js?v=20260801.8');
+      }
+    };
+
+    const supabaseConfig=document.createElement('script');
+    supabaseConfig.src='supabase-config.js?v=20260803.3';
+    supabaseConfig.async=false;
+    supabaseConfig.onload=startMode;
+    supabaseConfig.onerror=()=>appendScript('sheets-sync.js?v=20260801.8');
+    document.body.appendChild(supabaseConfig);
+  }
+
+  const config='''
+          pattern=r"  function loadDependentScripts\(\)\{.*?\n  \}\n\n  const config="
+          new,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n!=1:
+              raise SystemExit(f'Không thay được bộ nạp, số khớp={n}')
+          p.write_text(new,encoding='utf-8')
+          PY
+      - name: Commit patch and remove workflow
+        run: |
+          rm -f .github/workflows/patch-auth-loader-test.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis-fix.js .github/workflows/patch-auth-loader-test.yml
+          git commit -m "test: load Supabase modules only in auth test mode"
+          git push origin HEAD:feature-auth-sync-v1-20260803
