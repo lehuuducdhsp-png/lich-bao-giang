@@ -7,18 +7,22 @@ on:
       - 'access-control-v1.js'
       - 'group-management-v1.js'
       - 'group-auto-map-v1.js'
+      - 'branding-settings-v1.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
+      - 'supabase/migrations/20260805_branding_settings.sql'
       - '.github/workflows/validate-static.yml'
   pull_request:
     paths:
       - 'access-control-v1.js'
       - 'group-management-v1.js'
       - 'group-auto-map-v1.js'
+      - 'branding-settings-v1.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
+      - 'supabase/migrations/20260805_branding_settings.sql'
 
 permissions:
   contents: read
@@ -36,10 +40,15 @@ jobs:
           node --check access-control-v1.js
           node --check group-management-v1.js
           node --check group-auto-map-v1.js
+          node --check branding-settings-v1.js
           node --check groups-test-loader-v1.js
-      - name: Check test HTML contains loader
-        run: grep -Fq 'groups-test-loader-v1.js' group-auth-test.html
-      - name: Check migration transaction
+      - name: Check test HTML contains loaders
+        run: |
+          grep -Fq 'groups-test-loader-v1.js' group-auth-test.html
+          grep -Fq 'branding-settings-v1.js' groups-test-loader-v1.js
+      - name: Check migration transactions
         run: |
           grep -Eq '^begin;' supabase/migrations/20260804_groups_permissions.sql
           grep -Eq '^commit;' supabase/migrations/20260804_groups_permissions.sql
+          grep -Eq '^begin;' supabase/migrations/20260805_branding_settings.sql
+          grep -Eq '^commit;' supabase/migrations/20260805_branding_settings.sql
