@@ -9,12 +9,11 @@
     tries++;
     if(window.LBGAuth){
       clearInterval(timer);
+      add('branding-runtime-v2.js?v=20260805.1','lbgBrandingRuntimeV2');
       add('access-control-v1.js?v=20260804.2','lbgAccessControlV1',()=>{
         add('group-management-v1.js?v=20260804.2','lbgGroupManagementV1',()=>{
           add('group-auto-map-v1.js?v=20260804.2','lbgGroupAutoMapV1',()=>{
-            add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1',()=>{
-              add('branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1');
-            });
+            add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1');
           });
         });
       });
