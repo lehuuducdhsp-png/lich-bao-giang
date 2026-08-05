@@ -53,6 +53,10 @@
     return{url:'',type:'fallback'};
   }
 
+  function setText(element,value){
+    if(element&&element.textContent!==value)element.textContent=value;
+  }
+
   function syncHeader(){
     const header=document.querySelector('header.top');
     const box=header?.querySelector('.logo');
@@ -76,15 +80,15 @@
           if(desired.type==='logo'&&settings.icon_path){settings={...settings,logo_path:null};queueSync();return}
           box.classList.remove('lbg-brand-icon-fallback','lbg-brand-has-image');
           box.classList.add('lbg-brand-text-fallback');
-          box.textContent='BG';
+          setText(box,'BG');
         };
       }
       if(desired.type==='logo'){
         box.style.background=settings.logo_background||'transparent';
         box.style.borderRadius=`${Number(settings.logo_radius)||0}px`;
       }
-    }else if(box.textContent.trim()!=='BG'||box.querySelector('img')){
-      box.textContent='BG';
+    }else if(box.querySelector('img')||box.textContent.trim()!=='BG'){
+      setText(box,'BG');
     }
   }
 
@@ -111,13 +115,14 @@
 
     const title=form.querySelector('h2');
     const subtitle=form.querySelector('p');
-    if(title){title.classList.add('lbg-login-brand-title');title.textContent=settings.site_title||defaults.site_title}
-    if(subtitle){subtitle.classList.add('lbg-login-brand-subtitle');subtitle.textContent='Đăng nhập bằng mã tài khoản và mật khẩu do chủ sở hữu cấp.'}
+    if(title){title.classList.add('lbg-login-brand-title');setText(title,settings.site_title||defaults.site_title)}
+    if(subtitle){subtitle.classList.add('lbg-login-brand-subtitle');setText(subtitle,'Đăng nhập bằng mã tài khoản và mật khẩu do chủ sở hữu cấp.')}
   }
 
   function syncDocument(){
     const title=settings.site_title||defaults.site_title;
-    if(document.title.includes('Kiểm thử'))document.title=`Kiểm thử — ${title}`;
+    const next=`Kiểm thử — ${title}`;
+    if(document.title.includes('Kiểm thử')&&document.title!==next)document.title=next;
   }
 
   function sync(){syncQueued=false;syncHeader();syncLogin();syncDocument()}
