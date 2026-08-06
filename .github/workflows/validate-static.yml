@@ -22,6 +22,7 @@ on:
       - 'supabase/migrations/20260805_branding_settings.sql'
       - 'supabase/migrations/20260806_teacher_code_linking.sql'
       - 'supabase/migrations/20260806_group_roster_from_tkb.sql'
+      - 'supabase/migrations/20260806_group_leaders_visible_in_scope.sql'
       - '.github/workflows/validate-static.yml'
   pull_request:
     paths:
@@ -43,6 +44,7 @@ on:
       - 'supabase/migrations/20260805_branding_settings.sql'
       - 'supabase/migrations/20260806_teacher_code_linking.sql'
       - 'supabase/migrations/20260806_group_roster_from_tkb.sql'
+      - 'supabase/migrations/20260806_group_leaders_visible_in_scope.sql'
 
 permissions:
   contents: read
@@ -92,3 +94,5 @@ jobs:
           grep -Eq '^commit;' supabase/migrations/20260806_teacher_code_linking.sql
           grep -Eq '^begin;' supabase/migrations/20260806_group_roster_from_tkb.sql
           grep -Eq '^commit;' supabase/migrations/20260806_group_roster_from_tkb.sql
+          grep -Eq '^begin;' supabase/migrations/20260806_group_leaders_visible_in_scope.sql
+          grep -Eq '^commit;' supabase/migrations/20260806_group_leaders_visible_in_scope.sql
