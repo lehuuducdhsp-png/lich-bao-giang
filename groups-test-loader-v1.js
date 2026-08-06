@@ -14,12 +14,10 @@
         add('self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1',()=>{
           add('teacher-select-refresh-v1.js?v=20260806.1','lbgTeacherSelectRefreshV1',()=>{
             add('group-management-v1.js?v=20260804.2','lbgGroupManagementV1',()=>{
-              add('group-auto-map-v1.js?v=20260804.2','lbgGroupAutoMapV1',()=>{
-                add('teacher-code-linking-v2.js?v=20260806.1','lbgTeacherCodeLinkingV2',()=>{
-                  add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1',()=>{
-                    add('branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1',()=>{
-                      add('ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1');
-                    });
+              add('teacher-code-linking-v2.js?v=20260806.1','lbgTeacherCodeLinkingV2',()=>{
+                add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1',()=>{
+                  add('branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1',()=>{
+                    add('ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1');
                   });
                 });
               });
