@@ -187,8 +187,9 @@ begin
 end;
 $$;
 
--- Phạm vi báo giảng lấy mã trực tiếp từ danh sách giáo viên TKB của nhóm,
--- đồng thời giữ tương thích với dữ liệu thành viên tài khoản cũ.
+-- Phạm vi báo giảng lấy mã trực tiếp từ danh sách giáo viên TKB của nhóm.
+-- Nhóm trưởng của mỗi nhóm cũng tự động được tính vào phạm vi của nhóm đó,
+-- không cần thêm lại nhóm trưởng như một thành viên.
 create or replace function public.my_access_context()
 returns jsonb
 language plpgsql
@@ -214,11 +215,13 @@ begin
   from (
     select distinct teacher_code
     from (
+      -- Chính tài khoản đang đăng nhập.
       select upper(btrim(v_profile.teacher_code)) as teacher_code
       where v_profile.teacher_code is not null and btrim(v_profile.teacher_code)<>''
 
       union
 
+      -- Giáo viên được phân trực tiếp vào danh sách TKB của nhóm.
       select upper(btrim(r.teacher_code))
       from public.teacher_group_roster r
       join public.teacher_groups g on g.id=r.group_id and g.is_active
@@ -227,6 +230,17 @@ begin
 
       union
 
+      -- Nhóm trưởng của các nhóm được xem: tự động thuộc phạm vi báo giảng.
+      select upper(btrim(p.teacher_code))
+      from public.teacher_group_managers m
+      join public.teacher_groups g on g.id=m.group_id and g.is_active
+      join public.profiles p on p.id=m.user_id
+      where p.teacher_code is not null and btrim(p.teacher_code)<>''
+        and (v_owner or public.can_view_teacher_group(m.group_id,v_uid))
+
+      union
+
+      -- Tương thích với dữ liệu thành viên tài khoản cũ.
       select upper(btrim(p.teacher_code))
       from public.profiles p
       join public.teacher_group_memberships gm on gm.user_id=p.id and gm.valid_to is null
@@ -235,6 +249,7 @@ begin
 
       union
 
+      -- Chủ sở hữu luôn thấy toàn bộ mã đã liên kết.
       select upper(btrim(p.teacher_code))
       from public.profiles p
       where v_owner and p.teacher_code is not null and btrim(p.teacher_code)<>''
