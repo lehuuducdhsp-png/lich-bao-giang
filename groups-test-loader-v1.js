@@ -11,11 +11,13 @@
       clearInterval(timer);
       add('branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2');
       add('access-control-v1.js?v=20260804.2','lbgAccessControlV1',()=>{
-        add('group-management-v1.js?v=20260804.2','lbgGroupManagementV1',()=>{
-          add('group-auto-map-v1.js?v=20260804.2','lbgGroupAutoMapV1',()=>{
-            add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1',()=>{
-              add('branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1',()=>{
-                add('ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1');
+        add('self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1',()=>{
+          add('group-management-v1.js?v=20260804.2','lbgGroupManagementV1',()=>{
+            add('group-auto-map-v1.js?v=20260804.2','lbgGroupAutoMapV1',()=>{
+              add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1',()=>{
+                add('branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1',()=>{
+                  add('ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1');
+                });
               });
             });
           });
