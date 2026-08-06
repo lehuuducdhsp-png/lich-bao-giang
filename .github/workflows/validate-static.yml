@@ -8,6 +8,7 @@ on:
       - 'self-access-guarantee-v1.js'
       - 'teacher-select-refresh-v1.js'
       - 'teacher-code-linking-v2.js'
+      - 'access-scope-audit-v1.js'
       - 'group-management-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
@@ -25,6 +26,7 @@ on:
       - 'self-access-guarantee-v1.js'
       - 'teacher-select-refresh-v1.js'
       - 'teacher-code-linking-v2.js'
+      - 'access-scope-audit-v1.js'
       - 'group-management-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
@@ -53,6 +55,7 @@ jobs:
           node --check self-access-guarantee-v1.js
           node --check teacher-select-refresh-v1.js
           node --check teacher-code-linking-v2.js
+          node --check access-scope-audit-v1.js
           node --check group-management-v1.js
           node --check branding-settings-v1.js
           node --check branding-runtime-v2.js
@@ -65,6 +68,7 @@ jobs:
           grep -Fq 'self-access-guarantee-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-select-refresh-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-code-linking-v2.js' groups-test-loader-v1.js
+          grep -Fq 'access-scope-audit-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-settings-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-runtime-v2.js' groups-test-loader-v1.js
           grep -Fq 'ui-redesign-v1.js' groups-test-loader-v1.js
