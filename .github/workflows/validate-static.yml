@@ -7,8 +7,8 @@ on:
       - 'access-control-v1.js'
       - 'self-access-guarantee-v1.js'
       - 'teacher-select-refresh-v1.js'
+      - 'teacher-code-linking-v2.js'
       - 'group-management-v1.js'
-      - 'group-auto-map-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
@@ -17,14 +17,15 @@ on:
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
       - 'supabase/migrations/20260805_branding_settings.sql'
+      - 'supabase/migrations/20260806_teacher_code_linking.sql'
       - '.github/workflows/validate-static.yml'
   pull_request:
     paths:
       - 'access-control-v1.js'
       - 'self-access-guarantee-v1.js'
       - 'teacher-select-refresh-v1.js'
+      - 'teacher-code-linking-v2.js'
       - 'group-management-v1.js'
-      - 'group-auto-map-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
@@ -33,6 +34,7 @@ on:
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
       - 'supabase/migrations/20260805_branding_settings.sql'
+      - 'supabase/migrations/20260806_teacher_code_linking.sql'
 
 permissions:
   contents: read
@@ -50,8 +52,8 @@ jobs:
           node --check access-control-v1.js
           node --check self-access-guarantee-v1.js
           node --check teacher-select-refresh-v1.js
+          node --check teacher-code-linking-v2.js
           node --check group-management-v1.js
-          node --check group-auto-map-v1.js
           node --check branding-settings-v1.js
           node --check branding-runtime-v2.js
           node --check branding-header-fix-v1.js
@@ -62,6 +64,7 @@ jobs:
           grep -Fq 'groups-test-loader-v1.js' group-auth-test.html
           grep -Fq 'self-access-guarantee-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-select-refresh-v1.js' groups-test-loader-v1.js
+          grep -Fq 'teacher-code-linking-v2.js' groups-test-loader-v1.js
           grep -Fq 'branding-settings-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-runtime-v2.js' groups-test-loader-v1.js
           grep -Fq 'ui-redesign-v1.js' groups-test-loader-v1.js
@@ -71,3 +74,5 @@ jobs:
           grep -Eq '^commit;' supabase/migrations/20260804_groups_permissions.sql
           grep -Eq '^begin;' supabase/migrations/20260805_branding_settings.sql
           grep -Eq '^commit;' supabase/migrations/20260805_branding_settings.sql
+          grep -Eq '^begin;' supabase/migrations/20260806_teacher_code_linking.sql
+          grep -Eq '^commit;' supabase/migrations/20260806_teacher_code_linking.sql
