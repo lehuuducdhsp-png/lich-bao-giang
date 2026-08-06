@@ -28,8 +28,9 @@
     const name=auth?.profile?.display_name||auth?.profile?.username||'';
     let label='Thành viên';
     if(ctx.is_owner)label='Chủ sở hữu';
+    else if(ctx.is_group_leader&&ctx.is_head_specialist)label='Nhóm trưởng • Trưởng ban chuyên môn';
+    else if(ctx.is_head_specialist)label='Trưởng ban chuyên môn';
     else if(ctx.is_group_leader)label='Nhóm trưởng';
-    else if((ctx.group_ids||[]).length>0)label='Phụ trách chuyên môn';
     const html=`<b>${escHtml(name)}</b> • ${escHtml(label)}`;
     if(chip.dataset.lbgAccessHtml===html)return;
     chip.dataset.lbgAccessHtml=html;
@@ -42,7 +43,7 @@
     window.LBGAllTeachers=originalTeachers;
     window.teachers=function(ws){
       const list=originalTeachers(ws)||[];
-      if(ctx?.is_owner)return list;
+      if(ctx?.is_owner||ctx?.can_review_all_reports)return list;
       const set=allowed();
       return list.filter(x=>set.has(txt(x.code).toUpperCase()));
     };
@@ -70,11 +71,21 @@
 
   function enforceReportScope(){
     if(!ctx||ctx.is_owner)return;
+    const card=findCard(/^3\.\s*Kiểm tra và lập báo giảng/i);
+    if(ctx.can_review_all_reports){
+      const select=q('teacher');
+      if(select?.options)[...select.options].forEach(opt=>{opt.hidden=false;opt.disabled=false});
+      if(card){
+        let n=card.querySelector('.lbg-access-note');
+        if(!n){n=document.createElement('div');n.className='lbg-access-note';card.querySelector('.head')?.insertAdjacentElement('afterend',n)}
+        n.textContent='Phạm vi báo giảng: Trưởng ban chuyên môn được chọn và kiểm tra toàn bộ giáo viên trong TKB đang mở.';
+      }
+      return;
+    }
     const set=allowed(),select=q('teacher');
     applyTeacherSelect(select,set);
-    const card=findCard(/^3\.\s*Kiểm tra và lập báo giảng/i);
     if(card&&!card.querySelector('.lbg-access-note')){
-      const names=ctx.is_group_leader?'các thành viên thuộc nhóm được quản lý':((ctx.group_ids||[]).length?'các nhóm được chủ sở hữu giao':'chính bạn');
+      const names=ctx.is_group_leader?'bạn và các thành viên thuộc nhóm được quản lý':'chính bạn';
       const n=document.createElement('div');n.className='lbg-access-note';n.textContent=`Phạm vi báo giảng: chỉ hiển thị ${names}.`;
       card.querySelector('.head')?.insertAdjacentElement('afterend',n);
     }
@@ -92,7 +103,7 @@
     const card=findCard(/Bảng kê tiết dạy tháng/i);if(!card)return;
     const code=ownCode();
     if(!card.querySelector('.lbg-access-note')){
-      const n=document.createElement('div');n.className='lbg-access-note';n.innerHTML='<b>Dữ liệu riêng tư:</b> tài khoản này chỉ được xem và xuất bảng kê của chính mình. Nhóm trưởng không được xem bảng kê chi tiết hoặc số tiền của thành viên khác.';
+      const n=document.createElement('div');n.className='lbg-access-note';n.innerHTML='<b>Dữ liệu riêng tư:</b> tài khoản này chỉ được xem và xuất bảng kê của chính mình. Nhóm trưởng và Trưởng ban chuyên môn không được xem bảng kê chi tiết hoặc số tiền của thành viên khác.';
       card.querySelector('.head')?.insertAdjacentElement('afterend',n);
     }
     if(!code){
@@ -199,7 +210,7 @@
     const {data,error}=await auth.client.rpc('my_access_context');
     if(error)throw error;
     ctx=data||{};
-    window.LBGAccess={context:ctx,allowedTeacherCodes:allowed,isOwner:()=>Boolean(ctx?.is_owner),isGroupLeader:()=>Boolean(ctx?.is_group_leader),canViewAllWeekly:()=>Boolean(ctx?.can_view_all_weekly_stats),refresh:loadContext};
+    window.LBGAccess={context:ctx,allowedTeacherCodes:allowed,isOwner:()=>Boolean(ctx?.is_owner),isGroupLeader:()=>Boolean(ctx?.is_group_leader),isHeadSpecialist:()=>Boolean(ctx?.is_head_specialist),canReviewAllReports:()=>Boolean(ctx?.can_review_all_reports),canViewAllWeekly:()=>Boolean(ctx?.can_view_all_weekly_stats),refresh:loadContext};
     sweep();setupObserver();
     document.dispatchEvent(new CustomEvent('lbg-access-ready',{detail:ctx}));
     return ctx;
@@ -208,7 +219,7 @@
   function setupFailure(error){
     console.error(error);
     if(auth?.isOwner()&&!q('lbgAccessSetupWarning')){
-      const main=document.querySelector('main.shell'),n=document.createElement('div');n.id='lbgAccessSetupWarning';n.className='lbg-setup-warning';n.innerHTML='<b>Chưa kích hoạt mô-đun nhóm:</b> hãy chạy migration <code>20260804_groups_permissions.sql</code> trong Supabase SQL Editor.';main?.prepend(n);
+      const main=document.querySelector('main.shell'),n=document.createElement('div');n.id='lbgAccessSetupWarning';n.className='lbg-setup-warning';n.innerHTML='<b>Chưa kích hoạt mô-đun phân quyền mới:</b> hãy chạy migration <code>20260806_global_head_specialist.sql</code> trong Supabase SQL Editor.';main?.prepend(n);
     }
   }
 
