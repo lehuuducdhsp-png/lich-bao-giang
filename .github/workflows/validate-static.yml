@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'access-control-v1.js'
+      - 'self-access-guarantee-v1.js'
+      - 'teacher-select-refresh-v1.js'
       - 'group-management-v1.js'
       - 'group-auto-map-v1.js'
       - 'branding-settings-v1.js'
@@ -19,6 +21,8 @@ on:
   pull_request:
     paths:
       - 'access-control-v1.js'
+      - 'self-access-guarantee-v1.js'
+      - 'teacher-select-refresh-v1.js'
       - 'group-management-v1.js'
       - 'group-auto-map-v1.js'
       - 'branding-settings-v1.js'
@@ -44,6 +48,8 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check access-control-v1.js
+          node --check self-access-guarantee-v1.js
+          node --check teacher-select-refresh-v1.js
           node --check group-management-v1.js
           node --check group-auto-map-v1.js
           node --check branding-settings-v1.js
@@ -54,6 +60,8 @@ jobs:
       - name: Check test HTML contains loaders
         run: |
           grep -Fq 'groups-test-loader-v1.js' group-auth-test.html
+          grep -Fq 'self-access-guarantee-v1.js' groups-test-loader-v1.js
+          grep -Fq 'teacher-select-refresh-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-settings-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-runtime-v2.js' groups-test-loader-v1.js
           grep -Fq 'ui-redesign-v1.js' groups-test-loader-v1.js
