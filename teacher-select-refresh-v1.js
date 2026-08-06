@@ -45,9 +45,10 @@
     if(!week||!teacher||!week.value||typeof wb==='undefined'||!wb)return;
     const ws=wb.getWorksheet(week.value);if(!ws)return;
 
+    const all=sourceTeachers(ws);
     const allowed=allowedCodes();
-    const list=sourceTeachers(ws).filter(item=>allowed.has(item.code));
-    const signature=[week.value,[...allowed].sort().join(','),list.map(item=>item.code).join(',')].join('|');
+    const list=ctx.can_review_all_reports?all:all.filter(item=>allowed.has(item.code));
+    const signature=[week.value,ctx.can_review_all_reports?'ALL':[...allowed].sort().join(','),list.map(item=>item.code).join(',')].join('|');
     const existing=[...teacher.options].filter(option=>txt(option.value)).map(option=>txt(option.value).toUpperCase());
     if(!force&&lastKey===signature&&!teacher.disabled&&existing.join(',')===list.map(item=>item.code).join(','))return;
     lastKey=signature;
@@ -64,8 +65,12 @@
       const selected=list.find(item=>item.code===previous)||list.find(item=>item.code===self)||list[0];
       teacher.value=selected.code;
       teacher.dispatchEvent(new Event('change',{bubbles:true}));
-      const scope=ctx.is_group_leader?'bạn và các thành viên thuộc nhóm được quản lý':((ctx.group_ids||[]).length?'bạn và các nhóm được chủ sở hữu giao':'chính bạn');
-      updateScopeNote(`Phạm vi báo giảng: chỉ hiển thị ${scope}.`);
+      if(ctx.can_review_all_reports){
+        updateScopeNote(`Phạm vi báo giảng: Trưởng ban chuyên môn được chọn toàn bộ ${list.length} giáo viên trong tuần ${week.value}.`);
+      }else{
+        const scope=ctx.is_group_leader?'bạn và các thành viên thuộc nhóm được quản lý':'chính bạn';
+        updateScopeNote(`Phạm vi báo giảng: chỉ hiển thị ${scope}.`);
+      }
     }else{
       const self=ownCode();
       teacher.innerHTML=`<option value="">${self?'Không tìm thấy mã '+escHtml(self)+' trong tuần này':'Tài khoản chưa được gán mã giáo viên'}</option>`;
