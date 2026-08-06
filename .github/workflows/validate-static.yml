@@ -11,6 +11,7 @@ on:
       - 'access-scope-audit-v1.js'
       - 'combined-role-label-fix-v1.js'
       - 'group-management-v1.js'
+      - 'group-roster-tkb-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
@@ -20,6 +21,7 @@ on:
       - 'supabase/migrations/20260804_groups_permissions.sql'
       - 'supabase/migrations/20260805_branding_settings.sql'
       - 'supabase/migrations/20260806_teacher_code_linking.sql'
+      - 'supabase/migrations/20260806_group_roster_from_tkb.sql'
       - '.github/workflows/validate-static.yml'
   pull_request:
     paths:
@@ -30,6 +32,7 @@ on:
       - 'access-scope-audit-v1.js'
       - 'combined-role-label-fix-v1.js'
       - 'group-management-v1.js'
+      - 'group-roster-tkb-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
@@ -39,6 +42,7 @@ on:
       - 'supabase/migrations/20260804_groups_permissions.sql'
       - 'supabase/migrations/20260805_branding_settings.sql'
       - 'supabase/migrations/20260806_teacher_code_linking.sql'
+      - 'supabase/migrations/20260806_group_roster_from_tkb.sql'
 
 permissions:
   contents: read
@@ -60,6 +64,7 @@ jobs:
           node --check access-scope-audit-v1.js
           node --check combined-role-label-fix-v1.js
           node --check group-management-v1.js
+          node --check group-roster-tkb-v1.js
           node --check branding-settings-v1.js
           node --check branding-runtime-v2.js
           node --check branding-header-fix-v1.js
@@ -71,6 +76,7 @@ jobs:
           grep -Fq 'self-access-guarantee-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-select-refresh-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-code-linking-v2.js' groups-test-loader-v1.js
+          grep -Fq 'group-roster-tkb-v1.js' groups-test-loader-v1.js
           grep -Fq 'access-scope-audit-v1.js' groups-test-loader-v1.js
           grep -Fq 'combined-role-label-fix-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-settings-v1.js' groups-test-loader-v1.js
@@ -84,3 +90,5 @@ jobs:
           grep -Eq '^commit;' supabase/migrations/20260805_branding_settings.sql
           grep -Eq '^begin;' supabase/migrations/20260806_teacher_code_linking.sql
           grep -Eq '^commit;' supabase/migrations/20260806_teacher_code_linking.sql
+          grep -Eq '^begin;' supabase/migrations/20260806_group_roster_from_tkb.sql
+          grep -Eq '^commit;' supabase/migrations/20260806_group_roster_from_tkb.sql
