@@ -19,7 +19,9 @@
                   add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1',()=>{
                     add('branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1',()=>{
                       add('ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1',()=>{
-                        add('sunday-dynamic-v1.js?v=20260807.1','lbgSundayDynamicV1');
+                        add('report-engine-v2.js?v=20260807.2','lbgReportEngineV2Script',()=>{
+                          add('mobile-polish-v2.js?v=20260807.2','lbgMobilePolishV2');
+                        });
                       });
                     });
                   });
