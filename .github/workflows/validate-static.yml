@@ -14,7 +14,8 @@ on:
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
       - 'ui-redesign-v1.js'
-      - 'sunday-dynamic-v1.js'
+      - 'report-engine-v2.js'
+      - 'mobile-polish-v2.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
@@ -34,7 +35,8 @@ on:
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
       - 'ui-redesign-v1.js'
-      - 'sunday-dynamic-v1.js'
+      - 'report-engine-v2.js'
+      - 'mobile-polish-v2.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
@@ -65,7 +67,8 @@ jobs:
           node --check branding-runtime-v2.js
           node --check branding-header-fix-v1.js
           node --check ui-redesign-v1.js
-          node --check sunday-dynamic-v1.js
+          node --check report-engine-v2.js
+          node --check mobile-polish-v2.js
           node --check groups-test-loader-v1.js
       - name: Check active test loaders
         run: |
@@ -77,10 +80,20 @@ jobs:
           grep -Fq 'branding-settings-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-runtime-v2.js' groups-test-loader-v1.js
           grep -Fq 'ui-redesign-v1.js' groups-test-loader-v1.js
-          grep -Fq 'sunday-dynamic-v1.js' groups-test-loader-v1.js
+          grep -Fq 'report-engine-v2.js' groups-test-loader-v1.js
+          grep -Fq 'mobile-polish-v2.js' groups-test-loader-v1.js
+          ! grep -Fq 'sunday-dynamic-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'group-roster-tkb-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'access-scope-audit-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'combined-role-label-fix-v1.js' groups-test-loader-v1.js
+      - name: Check report engine contracts
+        run: |
+          grep -Fq 'weekHasSunday' report-engine-v2.js
+          grep -Fq 'GA_PREFIX' report-engine-v2.js
+          grep -Fq 'multiExportMode' report-engine-v2.js
+          grep -Fq 'weeklyOffDay' report-engine-v2.js
+          grep -Fq 'lbgMobileDock' mobile-polish-v2.js
+          grep -Fq 'lbg-auth-gate' mobile-polish-v2.js
       - name: Check migration transactions
         run: |
           grep -Eq '^begin;' supabase/migrations/20260804_groups_permissions.sql
