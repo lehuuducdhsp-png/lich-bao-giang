@@ -114,28 +114,18 @@ try {
   # a dumpable supabase_migrations schema, so we intentionally skip it here.
 
   # 4) STORAGE OBJECT FILES
-  # Supabase Storage URLs use the ss:///bucket/path form (three slashes).
-  # On Windows, run the copy from inside the destination directory.
+  # Stay inside the linked workdir so the CLI can resolve the linked project.
+  # The destination is relative to WorkDir: ../storage/<bucket>.
   Run-Step 'Download bucket tkb-private' {
     $dest = Join-Path $StorageDir 'tkb-private'
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
-    Push-Location $dest
-    try {
-      supabase storage cp -r 'ss:///tkb-private' '.' --experimental --linked
-    } finally {
-      Pop-Location
-    }
+    supabase storage cp -r 'ss:///tkb-private' '..\storage\tkb-private' --experimental --linked
   }
 
   Run-Step 'Download bucket site-branding' {
     $dest = Join-Path $StorageDir 'site-branding'
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
-    Push-Location $dest
-    try {
-      supabase storage cp -r 'ss:///site-branding' '.' --experimental --linked
-    } finally {
-      Pop-Location
-    }
+    supabase storage cp -r 'ss:///site-branding' '..\storage\site-branding' --experimental --linked
   } $false
 
   # 5) EDGE FUNCTIONS
