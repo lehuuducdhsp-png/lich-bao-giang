@@ -1,13 +1,14 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Bộ sao lưu Supabase cho dự án Lịch Báo giảng.
-# KHÔNG ghi mật khẩu DB, access token, service-role key hay secret vào file này.
+# Supabase backup script for Windows PowerShell 5.1+.
+# ASCII-only source is intentional so Windows PowerShell 5.1 can parse it safely.
+# NEVER store DB passwords, access tokens, service-role keys, or secret values here.
 
 $ProjectRef = 'gmkibmybqfomypytmjxw'
 $Stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $BaseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$OutDir = Join-Path $BaseDir "output\$Stamp"
+$OutDir = Join-Path $BaseDir ("output\" + $Stamp)
 $WorkDir = Join-Path $OutDir 'workdir'
 $DbDir = Join-Path $OutDir 'database'
 $StorageDir = Join-Path $OutDir 'storage'
@@ -24,135 +25,142 @@ function Write-Status([string]$Text){
   Add-Content -Path $StatusFile -Value $line -Encoding UTF8
 }
 
-function Require-Command([string]$Name,[string]$Help){
+function Require-Command([string]$Name,[string]$HelpText){
   if(-not (Get-Command $Name -ErrorAction SilentlyContinue)){
-    throw "Thiếu '$Name'. $Help"
+    throw "Missing command '$Name'. $HelpText"
   }
 }
 
 function Run-Step([string]$Name,[scriptblock]$Action,[bool]$Critical=$true){
-  Write-Status "BẮT ĐẦU: $Name"
+  Write-Status "START: $Name"
   try {
+    $global:LASTEXITCODE = 0
     & $Action
-    if($LASTEXITCODE -ne $null -and $LASTEXITCODE -ne 0){ throw "Mã lỗi $LASTEXITCODE" }
+    if($LASTEXITCODE -ne 0){ throw "Exit code $LASTEXITCODE" }
     Write-Status "OK: $Name"
     return $true
   } catch {
-    Write-Status "LỖI: $Name — $($_.Exception.Message)"
+    Write-Status "ERROR: $Name - $($_.Exception.Message)"
     if($Critical){ throw }
     return $false
   }
 }
 
 @"
-BẢN SAO LƯU SUPABASE — DỮ LIỆU RIÊNG TƯ
+SUPABASE BACKUP - PRIVATE DATA
 Project ref: $ProjectRef
-Thời điểm: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss K')
+Created: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss K')
 
-CẢNH BÁO:
-- Thư mục này có thể chứa dữ liệu tài khoản, hash mật khẩu, hồ sơ và TKB riêng tư.
-- KHÔNG đưa thư mục output này lên GitHub công khai.
-- KHÔNG gửi file backup cho người không có quyền quản trị.
-- Secret/service-role key không được tự động sao lưu giá trị bởi script này.
+WARNING:
+- This folder may contain account data, password hashes, profiles, and private TKB files.
+- DO NOT upload the output folder to a public GitHub repository.
+- DO NOT share this backup with unauthorized people.
+- Secret/service-role values are NOT automatically exported by this script.
 "@ | Set-Content -Path (Join-Path $OutDir 'README-PRIVATE.txt') -Encoding UTF8
 
-Require-Command 'supabase' 'Hãy cài Supabase CLI trước khi chạy script.'
-Require-Command 'docker' 'Hãy cài và mở Docker Desktop; db dump của Supabase CLI cần Docker.'
+Require-Command 'supabase' 'Install Supabase CLI first.'
+Require-Command 'docker' 'Install and start Docker Desktop first.'
 
-Run-Step 'Kiểm tra Docker' { docker info | Out-Null }
+Run-Step 'Docker engine check' { docker info | Out-Null }
 
-# Kiểm tra phiên đăng nhập Supabase CLI. Nếu chưa đăng nhập, mở flow đăng nhập chính thức.
+# Confirm Supabase CLI login. If not logged in, start the official login flow.
 try {
+  $global:LASTEXITCODE = 0
   supabase projects list | Out-Null
-  if($LASTEXITCODE -ne 0){ throw 'not logged in' }
+  if($LASTEXITCODE -ne 0){ throw 'Supabase CLI is not logged in.' }
 } catch {
   Write-Host ''
-  Write-Host 'Supabase CLI chưa đăng nhập. Một cửa sổ/flow đăng nhập chính thức sẽ được mở.' -ForegroundColor Yellow
+  Write-Host 'Supabase CLI login is required. The official login flow will start now.' -ForegroundColor Yellow
   supabase login
-  if($LASTEXITCODE -ne 0){ throw 'Không đăng nhập được Supabase CLI.' }
+  if($LASTEXITCODE -ne 0){ throw 'Supabase CLI login failed.' }
 }
 
 Push-Location $WorkDir
 try {
   if(-not (Test-Path (Join-Path $WorkDir 'supabase\config.toml'))){
-    Run-Step 'Khởi tạo workdir Supabase tạm' { supabase init }
+    Run-Step 'Initialize temporary Supabase workdir' { supabase init }
   }
 
   Write-Host ''
-  Write-Host 'Tiếp theo Supabase sẽ yêu cầu mật khẩu Database nếu máy chưa lưu.' -ForegroundColor Yellow
-  Write-Host 'Không gửi mật khẩu đó cho bất kỳ ai và không dán vào GitHub.' -ForegroundColor Yellow
-  Run-Step 'Liên kết đúng project Supabase' { supabase link --project-ref $ProjectRef }
+  Write-Host 'Supabase may ask for the Database password during project linking.' -ForegroundColor Yellow
+  Write-Host 'Enter it only in this terminal. Do not paste it into GitHub or chat.' -ForegroundColor Yellow
+  Run-Step 'Link target Supabase project' { supabase link --project-ref $ProjectRef }
 
-  # 1) DATABASE CHÍNH
-  Run-Step 'Dump roles' { supabase db dump --linked -f (Join-Path $DbDir 'roles.sql') --role-only }
-  Run-Step 'Dump schema ứng dụng' { supabase db dump --linked -f (Join-Path $DbDir 'schema.sql') }
-  Run-Step 'Dump data ứng dụng' { supabase db dump --linked -f (Join-Path $DbDir 'data.sql') --use-copy --data-only -x 'storage.buckets_vectors' -x 'storage.vector_indexes' }
+  # 1) MAIN DATABASE
+  Run-Step 'Dump database roles' {
+    supabase db dump --linked -f (Join-Path $DbDir 'roles.sql') --role-only
+  }
+  Run-Step 'Dump application schema' {
+    supabase db dump --linked -f (Join-Path $DbDir 'schema.sql')
+  }
+  Run-Step 'Dump application data' {
+    supabase db dump --linked -f (Join-Path $DbDir 'data.sql') --use-copy --data-only -x 'storage.buckets_vectors' -x 'storage.vector_indexes'
+  }
 
-  # 2) AUTH — lưu riêng để bảo toàn tài khoản/hash mật khẩu khi cần phục hồi.
-  # CLI mặc định loại auth/storage; vì vậy yêu cầu schema auth một cách tường minh.
-  Run-Step 'Dump dữ liệu Auth (auth.users, identities...)' {
+  # 2) AUTH DATA
+  # Normal db dump excludes Supabase-managed auth/storage schemas, so auth is requested explicitly.
+  Run-Step 'Dump Auth data' {
     supabase db dump --linked --schema auth --data-only --use-copy -f (Join-Path $DbDir 'auth-data.sql')
   }
 
-  # Lưu schema auth để điều tra/khôi phục tùy trường hợp. Khi dựng project Supabase mới,
-  # không áp mù toàn bộ auth-schema.sql lên managed schema; đọc RESTORE_GUIDE.md trước.
-  Run-Step 'Dump schema Auth để lưu trữ' {
+  # Auth schema is archival/reference only. Do not blindly restore it over a hosted managed Auth schema.
+  Run-Step 'Dump Auth schema reference' {
     supabase db dump --linked --schema auth -f (Join-Path $DbDir 'auth-schema.sql')
   } $false
 
-  # 3) STORAGE METADATA — file thật sẽ tải riêng ở bước Storage.
-  Run-Step 'Dump metadata Storage' {
+  # 3) STORAGE METADATA
+  Run-Step 'Dump Storage metadata' {
     supabase db dump --linked --schema storage --data-only --use-copy -f (Join-Path $DbDir 'storage-metadata.sql')
   } $false
 
   # 4) MIGRATION HISTORY
-  Run-Step 'Dump schema migration history' {
+  Run-Step 'Dump migration history schema' {
     supabase db dump --linked --schema supabase_migrations -f (Join-Path $DbDir 'migration-history-schema.sql')
   } $false
-  Run-Step 'Dump data migration history' {
+  Run-Step 'Dump migration history data' {
     supabase db dump --linked --schema supabase_migrations --data-only --use-copy -f (Join-Path $DbDir 'migration-history-data.sql')
   } $false
 
-  # 5) STORAGE OBJECTS THẬT
-  Run-Step 'Tải toàn bộ bucket tkb-private' {
-    New-Item -ItemType Directory -Force -Path (Join-Path $StorageDir 'tkb-private') | Out-Null
-    supabase storage cp -r 'ss://tkb-private' (Join-Path $StorageDir 'tkb-private') --experimental --linked
+  # 5) STORAGE OBJECT FILES
+  Run-Step 'Download bucket tkb-private' {
+    $dest = Join-Path $StorageDir 'tkb-private'
+    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+    supabase storage cp -r 'ss://tkb-private' $dest --experimental --linked
   }
-  Run-Step 'Tải toàn bộ bucket site-branding' {
-    New-Item -ItemType Directory -Force -Path (Join-Path $StorageDir 'site-branding') | Out-Null
-    supabase storage cp -r 'ss://site-branding' (Join-Path $StorageDir 'site-branding') --experimental --linked
+  Run-Step 'Download bucket site-branding' {
+    $dest = Join-Path $StorageDir 'site-branding'
+    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+    supabase storage cp -r 'ss://site-branding' $dest --experimental --linked
   } $false
 
   # 6) EDGE FUNCTIONS
-  Run-Step 'Ghi danh sách Edge Functions' {
+  Run-Step 'List Edge Functions' {
     supabase functions list --project-ref $ProjectRef | Out-File -FilePath (Join-Path $MetaDir 'edge-functions-list.txt') -Encoding utf8
   } $false
 
-  Run-Step 'Tải Edge Function admin-users' {
-    supabase functions download admin-users --project-ref $ProjectRef
+  Run-Step 'Download Edge Function admin-users' {
+    supabase functions download admin-users --project-ref $ProjectRef --use-api
     $src = Join-Path $WorkDir 'supabase\functions\admin-users'
-    if(-not (Test-Path $src)){ throw 'Không tìm thấy source admin-users sau khi download.' }
+    if(-not (Test-Path $src)){ throw 'admin-users source was not found after download.' }
     Copy-Item -Path $src -Destination (Join-Path $FunctionsDir 'admin-users') -Recurse -Force
   } $false
 
-  # 7) SECRET — Supabase chỉ liệt kê tên/digest, KHÔNG cho lấy lại giá trị secret.
-  Run-Step 'Ghi danh sách tên Edge Function secrets' {
+  # 7) SECRET NAMES/DIGESTS ONLY. Secret values cannot be recovered by this script.
+  Run-Step 'List Edge Function secret names' {
     supabase secrets list --project-ref $ProjectRef | Out-File -FilePath (Join-Path $MetaDir 'secrets-list.txt') -Encoding utf8
   } $false
 
   @"
-SECRET CHECKLIST — KHÔNG PHẢI GIÁ TRỊ SECRET
+SECRET CHECKLIST - VALUES ARE NOT INCLUDED
 
-Supabase không nên được coi là nơi duy nhất giữ bản sao giá trị custom secret.
-File secrets-list.txt chỉ giúp biết secret nào tồn tại; giá trị thật có thể không xem lại được.
-
-Hãy tự kiểm tra và cất GIÁ TRỊ custom secrets trong password manager/kho bí mật riêng, KHÔNG ở GitHub.
-Các secret mặc định SUPABASE_URL / publishable/secret keys được Supabase quản lý theo project.
-Nếu Edge Function admin-users chỉ dùng secret mặc định thì không cần chép service-role key vào repository.
+secrets-list.txt records the names/digests that Supabase exposes.
+It does NOT provide a recoverable copy of custom secret values.
+Keep custom secret VALUES in a private password manager or secret vault.
+Never commit service-role/secret keys or .env files to a public repository.
 "@ | Set-Content -Path (Join-Path $MetaDir 'SECRETS_CHECKLIST.txt') -Encoding UTF8
 
-  # 8) PROJECT METADATA KHÔNG NHẠY CẢM
-  Run-Step 'Ghi danh sách project để đối chiếu' {
+  # 8) NON-SENSITIVE PROJECT METADATA
+  Run-Step 'Record project list for verification' {
     supabase projects list | Out-File -FilePath (Join-Path $MetaDir 'projects-list.txt') -Encoding utf8
   } $false
 
@@ -160,8 +168,8 @@ Nếu Edge Function admin-users chỉ dùng secret mặc định thì không c�
   Pop-Location
 }
 
-# 9) HASH KIỂM TRA TOÀN VẸN
-Write-Status 'Tạo SHA256SUMS...'
+# 9) INTEGRITY HASHES
+Write-Status 'Creating SHA256SUMS...'
 $hashFile = Join-Path $OutDir 'SHA256SUMS.txt'
 Get-ChildItem -Path $OutDir -File -Recurse |
   Where-Object { $_.FullName -ne $hashFile -and $_.FullName -ne $StatusFile } |
@@ -172,15 +180,15 @@ Get-ChildItem -Path $OutDir -File -Recurse |
     "$($h.Hash)  $rel"
   } | Set-Content -Path $hashFile -Encoding UTF8
 
-Write-Status 'HOÀN TẤT BỘ SAO LƯU TỰ ĐỘNG.'
+Write-Status 'BACKUP SCRIPT COMPLETED.'
 Write-Host ''
 Write-Host '============================================================' -ForegroundColor Green
-Write-Host 'ĐÃ TẠO BACKUP TẠI:' -ForegroundColor Green
+Write-Host 'BACKUP OUTPUT:' -ForegroundColor Green
 Write-Host $OutDir -ForegroundColor Cyan
 Write-Host '============================================================' -ForegroundColor Green
 Write-Host ''
-Write-Host 'CHƯA ĐƯỢC COI LÀ HOÀN CHỈNH cho đến khi bạn:' -ForegroundColor Yellow
-Write-Host '1) kiểm tra BACKUP_STATUS.txt không còn bước quan trọng bị lỗi;' -ForegroundColor Yellow
-Write-Host '2) kiểm tra Dashboard > Database > Backups;' -ForegroundColor Yellow
-Write-Host '3) kiểm tra custom secret values đã được cất riêng an toàn;' -ForegroundColor Yellow
-Write-Host '4) copy cả thư mục backup sang ít nhất một nơi riêng tư khác.' -ForegroundColor Yellow
+Write-Host 'Before calling this a complete backup, verify:' -ForegroundColor Yellow
+Write-Host '1) BACKUP_STATUS.txt has no critical errors.' -ForegroundColor Yellow
+Write-Host '2) Dashboard > Database > Backups is checked separately.' -ForegroundColor Yellow
+Write-Host '3) Custom secret VALUES are stored privately outside GitHub.' -ForegroundColor Yellow
+Write-Host '4) Copy this backup folder to at least one additional private location.' -ForegroundColor Yellow
