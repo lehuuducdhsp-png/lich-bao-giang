@@ -23,7 +23,9 @@
                           add('ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1',()=>{
                             add('report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script',()=>{
                               add('mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2',()=>{
-                                add('light-orange-theme-v2.js?v=20260808.4','lbgLightOrangeThemeV2');
+                                add('light-orange-theme-v2.js?v=20260808.4','lbgLightOrangeThemeV2',()=>{
+                                  add('ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1');
+                                });
                               });
                             });
                           });
