@@ -21,6 +21,7 @@ html{background:#fff9f5}body{margin:0;min-height:100vh;display:grid;place-items:
     html=html.replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i,'');
     html=html.replace(/<meta\s+name=["']theme-color["'][^>]*>/i,'<meta name="theme-color" content="#F4A261">');
     html=html.replace(/teacher-fix\.js\?v=[^"']+/g,'teacher-fix.js?v=20260803.10');
+    html=html.replace(/<script\s+src=["']monthly-calendar-fix\.js\?v=[^"']+["']><\/script>/i,'');
     html=html.replace('<title>Lập Lịch Báo giảng</title>','<title>Bản kiểm thử — Lịch Báo giảng 20260808.12</title><meta name="robots" content="noindex,nofollow">');
     const earlyTheme=`<style id="lbgEarlyOrangeTheme">
       :root{--n:#9a5b36!important;--t:#f4a261!important;--i:#4b342b!important;--m:#806b61!important;--l:#f2ddd0!important;--b:#fff9f5!important;--ui-navy:#8f5636!important;--ui-teal:#f4a261!important;--ui-teal-2:#f8c794!important;--ui-surface:#fff!important;--ui-bg:#fff9f5!important;--ui-border:#f2ddd0!important;--ui-muted:#806b61!important;color-scheme:light}
