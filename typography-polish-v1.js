@@ -7,7 +7,7 @@
   const style=document.createElement('style');
   style.id=id;
   style.textContent=`
-    /* Typography pass 20260808.14 — tăng khả năng đọc, không phóng to biểu mẫu báo giảng chính thức. */
+    /* Typography pass 20260808.14 — tăng khả năng đọc có chọn lọc. */
     body{font-size:15px!important;line-height:1.58!important}
 
     header.top h1{font-size:18px!important}
@@ -47,15 +47,14 @@
     .ver b{font-size:12.5px!important}.ver .meta{font-size:10.5px!important}
     .sum b{font-size:18px!important}.sum span{font-size:10.5px!important;line-height:1.35!important}
 
-    /* Bảng dữ liệu thông thường: tăng nhẹ; riêng bảng kê tháng giữ mật độ để 31 ngày không bị quá rộng. */
+    /* Bảng dữ liệu thông thường: tăng nhẹ; bảng kê tháng giữ mật độ để 31 ngày không bị quá rộng. */
     main.shell .lbg-ui-section:not(#monthCardFixed) table:not(.report) th{font-size:10.5px!important;line-height:1.35!important}
     main.shell .lbg-ui-section:not(#monthCardFixed) table:not(.report) td{font-size:11.5px!important;line-height:1.45!important}
     #monthCardFixed table:not(.report) th{font-size:9.8px!important;line-height:1.3!important}
     #monthCardFixed table:not(.report) td{font-size:10.8px!important;line-height:1.4!important}
 
-    /* Biểu mẫu Lịch Báo giảng chính thức: không thay đổi font bên trong bảng/phiếu. */
-    #previewCard .sheet,#previewCard .report,#previewCard .report th,#previewCard .report td,
-    #detailCard .sheet,#detailCard .report,#detailCard .report th,#detailCard .report td{font-size:inherit}
+    /* Giữ nguyên tỷ lệ biểu mẫu Lịch Báo giảng như trước khi tăng chữ toàn giao diện. */
+    #previewCard .sheet{font-size:14px!important;line-height:1.55!important}
 
     @media(max-width:760px){
       body{font-size:14.5px!important}
@@ -69,6 +68,7 @@
       .notice,.alert,.lbg-access-note{font-size:11px!important}
       main.shell .lbg-ui-section:not(#monthCardFixed) table:not(.report) th{font-size:10px!important}
       main.shell .lbg-ui-section:not(#monthCardFixed) table:not(.report) td{font-size:11px!important}
+      #previewCard .sheet{font-size:14px!important;line-height:1.55!important}
     }
   `;
   document.head.appendChild(style);
