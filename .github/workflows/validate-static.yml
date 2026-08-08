@@ -9,7 +9,9 @@ on:
       - 'teacher-select-refresh-v1.js'
       - 'teacher-code-linking-v2.js'
       - 'global-specialist-v1.js'
+      - 'manager-permissions-v1.js'
       - 'group-management-v1.js'
+      - 'cloud-sync-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
@@ -22,6 +24,7 @@ on:
       - 'supabase/migrations/20260805_branding_settings.sql'
       - 'supabase/migrations/20260806_teacher_code_linking.sql'
       - 'supabase/migrations/20260806_global_head_specialist.sql'
+      - 'supabase/migrations/20260808_manager_permissions.sql'
       - '.github/workflows/validate-static.yml'
   pull_request:
     paths:
@@ -30,7 +33,9 @@ on:
       - 'teacher-select-refresh-v1.js'
       - 'teacher-code-linking-v2.js'
       - 'global-specialist-v1.js'
+      - 'manager-permissions-v1.js'
       - 'group-management-v1.js'
+      - 'cloud-sync-v1.js'
       - 'branding-settings-v1.js'
       - 'branding-runtime-v2.js'
       - 'branding-header-fix-v1.js'
@@ -43,6 +48,7 @@ on:
       - 'supabase/migrations/20260805_branding_settings.sql'
       - 'supabase/migrations/20260806_teacher_code_linking.sql'
       - 'supabase/migrations/20260806_global_head_specialist.sql'
+      - 'supabase/migrations/20260808_manager_permissions.sql'
 
 permissions:
   contents: read
@@ -62,7 +68,9 @@ jobs:
           node --check teacher-select-refresh-v1.js
           node --check teacher-code-linking-v2.js
           node --check global-specialist-v1.js
+          node --check manager-permissions-v1.js
           node --check group-management-v1.js
+          node --check cloud-sync-v1.js
           node --check branding-settings-v1.js
           node --check branding-runtime-v2.js
           node --check branding-header-fix-v1.js
@@ -77,6 +85,7 @@ jobs:
           grep -Fq 'teacher-select-refresh-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-code-linking-v2.js' groups-test-loader-v1.js
           grep -Fq 'global-specialist-v1.js' groups-test-loader-v1.js
+          grep -Fq 'manager-permissions-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-settings-v1.js' groups-test-loader-v1.js
           grep -Fq 'branding-runtime-v2.js' groups-test-loader-v1.js
           grep -Fq 'ui-redesign-v1.js' groups-test-loader-v1.js
@@ -87,6 +96,14 @@ jobs:
           ! grep -Fq 'group-roster-tkb-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'access-scope-audit-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'combined-role-label-fix-v1.js' groups-test-loader-v1.js
+      - name: Check manager permission contracts
+        run: |
+          grep -Fq 'set_manager_permissions' manager-permissions-v1.js
+          grep -Fq 'view_payroll_amounts' manager-permissions-v1.js
+          grep -Fq 'can_activate_shared_tkb' cloud-sync-v1.js
+          grep -Fq 'manager_can_weekly_stats' supabase/migrations/20260808_manager_permissions.sql
+          grep -Fq 'set_global_specialist_access' supabase/migrations/20260808_manager_permissions.sql
+          grep -Fq 'set_active_shared_tkb' supabase/migrations/20260808_manager_permissions.sql
       - name: Check report engine contracts
         run: |
           grep -Fq 'weekHasSunday' report-engine-v3.js
@@ -103,5 +120,5 @@ jobs:
           grep -Eq '^commit;' supabase/migrations/20260805_branding_settings.sql
           grep -Eq '^begin;' supabase/migrations/20260806_teacher_code_linking.sql
           grep -Eq '^commit;' supabase/migrations/20260806_teacher_code_linking.sql
-          grep -Eq '^begin;' supabase/migrations/20260806_global_head_specialist.sql
-          grep -Eq '^commit;' supabase/migrations/20260806_global_head_specialist.sql
+          grep -Eq '^begin;' supabase/migrations/20260808_manager_permissions.sql
+          grep -Eq '^commit;' supabase/migrations/20260808_manager_permissions.sql
