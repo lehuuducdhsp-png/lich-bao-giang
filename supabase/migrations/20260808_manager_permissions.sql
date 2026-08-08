@@ -3,6 +3,7 @@ begin;
 -- Tài khoản Quản lý không bắt buộc có mã TKB.
 -- Các quyền được tách độc lập để Chủ sở hữu cấp đúng nhu cầu.
 alter table public.profiles
+  add column if not exists can_review_all_reports boolean not null default false,
   add column if not exists is_manager boolean not null default false,
   add column if not exists manager_can_weekly_stats boolean not null default false,
   add column if not exists manager_can_manage_groups boolean not null default false,
@@ -13,6 +14,22 @@ alter table public.profiles
   add column if not exists manager_can_view_other_payroll boolean not null default false,
   add column if not exists manager_can_view_payroll_amounts boolean not null default false,
   add column if not exists can_upload_shared boolean not null default false;
+
+-- Nếu trước đây một tài khoản đã được cấp chuyên môn ở toàn bộ nhóm đang hoạt động,
+-- giữ ý nghĩa cũ bằng cách chuyển thành Trưởng ban chuyên môn toàn hệ thống.
+update public.profiles p
+set can_review_all_reports=true
+where p.role<>'owner'
+  and exists(select 1 from public.teacher_groups g where g.is_active)
+  and not exists(
+    select 1
+    from public.teacher_groups g
+    where g.is_active
+      and not exists(
+        select 1 from public.teacher_group_scoped_access a
+        where a.group_id=g.id and a.user_id=p.id
+      )
+  );
 
 create or replace function public.has_manager_permission(
   p_permission text,
@@ -85,6 +102,32 @@ begin
 
   if not found then
     raise exception 'Không tìm thấy tài khoản để cấp quyền Quản lý.';
+  end if;
+end;
+$$;
+
+-- Trưởng ban chuyên môn là một vai trò riêng; Quản lý có thể được cấp quyền báo giảng
+-- toàn hệ thống mà không bị biến thành Trưởng ban chuyên môn.
+create or replace function public.set_global_specialist_access(
+  p_user_id uuid,
+  p_enabled boolean default true
+)
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $$
+begin
+  if not public.is_owner() then
+    raise exception 'Chỉ chủ sở hữu được cấp quyền Trưởng ban chuyên môn.';
+  end if;
+
+  update public.profiles
+  set can_review_all_reports=coalesce(p_enabled,false)
+  where id=p_user_id and role<>'owner';
+
+  if not found then
+    raise exception 'Không tìm thấy tài khoản thành viên.';
   end if;
 end;
 $$;
@@ -210,8 +253,6 @@ begin
 end;
 $$;
 
--- Trưởng ban chuyên môn tiếp tục dùng can_review_all_reports cũ.
--- Quản lý dùng manager_can_review_all_reports để không bị biến thành Trưởng ban chuyên môn.
 create or replace function public.my_access_context()
 returns jsonb
 language plpgsql
@@ -353,6 +394,7 @@ using (
 
 grant execute on function public.has_manager_permission(text,uuid) to authenticated;
 grant execute on function public.set_manager_permissions(uuid,boolean,jsonb) to authenticated;
+grant execute on function public.set_global_specialist_access(uuid,boolean) to authenticated;
 grant execute on function public.my_access_context() to authenticated;
 grant execute on function public.create_teacher_group(text) to authenticated;
 grant execute on function public.rename_teacher_group(uuid,text) to authenticated;
