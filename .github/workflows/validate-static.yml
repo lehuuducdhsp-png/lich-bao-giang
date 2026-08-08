@@ -19,6 +19,7 @@ on:
       - 'ui-redesign-v1.js'
       - 'report-engine-v3.js'
       - 'mobile-polish-v2.js'
+      - 'orange-theme-v1.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
@@ -44,6 +45,7 @@ on:
       - 'ui-redesign-v1.js'
       - 'report-engine-v3.js'
       - 'mobile-polish-v2.js'
+      - 'orange-theme-v1.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
       - 'supabase/migrations/20260804_groups_permissions.sql'
@@ -80,6 +82,7 @@ jobs:
           node --check ui-redesign-v1.js
           node --check report-engine-v3.js
           node --check mobile-polish-v2.js
+          node --check orange-theme-v1.js
           node --check groups-test-loader-v1.js
       - name: Check active test loaders
         run: |
@@ -95,6 +98,7 @@ jobs:
           grep -Fq 'ui-redesign-v1.js' groups-test-loader-v1.js
           grep -Fq 'report-engine-v3.js' groups-test-loader-v1.js
           grep -Fq 'mobile-polish-v2.js' groups-test-loader-v1.js
+          grep -Fq 'orange-theme-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'report-engine-v2.js' groups-test-loader-v1.js
           ! grep -Fq 'sunday-dynamic-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'group-roster-tkb-v1.js' groups-test-loader-v1.js
@@ -109,6 +113,12 @@ jobs:
           grep -Fq 'manager_can_weekly_stats' supabase/migrations/20260808_manager_permissions.sql
           grep -Fq 'set_global_specialist_access' supabase/migrations/20260808_manager_permissions.sql
           grep -Fq 'set_active_shared_tkb' supabase/migrations/20260808_manager_permissions.sql
+      - name: Check orange theme contracts
+        run: |
+          grep -Fq -- '--ui-teal:#f97316' orange-theme-v1.js
+          grep -Fq 'lbgMobileDock' orange-theme-v1.js
+          grep -Fq 'lbg-auth-gate' orange-theme-v1.js
+          grep -Fq "meta[name=\"theme-color\"]" orange-theme-v1.js
       - name: Check report engine contracts
         run: |
           grep -Fq 'weekHasSunday' report-engine-v3.js
