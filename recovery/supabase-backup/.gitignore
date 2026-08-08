@@ -1,0 +1,12 @@
+# Tuyệt đối không commit dữ liệu sao lưu/secret lên GitHub.
+output/
+*.env
+*.env.*
+!*.env.example
+*.backup
+*.dump
+*.sql.gz
+*.zip
+*.7z
+*.tar
+*.tar.gz
