@@ -14,7 +14,15 @@
     if(title&&title.textContent!=='7. Quản lý nhóm và phân quyền')title.textContent='7. Quản lý nhóm và phân quyền';
     if(desc){
       const ctx=context();
-      const value=ctx?.is_owner?'Chủ sở hữu quản lý nhóm, nhóm trưởng và quyền Trưởng ban chuyên môn toàn hệ thống.':ctx?.is_head_specialist&&ctx?.is_group_leader?'Bạn là Nhóm trưởng và Trưởng ban chuyên môn; báo giảng được xem toàn hệ thống, quản lý thành viên chỉ trong nhóm mình.':ctx?.is_head_specialist?'Bạn là Trưởng ban chuyên môn; được kiểm tra báo giảng toàn bộ giáo viên nhưng không quản lý thành viên nhóm.':ctx?.is_group_leader?'Nhóm trưởng quản lý thành viên và báo giảng trong nhóm mình.':'Quyền nhóm do chủ sở hữu phân công.';
+      let value='Quyền nhóm do chủ sở hữu phân công.';
+      if(ctx?.is_owner)value='Chủ sở hữu quản lý nhóm, nhóm trưởng, tài khoản Quản lý và quyền Trưởng ban chuyên môn.';
+      else if(ctx?.is_manager&&ctx?.can_manage_groups&&ctx?.can_transfer_group_members)value='Quản lý được tạo/đổi tên nhóm và chuyển thành viên theo quyền Chủ sở hữu đã cấp.';
+      else if(ctx?.is_manager&&ctx?.can_manage_groups)value='Quản lý được tạo và đổi tên nhóm; không có quyền chuyển thành viên.';
+      else if(ctx?.is_manager&&ctx?.can_transfer_group_members)value='Quản lý được chuyển thành viên giữa các nhóm; không có quyền tạo/đổi tên nhóm.';
+      else if(ctx?.is_manager)value='Tài khoản Quản lý chỉ sử dụng các quyền đã được Chủ sở hữu bật.';
+      else if(ctx?.is_head_specialist&&ctx?.is_group_leader)value='Bạn là Nhóm trưởng và Trưởng ban chuyên môn; báo giảng được xem toàn hệ thống, quản lý thành viên chỉ trong nhóm mình.';
+      else if(ctx?.is_head_specialist)value='Bạn là Trưởng ban chuyên môn; được kiểm tra báo giảng toàn bộ giáo viên nhưng không quản lý thành viên nhóm.';
+      else if(ctx?.is_group_leader)value='Nhóm trưởng quản lý thành viên và báo giảng trong nhóm mình.';
       if(desc.textContent!==value)desc.textContent=value;
     }
   }
@@ -25,7 +33,7 @@
     catch(error){const message=error?.message||String(error);if(/can_review_all_reports|column/i.test(message))showSetupWarning();else console.error('Không tải được danh sách Trưởng ban chuyên môn:',error)}
     finally{loading=false}
   }
-  function showSetupWarning(){if(q('lbgGlobalSpecialistWarning'))return;const main=document.querySelector('main.shell');if(!main)return;const box=document.createElement('div');box.id='lbgGlobalSpecialistWarning';box.className='lbg-setup-warning';box.innerHTML='<b>Chưa kích hoạt quyền Trưởng ban chuyên môn:</b> hãy chạy tệp <code>20260806_global_head_specialist.sql</code> trong Supabase SQL Editor.';main.prepend(box)}
+  function showSetupWarning(){if(q('lbgGlobalSpecialistWarning'))return;const main=document.querySelector('main.shell');if(!main)return;const box=document.createElement('div');box.id='lbgGlobalSpecialistWarning';box.className='lbg-setup-warning';box.innerHTML='<b>Chưa kích hoạt quyền Trưởng ban chuyên môn:</b> chạy migration quyền mới trong Supabase SQL Editor.';main.prepend(box)}
   function options(){return'<option value="">Chọn tài khoản…</option>'+people.filter(p=>p.is_active).map(p=>`<option value="${p.id}">${esc(p.display_name)} — ${esc(p.username)}${p.teacher_code?' — '+esc(p.teacher_code):''}</option>`).join('')}
   function selectedPerson(){const id=q('lbgGlobalSpecialistPerson')?.value;return people.find(p=>p.id===id)||null}
   function updateStatus(){const person=selectedPerson(),box=q('lbgGlobalSpecialistStatus');if(!box)return;if(!person){box.className='lbg-global-specialist-status';box.textContent='Chọn tài khoản để xem trạng thái.';return}if(person.can_review_all_reports){box.className='lbg-global-specialist-status on';box.innerHTML=`<b>${esc(person.display_name)}</b> đang là Trưởng ban chuyên môn và được kiểm tra báo giảng của toàn bộ giáo viên.`}else{box.className='lbg-global-specialist-status';box.innerHTML=`<b>${esc(person.display_name)}</b> chưa có quyền Trưởng ban chuyên môn.`}}
