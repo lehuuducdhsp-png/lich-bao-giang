@@ -114,13 +114,14 @@ try {
   # a dumpable supabase_migrations schema, so we intentionally skip it here.
 
   # 4) STORAGE OBJECT FILES
-  # Supabase CLI on Windows works reliably when the destination is the current directory.
+  # Supabase Storage URLs use the ss:///bucket/path form (three slashes).
+  # On Windows, run the copy from inside the destination directory.
   Run-Step 'Download bucket tkb-private' {
     $dest = Join-Path $StorageDir 'tkb-private'
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Push-Location $dest
     try {
-      supabase storage cp -r 'ss://tkb-private' '.' --experimental --linked
+      supabase storage cp -r 'ss:///tkb-private' '.' --experimental --linked
     } finally {
       Pop-Location
     }
@@ -131,7 +132,7 @@ try {
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Push-Location $dest
     try {
-      supabase storage cp -r 'ss://site-branding' '.' --experimental --linked
+      supabase storage cp -r 'ss:///site-branding' '.' --experimental --linked
     } finally {
       Pop-Location
     }
