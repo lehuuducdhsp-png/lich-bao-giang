@@ -5,24 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#F4A261">
-<title>Bản kiểm thử — Lịch Báo giảng 20260808.15</title>
+<title>Bản kiểm thử — Lịch Báo giảng 20260808.16</title>
 <style>
 html{background:#fff9f5}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 18% 12%,rgba(248,199,148,.62),transparent 30%),linear-gradient(145deg,#fff4ea,#f8c794 58%,#f4a261);color:#5b3828;font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.box{width:min(440px,calc(100% - 36px));padding:24px;text-align:center}.spin{width:40px;height:40px;border:4px solid #ffffffaa;border-top-color:#8f5636;border-radius:50%;margin:0 auto 14px;animation:s .8s linear infinite}.box b{display:block;font-size:16px}.box small{display:block;margin-top:6px;color:#755647}@keyframes s{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="box"><div class="spin"></div><b>Đang mở hệ thống Lịch Báo giảng…</b><small>Bản 20260808.15 • Bảng kê tháng có tìm nhanh giáo viên theo tên hoặc mã.</small><div id="msg"></div></div>
+<div class="box"><div class="spin"></div><b>Đang mở hệ thống Lịch Báo giảng…</b><small>Bản 20260808.16 • Ô Giáo viên trong Bảng kê tháng đã gộp tìm kiếm vào cùng một dropdown.</small><div id="msg"></div></div>
 <script>
 (async()=>{
   try{
-    const response=await fetch('./index.html?v=20260808.15',{cache:'no-store'});
+    const response=await fetch('./index.html?v=20260808.16',{cache:'no-store'});
     if(!response.ok)throw new Error('Không đọc được trang chính: HTTP '+response.status);
     let html=await response.text();
     html=html.replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i,'');
     html=html.replace(/<meta\s+name=["']theme-color["'][^>]*>/i,'<meta name="theme-color" content="#F4A261">');
     html=html.replace(/teacher-fix\.js\?v=[^"']+/g,'teacher-fix.js?v=20260803.10');
     html=html.replace(/<script\s+src=["']monthly-calendar-fix\.js\?v=[^"']+["']><\/script>/i,'');
-    html=html.replace('<title>Lập Lịch Báo giảng</title>','<title>Bản kiểm thử — Lịch Báo giảng 20260808.15</title><meta name="robots" content="noindex,nofollow">');
+    html=html.replace('<title>Lập Lịch Báo giảng</title>','<title>Bản kiểm thử — Lịch Báo giảng 20260808.16</title><meta name="robots" content="noindex,nofollow">');
     const earlyTheme=`<style id="lbgEarlyOrangeTheme">
       :root{--n:#9a5b36!important;--t:#f4a261!important;--i:#4b342b!important;--m:#806b61!important;--l:#f2ddd0!important;--b:#fff9f5!important;--ui-navy:#8f5636!important;--ui-teal:#f4a261!important;--ui-teal-2:#f8c794!important;--ui-surface:#fff!important;--ui-bg:#fff9f5!important;--ui-border:#f2ddd0!important;--ui-muted:#806b61!important;color-scheme:light}
       html{background:#fff9f5!important}body{background:linear-gradient(180deg,#fffdfb 0%,#fff9f5 45%,#fff6f0 100%)!important;color:#4b342b!important}
@@ -35,7 +35,7 @@ html{background:#fff9f5}body{margin:0;min-height:100vh;display:grid;place-items:
       #lbgUiSidebar{background:#fffdfb!important;border-color:#f2ddd0!important;box-shadow:0 14px 36px rgba(126,79,53,.08)!important}.lbg-ui-nav-link.active{background:#ffe7d2!important;color:#81502f!important;box-shadow:inset 3px 0 #f4a261!important}.lbg-ui-nav-link:hover{background:#fff4ea!important;color:#9a5b36!important}.lbg-userbar{background:rgba(255,250,247,.97)!important;border-bottom-color:#f4e4da!important}
     </style>`;
     html=html.replace('</head>',earlyTheme+'</head>');
-    html=html.replace('</body>','<script src="groups-test-loader-v1.js?v=20260808.15"><\/script></body>');
+    html=html.replace('</body>','<script src="groups-test-loader-v1.js?v=20260808.16"><\/script></body>');
     document.open();document.write(html);document.close();
   }catch(error){document.getElementById('msg').textContent='Không mở được giao diện kiểm thử: '+(error?.message||String(error))}
 })();
