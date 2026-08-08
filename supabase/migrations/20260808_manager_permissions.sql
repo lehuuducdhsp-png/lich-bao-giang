@@ -4,7 +4,7 @@ begin;
 -- Các quyền được tách độc lập để Chủ sở hữu cấp đúng nhu cầu.
 alter table public.profiles
   add column if not exists is_manager boolean not null default false,
-  add column if not exists manager_can_view_all_weekly_stats boolean not null default false,
+  add column if not exists manager_can_weekly_stats boolean not null default false,
   add column if not exists manager_can_manage_groups boolean not null default false,
   add column if not exists manager_can_transfer_members boolean not null default false,
   add column if not exists manager_can_upload_shared boolean not null default false,
@@ -14,7 +14,6 @@ alter table public.profiles
   add column if not exists manager_can_view_payroll_amounts boolean not null default false,
   add column if not exists can_upload_shared boolean not null default false;
 
--- Hàm kiểm tra quyền Quản lý tập trung để các RPC dùng cùng một quy tắc.
 create or replace function public.has_manager_permission(
   p_permission text,
   p_user uuid default auth.uid()
@@ -33,7 +32,7 @@ as $$
       and p.is_manager
       and (p.expires_at is null or p.expires_at>now())
       and case lower(coalesce(p_permission,''))
-        when 'weekly_stats' then p.manager_can_view_all_weekly_stats
+        when 'weekly_stats' then p.manager_can_weekly_stats
         when 'manage_groups' then p.manager_can_manage_groups
         when 'transfer_members' then p.manager_can_transfer_members
         when 'upload_shared' then p.manager_can_upload_shared
@@ -46,7 +45,6 @@ as $$
   );
 $$;
 
--- Chủ sở hữu là người duy nhất được bật/tắt vai trò Quản lý và các quyền của họ.
 create or replace function public.set_manager_permissions(
   p_user_id uuid,
   p_is_manager boolean,
@@ -74,7 +72,7 @@ begin
 
   update public.profiles p
   set is_manager=v_manager,
-      manager_can_view_all_weekly_stats=v_stats,
+      manager_can_weekly_stats=v_stats,
       manager_can_manage_groups=v_groups,
       manager_can_transfer_members=v_transfer,
       manager_can_upload_shared=v_upload,
@@ -82,7 +80,6 @@ begin
       manager_can_review_all_reports=v_reports,
       manager_can_view_other_payroll=v_payroll,
       manager_can_view_payroll_amounts=v_money,
-      -- Giữ tương thích với cơ chế tải TKB chung cũ; uploader độc lập vẫn giữ quyền.
       can_upload_shared=(p.role='uploader' or v_upload)
   where p.id=p_user_id and p.role<>'owner';
 
@@ -92,7 +89,7 @@ begin
 end;
 $$;
 
--- Quản lý nhóm và chuyển thành viên là hai quyền khác nhau.
+-- Quản lý nhóm và chuyển thành viên là hai quyền độc lập.
 create or replace function public.can_view_teacher_group(
   p_group uuid,
   p_user uuid default auth.uid()
@@ -199,18 +196,22 @@ begin
   from public.profiles p
   left join public.teacher_group_memberships gm on gm.user_id=p.id and gm.valid_to is null
   left join public.teacher_groups g on g.id=gm.group_id
-  where p.role<>'owner' and p.is_active and (
-    p.display_name ilike '%'||v_q||'%'
-    or p.username ilike '%'||v_q||'%'
-    or coalesce(p.teacher_code,'') ilike '%'||v_q||'%'
-  )
+  where p.role<>'owner'
+    and p.is_active
+    and p.teacher_code is not null
+    and btrim(p.teacher_code)<>''
+    and (
+      p.display_name ilike '%'||v_q||'%'
+      or p.username ilike '%'||v_q||'%'
+      or p.teacher_code ilike '%'||v_q||'%'
+    )
   order by p.display_name
   limit 30;
 end;
 $$;
 
--- Ngữ cảnh quyền chung. Trưởng ban chuyên môn cũ vẫn dùng can_review_all_reports;
--- quyền báo giảng của Quản lý dùng cột manager_can_review_all_reports riêng.
+-- Trưởng ban chuyên môn tiếp tục dùng can_review_all_reports cũ.
+-- Quản lý dùng manager_can_review_all_reports để không bị biến thành Trưởng ban chuyên môn.
 create or replace function public.my_access_context()
 returns jsonb
 language plpgsql
@@ -266,10 +267,7 @@ begin
   select coalesce(jsonb_agg(g.id order by g.name),'[]'::jsonb)
   into v_groups
   from public.teacher_groups g
-  where g.is_active and (
-    v_owner
-    or public.can_view_teacher_group(g.id,v_uid)
-  );
+  where g.is_active and (v_owner or public.can_view_teacher_group(g.id,v_uid));
 
   select coalesce(jsonb_agg(g.id order by g.name),'[]'::jsonb)
   into v_managed
@@ -289,7 +287,7 @@ begin
     'can_view_all_weekly_stats',v_owner
       or coalesce(v_profile.is_group_leader,false)
       or coalesce(v_profile.can_review_all_reports,false)
-      or (coalesce(v_profile.is_manager,false) and coalesce(v_profile.manager_can_view_all_weekly_stats,false)),
+      or (coalesce(v_profile.is_manager,false) and coalesce(v_profile.manager_can_weekly_stats,false)),
     'can_manage_groups',v_owner
       or (coalesce(v_profile.is_manager,false) and coalesce(v_profile.manager_can_manage_groups,false)),
     'can_transfer_group_members',v_owner
@@ -307,7 +305,7 @@ begin
       or ((not coalesce(v_profile.is_manager,false)) and coalesce(v_profile.can_view_payroll_details,false))
       or (coalesce(v_profile.is_manager,false) and coalesce(v_profile.manager_can_view_other_payroll,false) and coalesce(v_profile.manager_can_view_payroll_amounts,false)),
     'manager_permissions',jsonb_build_object(
-      'weekly_stats',coalesce(v_profile.manager_can_view_all_weekly_stats,false),
+      'weekly_stats',coalesce(v_profile.manager_can_weekly_stats,false),
       'manage_groups',coalesce(v_profile.manager_can_manage_groups,false),
       'transfer_members',coalesce(v_profile.manager_can_transfer_members,false),
       'upload_shared',coalesce(v_profile.manager_can_upload_shared,false),
@@ -323,7 +321,7 @@ begin
 end;
 $$;
 
--- Cho Quản lý có quyền áp dụng TKB chung được chọn bản chung chính thức.
+-- Quản lý có quyền áp dụng TKB chung được chọn bản chính thức.
 create or replace function public.set_active_shared_tkb(p_id uuid)
 returns void
 language plpgsql
@@ -342,7 +340,7 @@ begin
 end;
 $$;
 
--- Quản lý có quyền tải/áp dụng TKB chung cần nhìn thấy các phiên bản chung để thao tác.
+-- Quản lý có quyền tải/áp dụng TKB chung cần nhìn thấy các bản chung để thao tác.
 drop policy if exists tkb_files_manager_shared_read on public.tkb_files;
 create policy tkb_files_manager_shared_read
 on public.tkb_files for select to authenticated
