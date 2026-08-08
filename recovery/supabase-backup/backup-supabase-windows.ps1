@@ -63,7 +63,6 @@ Require-Command 'docker' 'Install and start Docker Desktop first.'
 
 Run-Step 'Docker engine check' { docker info | Out-Null }
 
-# Confirm Supabase CLI login. If not logged in, start the official login flow.
 try {
   $global:LASTEXITCODE = 0
   supabase projects list | Out-Null
@@ -98,12 +97,10 @@ try {
   }
 
   # 2) AUTH DATA
-  # Normal db dump excludes Supabase-managed auth/storage schemas, so auth is requested explicitly.
   Run-Step 'Dump Auth data' {
     supabase db dump --linked --schema auth --data-only --use-copy -f (Join-Path $DbDir 'auth-data.sql')
   }
 
-  # Auth schema is archival/reference only. Do not blindly restore it over a hosted managed Auth schema.
   Run-Step 'Dump Auth schema reference' {
     supabase db dump --linked --schema auth -f (Join-Path $DbDir 'auth-schema.sql')
   } $false
@@ -113,27 +110,34 @@ try {
     supabase db dump --linked --schema storage --data-only --use-copy -f (Join-Path $DbDir 'storage-metadata.sql')
   } $false
 
-  # 4) MIGRATION HISTORY
-  Run-Step 'Dump migration history schema' {
-    supabase db dump --linked --schema supabase_migrations -f (Join-Path $DbDir 'migration-history-schema.sql')
-  } $false
-  Run-Step 'Dump migration history data' {
-    supabase db dump --linked --schema supabase_migrations --data-only --use-copy -f (Join-Path $DbDir 'migration-history-data.sql')
-  } $false
+  # Migration SQL files are already versioned in GitHub. Some hosted projects do not expose
+  # a dumpable supabase_migrations schema, so we intentionally skip it here.
 
-  # 5) STORAGE OBJECT FILES
+  # 4) STORAGE OBJECT FILES
+  # Supabase CLI on Windows works reliably when the destination is the current directory.
   Run-Step 'Download bucket tkb-private' {
     $dest = Join-Path $StorageDir 'tkb-private'
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
-    supabase storage cp -r 'ss://tkb-private' $dest --experimental --linked
+    Push-Location $dest
+    try {
+      supabase storage cp -r 'ss://tkb-private' '.' --experimental --linked
+    } finally {
+      Pop-Location
+    }
   }
+
   Run-Step 'Download bucket site-branding' {
     $dest = Join-Path $StorageDir 'site-branding'
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
-    supabase storage cp -r 'ss://site-branding' $dest --experimental --linked
+    Push-Location $dest
+    try {
+      supabase storage cp -r 'ss://site-branding' '.' --experimental --linked
+    } finally {
+      Pop-Location
+    }
   } $false
 
-  # 6) EDGE FUNCTIONS
+  # 5) EDGE FUNCTIONS
   Run-Step 'List Edge Functions' {
     supabase functions list --project-ref $ProjectRef | Out-File -FilePath (Join-Path $MetaDir 'edge-functions-list.txt') -Encoding utf8
   } $false
@@ -145,7 +149,7 @@ try {
     Copy-Item -Path $src -Destination (Join-Path $FunctionsDir 'admin-users') -Recurse -Force
   } $false
 
-  # 7) SECRET NAMES/DIGESTS ONLY. Secret values cannot be recovered by this script.
+  # 6) SECRET NAMES/DIGESTS ONLY
   Run-Step 'List Edge Function secret names' {
     supabase secrets list --project-ref $ProjectRef | Out-File -FilePath (Join-Path $MetaDir 'secrets-list.txt') -Encoding utf8
   } $false
@@ -159,7 +163,7 @@ Keep custom secret VALUES in a private password manager or secret vault.
 Never commit service-role/secret keys or .env files to a public repository.
 "@ | Set-Content -Path (Join-Path $MetaDir 'SECRETS_CHECKLIST.txt') -Encoding UTF8
 
-  # 8) NON-SENSITIVE PROJECT METADATA
+  # 7) NON-SENSITIVE PROJECT METADATA
   Run-Step 'Record project list for verification' {
     supabase projects list | Out-File -FilePath (Join-Path $MetaDir 'projects-list.txt') -Encoding utf8
   } $false
@@ -168,7 +172,7 @@ Never commit service-role/secret keys or .env files to a public repository.
   Pop-Location
 }
 
-# 9) INTEGRITY HASHES
+# 8) INTEGRITY HASHES
 Write-Status 'Creating SHA256SUMS...'
 $hashFile = Join-Path $OutDir 'SHA256SUMS.txt'
 Get-ChildItem -Path $OutDir -File -Recurse |
