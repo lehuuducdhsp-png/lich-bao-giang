@@ -34,7 +34,9 @@
                               add('mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2',()=>{
                                 add('ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1',()=>{
                                   add('dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1',()=>{
-                                    add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
+                                    add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1',()=>{
+                                      add('final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script');
+                                    });
                                   });
                                 });
                               });
