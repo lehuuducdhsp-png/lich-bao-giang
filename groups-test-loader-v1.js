@@ -34,7 +34,7 @@
                               add('mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2',()=>{
                                 add('ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1',()=>{
                                   add('dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1',()=>{
-                                    add('form-submit-safety-v1.js?v=20260808.9','lbgFormSubmitSafetyV1');
+                                    add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
                                   });
                                 });
                               });
