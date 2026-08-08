@@ -1,7 +1,8 @@
 const LBG_AUTH_TEST = new URLSearchParams(window.location.search).get('auth-test') === '1';
+const LBG_PRODUCTION_MODE = window.LBG_PRODUCTION === true || document.documentElement?.dataset?.lbgProduction === '1';
 
 window.LBG_SUPABASE_CONFIG = Object.freeze({
-  enabled: LBG_AUTH_TEST,
+  enabled: LBG_AUTH_TEST || LBG_PRODUCTION_MODE,
   testMode: LBG_AUTH_TEST,
   url: 'https://gmkibmybqfomypytmjxw.supabase.co',
   publishableKey: 'sb_publishable_x7E1lF0bK6qi6SJ1rrH8Eg_nzNHmtEg',
