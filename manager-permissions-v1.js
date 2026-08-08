@@ -20,7 +20,7 @@
   function style(){
     if(q('lbgManagerPermCss'))return;
     const s=document.createElement('style');s.id='lbgManagerPermCss';s.textContent=`
-      .lbg-manager-card{background:#fff;border:1px solid #dbe6eb;border-radius:20px;padding:19px;box-shadow:0 14px 36px rgba(8,47,73,.09);margin-top:18px}.lbg-manager-grid{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:14px;margin-top:13px}.lbg-manager-person{display:grid;gap:7px;align-content:start}.lbg-manager-person select{width:100%;padding:10px 11px;border:1px solid #dbe6eb;border-radius:11px;background:#fff}.lbg-manager-role{padding:11px;border-radius:13px;background:#f8fafc;border:1px solid #dbe6eb}.lbg-manager-perms{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lbg-manager-perm{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;padding:10px 11px;border:1px solid #dbe6eb;border-radius:12px;background:#fbfdff}.lbg-manager-perm input{width:18px;height:18px;margin-top:2px}.lbg-manager-perm b{display:block;color:#082f49}.lbg-manager-perm small{display:block;color:#64748b;line-height:1.35;margin-top:2px}.lbg-manager-safe{margin-top:12px;padding:10px 12px;border:1px solid #fed7aa;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:12px}.lbg-manager-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}.lbg-manager-group-toolbar{margin:12px 0;padding:11px 12px;border:1px solid #bfdbfe;border-radius:13px;background:#eff6ff;display:flex;gap:8px;align-items:end;flex-wrap:wrap}.lbg-manager-group-toolbar label{display:grid;gap:5px;min-width:260px;font-size:12px;font-weight:800}.lbg-manager-group-toolbar input{padding:9px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}.lbg-payroll-money-hidden{display:none!important}@media(max-width:820px){.lbg-manager-grid{grid-template-columns:1fr}.lbg-manager-perms{grid-template-columns:1fr}}@media(max-width:620px){.lbg-manager-card{padding:13px}.lbg-manager-group-toolbar{display:grid}.lbg-manager-group-toolbar label{min-width:0}.lbg-manager-actions{display:grid}.lbg-manager-actions .btn{width:100%}}
+      .lbg-manager-card{background:#fff;border:1px solid #dbe6eb;border-radius:20px;padding:19px;box-shadow:0 14px 36px rgba(8,47,73,.09);margin-top:18px}.lbg-manager-grid{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:14px;margin-top:13px}.lbg-manager-person{display:grid;gap:7px;align-content:start}.lbg-manager-person select{width:100%;padding:10px 11px;border:1px solid #dbe6eb;border-radius:11px;background:#fff}.lbg-manager-role{padding:11px;border-radius:13px;background:#f8fafc;border:1px solid #dbe6eb}.lbg-manager-perms{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lbg-manager-perm{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;padding:10px 11px;border:1px solid #dbe6eb;border-radius:12px;background:#fbfdff}.lbg-manager-perm input{width:18px;height:18px;margin-top:2px}.lbg-manager-perm b{display:block;color:#082f49}.lbg-manager-perm small{display:block;color:#64748b;line-height:1.35;margin-top:2px}.lbg-manager-safe{margin-top:12px;padding:10px 12px;border:1px solid #fed7aa;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:12px}.lbg-manager-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}.lbg-manager-group-toolbar{margin:12px 0;padding:11px 12px;border:1px solid #bfdbfe;border-radius:13px;background:#eff6ff;display:flex;gap:8px;align-items:end;flex-wrap:wrap}.lbg-manager-group-toolbar label{display:grid;gap:5px;min-width:260px;font-size:12px;font-weight:800}.lbg-manager-group-toolbar input{padding:9px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}.lbg-manager-role-badge{background:#ecfdf5!important;border-color:#86efac!important;color:#166534!important;font-weight:850}.lbg-payroll-money-hidden{display:none!important}@media(max-width:820px){.lbg-manager-grid{grid-template-columns:1fr}.lbg-manager-perms{grid-template-columns:1fr}}@media(max-width:620px){.lbg-manager-card{padding:13px}.lbg-manager-group-toolbar{display:grid}.lbg-manager-group-toolbar label{min-width:0}.lbg-manager-actions{display:grid}.lbg-manager-actions .btn{width:100%}}
     `;document.head.appendChild(s);
   }
 
@@ -50,11 +50,15 @@
     const n=document.createElement('div');n.id='lbgManagerSetupWarning';n.className='lbg-setup-warning';n.innerHTML='<b>Chưa kích hoạt vai trò Quản lý:</b> hãy chạy tệp <code>20260808_manager_permissions.sql</code> trong Supabase SQL Editor.';main.prepend(n);
   }
 
-  function ownerHost(){return q('lbgGroupsCard')||document.querySelector('main.shell')}
+  function placeOwnerCard(card){
+    const groups=q('lbgGroupsCard'),main=document.querySelector('main.shell');
+    if(groups)groups.insertAdjacentElement('afterend',card);else main?.appendChild(card);
+  }
+
   function renderOwnerCard(){
     if(!isOwner())return;
     let card=q('lbgManagerPermissionsCard');
-    if(!card){card=document.createElement('section');card.id='lbgManagerPermissionsCard';card.className='lbg-manager-card';ownerHost()?.insertAdjacentElement('afterend',card)}
+    if(!card){card=document.createElement('section');card.id='lbgManagerPermissionsCard';card.className='lbg-manager-card';placeOwnerCard(card)}
     const selected=q('lbgManagerPerson')?.value||'';
     card.innerHTML=`<div class="head"><div><h3>🧭 Tài khoản Quản lý và quyền chi tiết</h3><p>Quản lý có thể không có mã TKB. Mỗi quyền dưới đây được cấp độc lập bởi Chủ sở hữu.</p></div><span class="badge">Chủ sở hữu cấp quyền</span></div><div class="lbg-manager-grid"><div class="lbg-manager-person"><label><b>Tài khoản</b><select id="lbgManagerPerson"><option value="">Chọn tài khoản…</option>${people.filter(p=>p.is_active).map(p=>`<option value="${p.id}">${esc(p.display_name)} — ${esc(p.username)}${p.teacher_code?' — '+esc(p.teacher_code):' — không có mã TKB'}</option>`).join('')}</select></label><label class="lbg-manager-role"><input type="checkbox" id="lbgManagerEnabled"> <b>Đặt là tài khoản Quản lý</b><small>Không bắt buộc liên kết mã giáo viên.</small></label><div id="lbgManagerStatus" class="notice">Chọn tài khoản để xem quyền.</div></div><div><div class="lbg-manager-perms">${PERMS.map(([key,label,desc])=>`<label class="lbg-manager-perm"><input type="checkbox" data-manager-perm="${key}"><span><b>${esc(label)}</b><small>${esc(desc)}</small></span></label>`).join('')}</div><div class="lbg-manager-safe"><b>Luôn chỉ Chủ sở hữu:</b> quản lý tài khoản/mật khẩu, Google Sheets và cài đặt thương hiệu/logo. Các quyền này không xuất hiện để cấp cho Quản lý.</div><div class="lbg-manager-actions"><button class="btn outline" id="lbgManagerClear">Bỏ vai trò Quản lý</button><button class="btn primary" id="lbgManagerSave">Lưu quyền Quản lý</button></div></div></div>`;
     if(selected&&people.some(p=>p.id===selected))q('lbgManagerPerson').value=selected;
@@ -105,12 +109,14 @@
     finally{if(button){button.disabled=false;button.textContent=old}}
   }
 
-  function roleLabel(){
-    const c=context(),chip=q('lbgUserBar')?.querySelector('.lbg-userchip');if(!c||!chip||c.is_owner||!c.is_manager)return;
-    const name=auth?.profile?.display_name||auth?.profile?.username||'';
-    const roles=['Quản lý'];if(c.is_group_leader)roles.push('Nhóm trưởng');if(c.is_head_specialist)roles.push('Trưởng ban chuyên môn');
-    const html=`<b>${esc(name)}</b> • ${roles.join(' • ')}`;
-    if(chip.innerHTML!==html){chip.innerHTML=html;chip.dataset.lbgAccessHtml=html}
+  function roleBadge(){
+    const c=context(),bar=q('lbgUserBar');
+    if(!bar||!c?.is_manager||c.is_owner){q('lbgManagerRoleBadge')?.remove();return}
+    let badge=q('lbgManagerRoleBadge');
+    const extras=[];if(c.is_group_leader)extras.push('Nhóm trưởng');if(c.is_head_specialist)extras.push('Trưởng ban chuyên môn');
+    const label='🧭 Quản lý'+(extras.length?' • '+extras.join(' • '):'');
+    if(!badge){badge=document.createElement('span');badge.id='lbgManagerRoleBadge';badge.className='lbg-userchip lbg-manager-role-badge';bar.querySelector('.lbg-userchip')?.insertAdjacentElement('afterend',badge)}
+    if(badge&&badge.textContent!==label)badge.textContent=label;
   }
 
   function enhanceManagerGroups(){
@@ -148,7 +154,7 @@
     card.querySelectorAll('button').forEach(button=>{if(/xuất|export/i.test(txt(button.textContent))){button.disabled=true;button.title='Cần quyền xem số tiền/lương để xuất bảng kê của người khác.'}});
   }
 
-  function sweep(){roleLabel();enhanceManagerGroups();protectPayrollMoney();if(isOwner()&&!q('lbgManagerPermissionsCard'))loadPeople()}
+  function sweep(){roleBadge();enhanceManagerGroups();protectPayrollMoney();if(isOwner()&&!q('lbgManagerPermissionsCard'))loadPeople()}
   function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;sweep()})}
 
   window.LBGAuth.onReady(a=>{
@@ -157,5 +163,5 @@
     observer=new MutationObserver(queue);observer.observe(document.body,{childList:true,subtree:true});
     setTimeout(()=>{ctx=context();queue();if(isOwner())loadPeople()},650);
   });
-  window.LBGAuth.onLogout(()=>{observer?.disconnect();observer=null;auth=null;ctx=null;people=[];queued=false;q('lbgManagerPermissionsCard')?.remove();q('lbgManagerSetupWarning')?.remove()});
+  window.LBGAuth.onLogout(()=>{observer?.disconnect();observer=null;auth=null;ctx=null;people=[];queued=false;q('lbgManagerPermissionsCard')?.remove();q('lbgManagerSetupWarning')?.remove();q('lbgManagerRoleBadge')?.remove()});
 })();
