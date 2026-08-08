@@ -1,60 +1,46 @@
 'use strict';
 (function(){
-  let tries=0;
-  function add(src,id,onload){
-    if(document.getElementById(id)){onload?.();return}
-    const s=document.createElement('script');
-    s.id=id;
-    s.src=src;
-    s.async=false;
-    if(onload)s.onload=onload;
-    document.body.appendChild(s);
+  function add(src,id){
+    return new Promise((resolve,reject)=>{
+      if(document.getElementById(id)){resolve();return}
+      const s=document.createElement('script');
+      s.id=id;s.src=src;s.async=false;s.onload=()=>resolve();s.onerror=()=>reject(new Error('Không tải được '+src));
+      document.body.appendChild(s);
+    });
+  }
+  function waitForAuth(){
+    return new Promise((resolve,reject)=>{
+      let tries=0;const timer=setInterval(()=>{tries++;if(window.LBGAuth){clearInterval(timer);resolve()}else if(tries>300){clearInterval(timer);reject(new Error('Hệ thống đăng nhập chưa sẵn sàng.'))}},100);
+    });
   }
 
-  // Nạp theme cam ngay lập tức, không chờ hệ thống đăng nhập.
-  add('light-orange-theme-v2.js?v=20260808.7','lbgLightOrangeThemeV2');
+  add('light-orange-theme-v2.js?v=20260808.7','lbgLightOrangeThemeV2').catch(console.error);
 
-  const timer=setInterval(()=>{
-    tries++;
-    if(window.LBGAuth){
-      clearInterval(timer);
-      add('branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2');
-      add('access-control-v1.js?v=20260806.2','lbgAccessControlV1',()=>{
-        add('self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1',()=>{
-          add('teacher-select-refresh-v1.js?v=20260807.3','lbgTeacherSelectRefreshV1',()=>{
-            add('group-management-v1.js?v=20260804.2','lbgGroupManagementV1',()=>{
-              add('teacher-code-linking-v2.js?v=20260807.3','lbgTeacherCodeLinkingV2',()=>{
-                add('global-specialist-v1.js?v=20260808.1','lbgGlobalSpecialistV1',()=>{
-                  add('manager-permissions-v1.js?v=20260808.2','lbgManagerPermissionsV1',()=>{
-                    add('manager-cloud-bridge-v1.js?v=20260808.2','lbgManagerCloudBridgeV1',()=>{
-                      add('branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1',()=>{
-                        add('branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1',()=>{
-                          add('ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1',()=>{
-                            add('report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script',()=>{
-                              add('mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2',()=>{
-                                add('ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1',()=>{
-                                  add('dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1',()=>{
-                                    add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1',()=>{
-                                      add('final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script');
-                                    });
-                                  });
-                                });
-                              });
-                            });
-                          });
-                        });
-                      });
-                    });
-                  });
-                });
-              });
-            });
-          });
-        });
-      });
-    }else if(tries>300){
-      clearInterval(timer);
-      console.error('Không tải được mô-đun kiểm thử vì hệ thống đăng nhập chưa sẵn sàng.');
-    }
-  },100);
+  (async()=>{
+    try{
+      await waitForAuth();
+      const modules=[
+        ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
+        ['access-control-v1.js?v=20260806.2','lbgAccessControlV1'],
+        ['self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1'],
+        ['teacher-select-refresh-v1.js?v=20260807.3','lbgTeacherSelectRefreshV1'],
+        ['group-management-v1.js?v=20260804.2','lbgGroupManagementV1'],
+        ['teacher-code-linking-v2.js?v=20260807.3','lbgTeacherCodeLinkingV2'],
+        ['global-specialist-v1.js?v=20260808.1','lbgGlobalSpecialistV1'],
+        ['manager-permissions-v1.js?v=20260808.2','lbgManagerPermissionsV1'],
+        ['manager-cloud-bridge-v1.js?v=20260808.2','lbgManagerCloudBridgeV1'],
+        ['branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1'],
+        ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
+        ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
+        ['report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script'],
+        ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
+        ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
+        ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
+        ['login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1'],
+        ['monthly-calendar-v3.js?v=20260808.12','lbgMonthlyCalendarV3Script'],
+        ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script']
+      ];
+      for(const [src,id] of modules)await add(src,id);
+    }catch(error){console.error('Không tải được đầy đủ mô-đun kiểm thử:',error)}
+  })();
 })();
