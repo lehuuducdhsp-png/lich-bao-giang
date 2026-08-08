@@ -38,7 +38,8 @@
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
         ['login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1'],
         ['monthly-calendar-v3.js?v=20260808.12','lbgMonthlyCalendarV3Script'],
-        ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script']
+        ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script'],
+        ['section-order-fix-v1.js?v=20260808.13','lbgSectionOrderFixV1Script']
       ];
       for(const [src,id] of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun kiểm thử:',error)}
