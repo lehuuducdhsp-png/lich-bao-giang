@@ -2,7 +2,7 @@
 (function(){
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').trim();
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]||c));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
   let groups=[],loaded=false,loading=false;
   const storageKey='lbg-checkin-review-group';
 
@@ -46,7 +46,6 @@
     const t=txt(slot?.querySelector('.lbg-checkin-manager-head h4')?.textContent);
     const m=t.match(/—\s*([A-Z0-9._-]{1,24})\s*$/i);return m?m[1].toUpperCase():'';
   }
-  function selectedId(){return q('lbgCheckinGroupFilter')?.value||''}
   function applyFilter(){
     const box=q('lbgCheckinManagerResult'),select=q('lbgCheckinGroupFilter');if(!box||!select)return;
     const group=groups.find(g=>g.id===select.value),codes=new Set((group?.member_codes||[]).map(x=>txt(x).toUpperCase()));
