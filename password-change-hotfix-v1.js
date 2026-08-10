@@ -13,6 +13,7 @@
     if(low.includes('session')&&low.includes('missing'))return'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.';
     return raw||'Không đổi được mật khẩu.';
   }
+  function isSamePasswordError(error){const low=txt(error?.message||error).toLowerCase();return low.includes('new password should be different')||low.includes('same password')}
 
   function markerKey(api){
     const id=api?.session?.user?.id||api?.profile?.id||'';
@@ -35,7 +36,7 @@
       const alreadyUpdated=Boolean(key&&localStorage.getItem(key)==='1');
       if(!alreadyUpdated){
         const {error}=await api.client.auth.updateUser({password:p});
-        if(error)throw error;
+        if(error&&!isSamePasswordError(error))throw error;
         if(key)localStorage.setItem(key,'1');
       }
 
