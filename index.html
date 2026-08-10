@@ -13,6 +13,7 @@ html{background:#fff9f5}body{margin:0;min-height:100vh;display:grid;place-items:
 <div class="box"><div class="spin"></div><b>Đang mở hệ thống Lịch Báo giảng…</b><small>Đang tải dữ liệu, đăng nhập và các chức năng chính thức.</small><div id="msg"></div></div>
 <script>
 window.LBG_PRODUCTION=true;
+window.LBG_CHECKIN_ENABLED=true;
 (async()=>{
   try{
     const response=await fetch('./index-core.html?v=20260808.17',{cache:'no-store'});
@@ -20,16 +21,18 @@ window.LBG_PRODUCTION=true;
     let html=await response.text();
     html=html.replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i,'');
     html=html.replace(/<meta\s+name=["']theme-color["'][^>]*>/i,'<meta name="theme-color" content="#F4A261">');
+    html=html.replace(/auth-core-v1\.js\?v=[^"']+/g,'auth-core-v2.js?v=20260810.1');
     html=html.replace(/teacher-fix\.js\?v=[^"']+/g,'teacher-fix.js?v=20260803.10');
     html=html.replace(/<script\s+src=["']monthly-calendar-fix\.js\?v=[^"']+["']><\/script>/i,'');
-    const early=`<script>window.LBG_PRODUCTION=true;document.documentElement.dataset.lbgProduction='1';<\/script><style id="lbgProductionEarlyTheme">
+    const early=`<script>window.LBG_PRODUCTION=true;window.LBG_CHECKIN_ENABLED=true;document.documentElement.dataset.lbgProduction='1';document.documentElement.dataset.lbgCheckin='1';<\/script><style id="lbgProductionEarlyTheme">
       :root{--n:#9a5b36!important;--t:#f4a261!important;--i:#4b342b!important;--m:#806b61!important;--l:#f2ddd0!important;--b:#fff9f5!important;--ui-navy:#8f5636!important;--ui-teal:#f4a261!important;--ui-teal-2:#f8c794!important;--ui-surface:#fff!important;--ui-bg:#fff9f5!important;--ui-border:#f2ddd0!important;--ui-muted:#806b61!important;color-scheme:light}
       html{background:#fff9f5!important}body{background:linear-gradient(180deg,#fffdfb 0%,#fff9f5 45%,#fff6f0 100%)!important;color:#4b342b!important}
       header.top{background:rgba(255,253,251,.98)!important;border-bottom-color:#eadfd8!important}.lbg-finish-test-badge{display:none!important}
       .primary{background:#f4a261!important;color:#4c3429!important;border-color:#f4a261!important}
     </style>`;
     html=html.replace('</head>',early+'</head>');
-    html=html.replace('</body>','<script src="app-runtime-v1.js?v=20260808.17"><\/script></body>');
+    const runtime=`<script src="app-runtime-v1.js?v=20260808.17"><\/script><script>(function(){let loaded=false,tries=0;function loadCheckin(){if(loaded)return;if(window.LBGAuth&&window.LBGAccess&&window.LBGAccess.context){loaded=true;const s=document.createElement('script');s.src='checkin-v2.js?v=20260810.1';s.async=false;document.body.appendChild(s);}}document.addEventListener('lbg-access-ready',loadCheckin);const timer=setInterval(()=>{tries++;loadCheckin();if(loaded||tries>300){clearInterval(timer);if(!loaded)console.error('Check-in: access context chưa sẵn sàng sau 30 giây.');}},100);})();<\/script>`;
+    html=html.replace('</body>',runtime+'</body>');
     document.open();document.write(html);document.close();
   }catch(error){
     const msg=document.getElementById('msg');
