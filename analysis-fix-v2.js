@@ -48,6 +48,20 @@
 })();
 
 (function(){
+  window.renderPreview=function(a){
+    const ds=[2,3,4,5,6,7],end=a.start?new Date(a.start.getTime()+5*864e5):null;let rows='';
+    for(const ses of ['Sáng','Chiều']){
+      const sch=ds.map(d=>schools(a,d,ses));
+      rows+=`<tr><td class="session" rowspan="6">${ses}</td><td class="session">Tiết</td>${sch.map(x=>`<td class="school">${x.map(esc).join(' / ')}${x.length?'\n(GA  )':''}</td>`).join('')}</tr>`;
+      for(let p=1;p<=5;p++)rows+=`<tr><td>Tiết ${p}</td>${ds.map((d,i)=>{const pri=sch[i][0];return`<td>${at(a,d,ses,p).map(e=>`<span class="${pri&&e.school!==pri?'red':''}">${esc(e.className)}</span>`).join(' & ')}</td>`}).join('')}</tr>`;
+    }
+    $('caption').textContent=a.teacherName+' • '+a.total+' tiết';
+    $('preview').innerHTML=`<div class="sheet"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${$('year').value} - ${+$('year').value+1}</h2><h3>Tuần ${a.week||'...'}</h3><p>${a.start?'(Từ ngày '+a.start.toLocaleDateString('vi-VN')+' đến ngày '+end.toLocaleDateString('vi-VN')+')':'(Chưa xác định ngày từ tên sheet)'}</p></div><table class="report"><tr>${['Buổi','Tiết',...ds.map(day)].map(x=>`<th style="height:62px;vertical-align:middle">${x}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>TỔNG: ${a.total} tiết</span><span>Giáo viên: ${esc(a.teacherName)}</span></div></div>`;
+    $('previewCard').hidden=false;
+  };
+})();
+
+(function(){
   function appendScript(src,onload){const script=document.createElement('script');script.src=src;script.async=false;if(onload)script.onload=onload;document.body.appendChild(script);return script}
   function loadCommonModules(){appendScript('ga-editor.js?v=20260801.1');appendScript('multi-teacher-v5.js?v=20260803.1');appendScript('conflict-check-v5.js?v=20260803.1');appendScript('teacher-intelligence-v6.js?v=20260803.1');appendScript('weekly-stats-enhancement-v7.js?v=20260803.2')}
   function loadDependentScripts(){
