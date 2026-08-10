@@ -2,8 +2,8 @@ begin;
 
 -- Pilot review rights must never widen an existing role.
 -- A pilot flag only activates Check-in for a reviewer who is already a Group Leader/Manager.
--- Group Leader scope follows the current TKB roster model (teacher_group_roster),
--- with teacher_group_memberships retained only as a legacy fallback.
+-- Production baseline 20260810051504 has teacher_group_memberships but no teacher_group_roster,
+-- so Check-in scope must rely only on schema that actually exists in production.
 
 create or replace function public.checkin_group_leader_can_target(
   p_target uuid,
@@ -18,30 +18,11 @@ as $$
   select exists(
     select 1
     from public.teacher_group_managers m
-    join public.profiles target on target.id=p_target
+    join public.teacher_group_memberships gm
+      on gm.group_id=m.group_id
+     and gm.user_id=p_target
+     and gm.valid_to is null
     where m.user_id=p_viewer
-      and (
-        exists(
-          select 1
-          from public.teacher_group_roster r
-          where r.group_id=m.group_id
-            and r.valid_to is null
-            and (
-              r.linked_user_id=p_target
-              or (
-                btrim(coalesce(target.teacher_code,''))<>''
-                and upper(btrim(r.teacher_code))=upper(btrim(target.teacher_code))
-              )
-            )
-        )
-        or exists(
-          select 1
-          from public.teacher_group_memberships gm
-          where gm.group_id=m.group_id
-            and gm.user_id=p_target
-            and gm.valid_to is null
-        )
-      )
   );
 $$;
 
