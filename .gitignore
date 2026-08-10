@@ -1,0 +1,3 @@
+# Local-only Check-in staging configuration.
+# Never commit the staging project URL/key file created from the example.
+checkin-staging-config.local.js
