@@ -21,8 +21,7 @@ window.LBG_CHECKIN_ENABLED=true;
     let html=await response.text();
     html=html.replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i,'');
     html=html.replace(/<meta\s+name=["']theme-color["'][^>]*>/i,'<meta name="theme-color" content="#F4A261">');
-    html=html.replace(/auth-core-v1\.js\?v=[^"']+/g,'auth-core-v2.js?v=20260810.1');
-    html=html.replace(/teacher-fix\.js\?v=[^"']+/g,'teacher-fix.js?v=20260803.10');
+    html=html.replace(/teacher-fix\.js\?v=[^"']+/g,'teacher-fix-v2.js?v=20260810.1');
     html=html.replace(/<script\s+src=["']monthly-calendar-fix\.js\?v=[^"']+["']><\/script>/i,'');
     const early=`<script>window.LBG_PRODUCTION=true;window.LBG_CHECKIN_ENABLED=true;document.documentElement.dataset.lbgProduction='1';document.documentElement.dataset.lbgCheckin='1';<\/script><style id="lbgProductionEarlyTheme">
       :root{--n:#9a5b36!important;--t:#f4a261!important;--i:#4b342b!important;--m:#806b61!important;--l:#f2ddd0!important;--b:#fff9f5!important;--ui-navy:#8f5636!important;--ui-teal:#f4a261!important;--ui-teal-2:#f8c794!important;--ui-surface:#fff!important;--ui-bg:#fff9f5!important;--ui-border:#f2ddd0!important;--ui-muted:#806b61!important;color-scheme:light}
