@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F4A261">
+<title>Check-in V1 Staging - Lịch Báo giảng</title>
+<style>
+html{background:#fff9f5}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 18% 12%,rgba(248,199,148,.62),transparent 30%),linear-gradient(145deg,#fff4ea,#f8c794 58%,#f4a261);color:#5b3828;font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.box{width:min(560px,calc(100% - 36px));padding:24px;text-align:center}.spin{width:40px;height:40px;border:4px solid #ffffffaa;border-top-color:#8f5636;border-radius:50%;margin:0 auto 14px;animation:s .8s linear infinite}.box b{display:block;font-size:16px}.box small{display:block;margin-top:6px;color:#755647}.stag{display:inline-block;margin-top:10px;padding:5px 9px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px;font-weight:900}.err{margin-top:14px;padding:12px;text-align:left;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:13px;font-size:12px;white-space:pre-line}@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="box"><div class="spin" id="spin"></div><b>Đang mở môi trường thử nghiệm Check-in V1…</b><small>Trang này dành riêng cho kiểm thử, không phải đường dẫn production.</small><span class="stag">STAGING ONLY</span><div id="msg"></div></div>
+<script>
+window.LBG_PRODUCTION=false;
+window.LBG_CHECKIN_ENABLED=true;
+(async()=>{
+  try{
+    const localConfig=await fetch('./checkin-staging-config.local.js',{cache:'no-store'});
+    if(!localConfig.ok){
+      throw new Error('Chưa có checkin-staging-config.local.js.\n\nHãy sao chép checkin-staging-config.example.js thành checkin-staging-config.local.js, rồi điền URL + publishable/anon key của SUPABASE STAGING RIÊNG. Không dùng service_role key.');
+    }
+    const configText=await localConfig.text();
+    if(/gmkibmybqfomypytmjxw/i.test(configText)){
+      throw new Error('ĐÃ CHẶN: checkin-staging-config.local.js đang chứa project ref của Supabase production. Hãy dùng một Supabase staging riêng.');
+    }
+
+    const response=await fetch('./index-core.html?v=20260808.17',{cache:'no-store'});
+    if(!response.ok)throw new Error('Không đọc được lõi hệ thống: HTTP '+response.status);
+    let html=await response.text();
+    html=html.replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i,'');
+    html=html.replace(/<meta\s+name=["']theme-color["'][^>]*>/i,'<meta name="theme-color" content="#F4A261">');
+    html=html.replace(/teacher-fix\.js\?v=[^"']+/g,'teacher-fix.js?v=20260803.10');
+    html=html.replace(/<script\s+src=["']monthly-calendar-fix\.js\?v=[^"']+["']><\/script>/i,'');
+    html=html.replace(/<script\b[^>]*src=["']supabase-config\.js[^"']*["'][^>]*><\/script>/i,'<script src="checkin-staging-config.local.js"><\/script><script src="checkin-staging-guard.js?v=20260810.1"><\/script>');
+    const early=`<script>window.LBG_PRODUCTION=false;window.LBG_CHECKIN_ENABLED=true;document.documentElement.dataset.lbgCheckinStaging='1';<\/script><style id="lbgCheckinStagingTheme">
+      :root{--n:#9a5b36!important;--t:#f4a261!important;--i:#4b342b!important;--m:#806b61!important;--l:#f2ddd0!important;--b:#fff9f5!important;--ui-navy:#8f5636!important;--ui-teal:#f4a261!important;--ui-teal-2:#f8c794!important;--ui-surface:#fff!important;--ui-bg:#fff9f5!important;--ui-border:#f2ddd0!important;--ui-muted:#806b61!important;color-scheme:light}
+      html{background:#fff9f5!important}body{background:linear-gradient(180deg,#fffdfb 0%,#fff9f5 45%,#fff6f0 100%)!important;color:#4b342b!important}
+      body:before{content:'CHECK-IN V1 • STAGING';position:fixed;right:10px;bottom:10px;z-index:9999;background:#9a3412;color:#fff;padding:6px 9px;border-radius:999px;font:800 10px/1.2 system-ui;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+      header.top{background:rgba(255,253,251,.98)!important;border-bottom-color:#eadfd8!important}.lbg-finish-test-badge{display:none!important}
+      .primary{background:#f4a261!important;color:#4c3429!important;border-color:#f4a261!important}
+    </style>`;
+    html=html.replace('</head>',early+'</head>');
+    html=html.replace('</body>','<script src="app-runtime-v1.js?v=20260808.17"><\/script><script src="checkin-v1.js?v=20260810.1"><\/script></body>');
+    document.open();document.write(html);document.close();
+  }catch(error){
+    const spin=document.getElementById('spin');if(spin)spin.style.display='none';
+    const msg=document.getElementById('msg');
+    if(msg){msg.className='err';msg.textContent=error?.message||String(error)}
+  }
+})();
+</script>
+</body>
+</html>
