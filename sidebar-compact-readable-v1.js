@@ -33,28 +33,75 @@
         body.lbg-sidebar-compact #lbgUiSidebar .lbg-ui-nav-icon{width:auto!important;font-size:18px!important;line-height:1}
         body.lbg-sidebar-compact #lbgUiSidebar .lbg-ui-nav-link:hover{transform:translateY(-1px)}
 
-        #lbgAppLayout main.shell{font-size:15px!important;line-height:1.55}
-        #lbgAppLayout main.shell>.hero h2{font-size:21px!important}
+        /* Sidebar mở: tăng nhẹ để danh mục dễ đọc hơn. */
+        #lbgUiSidebar .lbg-ui-side-head b{font-size:16px!important}
+        #lbgUiSidebar .lbg-ui-side-head span{font-size:12.5px!important}
+        #lbgUiSidebar .lbg-ui-nav-label{font-size:11.5px!important;line-height:1.35!important}
+        #lbgUiSidebar .lbg-ui-nav-link{font-size:13.5px!important;line-height:1.4!important;min-height:38px}
+        #lbgUiSidebar .lbg-ui-side-actions button{font-size:12.5px!important}
+
+        /* Nền chữ chính của vùng làm việc. */
+        #lbgAppLayout main.shell{font-size:16px!important;line-height:1.6!important}
+        #lbgAppLayout main.shell>.hero h2{font-size:22px!important;line-height:1.3!important}
+        #lbgAppLayout main.shell>.hero p{font-size:14.5px!important;line-height:1.6!important}
         #lbgAppLayout main.shell .head h2,
-        #lbgAppLayout main.shell .head h3{font-size:17px!important;line-height:1.35}
-        #lbgAppLayout main.shell .head p{font-size:13px!important;line-height:1.55}
-        #lbgAppLayout main.shell .card,
-        #lbgAppLayout main.shell .lbg-owner-card,
-        #lbgAppLayout main.shell .lbg-scope-card,
-        #lbgAppLayout main.shell .lbg-branding-card,
-        #lbgAppLayout main.shell .lbg-groups-card,
-        #lbgAppLayout main.shell .lbg-ui-section{font-size:14px}
-        #lbgAppLayout main.shell table th{font-size:12px!important;line-height:1.35}
-        #lbgAppLayout main.shell table td{font-size:13px!important;line-height:1.45}
-        #lbgAppLayout main.shell .meta,
-        #lbgAppLayout main.shell small{font-size:12px!important;line-height:1.45}
-        #lbgAppLayout main.shell .btn{font-size:12.5px!important;line-height:1.3}
+        #lbgAppLayout main.shell .head h3{font-size:19px!important;line-height:1.35!important}
+        #lbgAppLayout main.shell .head p,
+        #lbgAppLayout main.shell .lbg-ui-section>.head p{font-size:14px!important;line-height:1.6!important}
+
+        /* Biểu mẫu, bộ lọc, nút: đồng bộ ở mức dễ đọc trên desktop. */
+        #lbgAppLayout main.shell label,
+        #lbgAppLayout main.shell .controls label,
+        #lbgAppLayout main.shell .row label,
+        #lbgAppLayout main.shell .lbg-scope-controls label{font-size:14px!important;line-height:1.45!important}
         #lbgAppLayout main.shell input,
         #lbgAppLayout main.shell select,
-        #lbgAppLayout main.shell textarea{font-size:13px!important}
+        #lbgAppLayout main.shell textarea{font-size:15px!important;line-height:1.45!important}
+        #lbgAppLayout main.shell .btn,
+        #lbgAppLayout main.shell button.btn{font-size:14.5px!important;line-height:1.35!important}
+        #lbgAppLayout main.shell .badge{font-size:12.5px!important;line-height:1.35!important}
+        #lbgAppLayout main.shell .notice,
+        #lbgAppLayout main.shell .alert,
+        #lbgAppLayout main.shell .lbg-access-note,
+        #lbgAppLayout main.shell .lbg-checkin-note{font-size:13.5px!important;line-height:1.6!important}
+        #lbgAppLayout main.shell .meta,
+        #lbgAppLayout main.shell small{font-size:13px!important;line-height:1.5!important}
+
+        /* Bảng dữ liệu thông thường: khắc phục font 10–11px của lớp typography cũ. */
+        #lbgAppLayout main.shell table:not(.report) th{font-size:13.5px!important;line-height:1.4!important;padding-top:10px!important;padding-bottom:10px!important}
+        #lbgAppLayout main.shell table:not(.report) td{font-size:14.5px!important;line-height:1.5!important;padding-top:11px!important;padding-bottom:11px!important}
+        #lbgAppLayout main.shell table:not(.report) td b{font-size:15px!important;line-height:1.45!important}
+
+        /* Quản lý quyền Check-in: có CSS riêng nên tăng trực tiếp tại đây. */
+        #lbgCheckinPermissionAdminV3 .lbg-p3-title h4{font-size:18px!important;line-height:1.35!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-head p{font-size:14px!important;line-height:1.6!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-pilot{font-size:12px!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-tools label{font-size:14px!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-tools select,
+        #lbgCheckinPermissionAdminV3 .lbg-p3-tools input{font-size:15px!important;min-height:42px}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-table th{font-size:13.5px!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-table td{font-size:14.5px!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-sub,
+        #lbgCheckinPermissionAdminV3 .lbg-p3-meta{font-size:13px!important;line-height:1.5!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-dirty{font-size:12.5px!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-table input[type=text]{font-size:14.5px!important;min-height:40px}
+
+        /* Không phá tỷ lệ bản xem trước báo giảng và bảng kê tháng mật độ cao. */
+        #previewCard .sheet{font-size:14px!important;line-height:1.55!important}
+        #monthCardFixed table.report th,
+        #monthCardFixed table.report td{font-size:inherit}
       }
 
       @media(max-width:1180px){.lbg-sidebar-toggle{display:none!important}}
+      @media(max-width:760px){
+        #lbgAppLayout main.shell{font-size:15px!important;line-height:1.55!important}
+        #lbgAppLayout main.shell .head h2,#lbgAppLayout main.shell .head h3{font-size:17px!important}
+        #lbgAppLayout main.shell .head p{font-size:13px!important}
+        #lbgAppLayout main.shell input,#lbgAppLayout main.shell select,#lbgAppLayout main.shell textarea,#lbgAppLayout main.shell .btn{font-size:13.5px!important}
+        #lbgAppLayout main.shell table:not(.report) th{font-size:12.5px!important}
+        #lbgAppLayout main.shell table:not(.report) td{font-size:13.5px!important}
+        #lbgCheckinPermissionAdminV3 .lbg-p3-sub,#lbgCheckinPermissionAdminV3 .lbg-p3-meta{font-size:12.5px!important}
+      }
     `;
     document.head.appendChild(s);
   }
