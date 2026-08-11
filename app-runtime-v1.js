@@ -39,6 +39,7 @@
         ['branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1'],
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
+        ['sidebar-compact-readable-v1.js?v=20260811.1','lbgSidebarCompactReadableV1'],
         ['report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
