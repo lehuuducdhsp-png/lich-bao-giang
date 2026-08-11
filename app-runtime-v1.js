@@ -39,7 +39,6 @@
         ['branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1'],
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
-        ['sidebar-compact-readable-v1.js?v=20260811.1','lbgSidebarCompactReadableV1'],
         ['report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
@@ -52,7 +51,8 @@
         ['section-order-fix-v1.js?v=20260808.13','lbgSectionOrderFixV1Script'],
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],
         ['monthly-teacher-search-v1.js?v=20260808.16','lbgMonthlyTeacherSearchV1Script'],
-        ['production-mode-v1.js?v=20260808.17','lbgProductionModeV1Script']
+        ['production-mode-v1.js?v=20260808.17','lbgProductionModeV1Script'],
+        ['sidebar-compact-readable-v1.js?v=20260811.2','lbgSidebarCompactReadableV1']
       ];
       for(const [src,id] of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
