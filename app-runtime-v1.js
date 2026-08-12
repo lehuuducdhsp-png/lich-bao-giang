@@ -54,7 +54,8 @@
         ['production-mode-v1.js?v=20260808.17','lbgProductionModeV1Script'],
         ['sidebar-compact-readable-v1.js?v=20260811.3','lbgSidebarCompactReadableV1'],
         ['readability-targeted-v2.js?v=20260811.1','lbgReadabilityTargetedV2'],
-        ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1']
+        ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
+        ['checkin-member-window-v1.js?v=20260812.1','lbgCheckinMemberWindowV1']
       ];
       for(const [src,id] of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
