@@ -1,7 +1,7 @@
 'use strict';
 (function(){
   const ID='lbgCheckinMemberWindowV1Css';
-  const VERSION='20260812.1';
+  const VERSION='20260812.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -16,12 +16,11 @@
       .lbg-member-window-preview{display:grid;gap:9px;margin-top:10px}.lbg-member-window-preview .lbg-checkin-point{margin-top:0}
       .lbg-member-window-preview .btn[disabled],.lbg-member-window-locked .btn[disabled],#lbgCheckinManualStart[disabled]{background:#f1f5f9!important;color:#94a3b8!important;border-color:#dbe3ea!important;box-shadow:none!important;cursor:not-allowed!important;transform:none!important;opacity:1!important}
       .lbg-member-window-empty{padding:16px;text-align:center;color:#806b61;border:1px dashed #e5d4ca;border-radius:13px;background:#fffaf7;font-size:13px;line-height:1.55}
-      .lbg-member-window-date{margin-top:8px;padding:8px 10px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb;font-size:12px;color:#64748b}
     `;document.head.appendChild(s);
   }
 
   function vnParts(date=new Date()){
-    const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit',hour12:false,hour:'2-digit',minute:'2-digit'}).formatToParts(date);
+    const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit',hourCycle:'h23',hour:'2-digit',minute:'2-digit'}).formatToParts(date);
     return Object.fromEntries(p.map(x=>[x.type,x.value]));
   }
   function todayKey(){const p=vnParts();return`${p.year}-${p.month}-${p.day}`}
@@ -43,9 +42,7 @@
   function shared(){try{return window.LBGCheckinV2?.getSharedTimetable?.()||null}catch{return null}}
   function memberEnabled(){const g=gate();return Boolean(g?.can_checkin&&!g?.is_group_leader&&!g?.is_owner)}
 
-  function parsePoint(el){
-    try{return JSON.parse(decodeURIComponent(el.dataset.checkinPoint||''))}catch{return null}
-  }
+  function parsePoint(el){try{return JSON.parse(decodeURIComponent(el.dataset.checkinPoint||''))}catch{return null}}
   function scanDate(key){
     const sh=shared(),ctx=context(),book=sh?.workbook,scanner=window.LBGTeacherIntelligenceV6?.scanSheet,code=fold(ctx?.teacher_code);
     if(sh?.status!=='ready'||!book||!scanner||!code)return[];
@@ -66,22 +63,27 @@
     if(!points.length)return`<div class="lbg-member-window-empty">TKB chung đang áp dụng chưa có điểm dạy của bạn vào <b>${esc(dateLabel(m.targetDate))}</b>.</div>`;
     return points.map(p=>`<article class="lbg-checkin-point lbg-member-window-locked"><div class="lbg-checkin-point-head"><div><h4>🏫 ${esc(p.school_name)}</h4><p>${esc(dateLabel(m.targetDate))} • ${esc(p.session)} • Theo TKB chung</p>${p.periods.length?`<div class="lbg-checkin-meta">Tiết ${esc(p.periods.join(', '))}${p.classes.length?` • Lớp ${esc(p.classes.join(', '))}`:''}</div>`:''}</div><span class="lbg-checkin-pill">Xem trước</span></div><div class="lbg-checkin-actions"><button class="btn outline" disabled>🔒 Chưa đến khung Check-in</button></div></article>`).join('');
   }
+  function ensureDateLabel(panel,m,preview=false){
+    let label=panel.querySelector('[data-lbg-today-label]');
+    if(!label){label=document.createElement('div');label.dataset.lbgTodayLabel='1';label.className='lbg-checkin-source';const note=panel.querySelector('[data-lbg-member-window-note]');if(note)note.insertAdjacentElement('afterend',label);else(panel.querySelector(':scope>h4')||panel.querySelector('h4'))?.insertAdjacentElement('afterend',label)}
+    label.innerHTML=`📅 ${preview?'Lịch xem trước':'Ngày đối chiếu TKB'}: <b>${esc(dateLabel(m.targetDate))}</b> • Giờ Việt Nam`;
+  }
 
-  function setManualState(panel,m){
+  function setManualState(m){
     const select=q('lbgCheckinManualSession'),button=q('lbgCheckinManualStart');if(!button)return;
     if(button.dataset.lbgWindowBaseText===undefined)button.dataset.lbgWindowBaseText=button.textContent||'📍 Check-in điểm dạy này';
-    const selected=normalizeSession(select?.value||'Khác');
-    const allowed=m.open&&(selected==='Khác'||selected===m.session);
+    const selected=normalizeSession(select?.value||'Khác'),allowed=m.open&&(selected==='Khác'||selected===m.session);
     button.disabled=!allowed;
-    button.textContent=allowed?button.dataset.lbgWindowBaseText:`🔒 Check-in chỉ mở ${m.session==='Chiều'?'12:00–17:00':'06:00–11:00'}`;
-    if(select&&!select.dataset.lbgWindowBound){select.dataset.lbgWindowBound='1';select.addEventListener('change',queue)}
+    if(allowed)button.textContent=button.dataset.lbgWindowBaseText;
+    else if(m.session==='ALL')button.textContent='🔒 Chỉ mở 06:00–11:00 / 12:00–17:00';
+    else button.textContent=`🔒 Check-in chỉ mở ${m.range}`;
+    if(select&&!select.dataset.lbgWindowBound){select.dataset.lbgWindowBound='1';select.addEventListener('change',()=>{const panel=button.closest('.lbg-checkin-panel');if(panel)delete panel.dataset.lbgMemberWindowSignature;queue()})}
   }
 
   function decorateTodayPanel(panel,m){
     const h4=panel.querySelector(':scope>h4')||panel.querySelector('h4');if(h4)h4.textContent=m.title;
     let note=panel.querySelector('[data-lbg-member-window-note]');if(!note){note=document.createElement('div');note.dataset.lbgMemberWindowNote='1';h4?.insertAdjacentElement('afterend',note)}
-    note.className=`lbg-member-window-note ${m.open?'live':''}`;note.innerHTML=`<b>${m.open?'✅':'🔒'} ${esc(m.message)}</b>`;
-    const label=panel.querySelector('[data-lbg-today-label]');if(label)label.innerHTML=`📅 Ngày đối chiếu TKB: <b>${esc(dateLabel(m.targetDate))}</b> • Giờ Việt Nam`;
+    note.className=`lbg-member-window-note ${m.open?'live':''}`;note.innerHTML=`<b>${m.open?'✅':'🔒'} ${esc(m.message)}</b>`;ensureDateLabel(panel,m,false);
     panel.querySelectorAll('[data-lbg-member-window-generated]').forEach(x=>x.remove());
     const points=[...panel.querySelectorAll('.lbg-checkin-point[data-checkin-point]')];let visible=0;
     for(const el of points){
@@ -92,23 +94,21 @@
       if(!m.open){if(b.dataset.lbgWindowBaseText===undefined)b.dataset.lbgWindowBaseText=b.textContent;b.textContent=`🔒 Mở ${m.range}`;el.classList.add('lbg-member-window-locked')}
       else{if(b.dataset.lbgWindowBaseText!==undefined)b.textContent=b.dataset.lbgWindowBaseText;el.classList.remove('lbg-member-window-locked')}
     }
-    const oldEmpty=[...panel.querySelectorAll(':scope>.lbg-checkin-empty')];oldEmpty.forEach(x=>x.hidden=visible>0);
+    panel.querySelectorAll(':scope>.lbg-checkin-empty').forEach(x=>x.hidden=true);
     if(!visible){
       const manual=panel.querySelector('.lbg-checkin-manual'),empty=document.createElement('div');empty.dataset.lbgMemberWindowGenerated='1';empty.className='lbg-member-window-empty';empty.innerHTML=`Không có điểm dạy ${esc(m.session.toLowerCase())} trong TKB chung vào <b>${esc(dateLabel(m.targetDate))}</b>.`;if(manual)panel.insertBefore(empty,manual);else panel.appendChild(empty);
     }
-    setManualState(panel,m);
+    setManualState(m);
   }
 
   function decorateTomorrow(panel,m){
     const h4=panel.querySelector(':scope>h4')||panel.querySelector('h4');if(h4)h4.textContent=m.title;
     let note=panel.querySelector('[data-lbg-member-window-note]');if(!note){note=document.createElement('div');note.dataset.lbgMemberWindowNote='1';h4?.insertAdjacentElement('afterend',note)}
-    note.className='lbg-member-window-note';note.innerHTML=`<b>🔒 ${esc(m.message)}</b>`;
-    const label=panel.querySelector('[data-lbg-today-label]');if(label)label.innerHTML=`📅 Lịch xem trước: <b>${esc(dateLabel(m.targetDate))}</b> • Giờ Việt Nam`;
+    note.className='lbg-member-window-note';note.innerHTML=`<b>🔒 ${esc(m.message)}</b>`;ensureDateLabel(panel,m,true);
     panel.querySelectorAll('.lbg-checkin-point[data-checkin-point],:scope>.lbg-checkin-empty').forEach(x=>x.hidden=true);
     panel.querySelectorAll('[data-lbg-member-window-generated]').forEach(x=>x.remove());
     const wrap=document.createElement('div');wrap.dataset.lbgMemberWindowGenerated='1';wrap.className='lbg-member-window-preview';wrap.innerHTML=previewHtml(scanDate(m.targetDate),m);
-    const manual=panel.querySelector('.lbg-checkin-manual');if(manual)panel.insertBefore(wrap,manual);else panel.appendChild(wrap);
-    setManualState(panel,m);
+    const manual=panel.querySelector('.lbg-checkin-manual');if(manual)panel.insertBefore(wrap,manual);else panel.appendChild(wrap);setManualState(m);
   }
 
   function apply(){
@@ -116,14 +116,16 @@
     try{
       style();if(!memberEnabled())return;
       const card=q('lbgCheckinCard');if(!card)return;
-      const panel=[...card.querySelectorAll('.lbg-checkin-panel')].find(p=>{const t=txt(p.querySelector('h4')?.textContent);return /bạn dạy ở đâu\?|Chiều nay bạn dạy ở đâu\?|Ngày mai bạn dạy ở đâu\?/i.test(t)});
-      if(!panel)return;
-      const m=mode();if(m.targetDate!==todayKey())decorateTomorrow(panel,m);else decorateTodayPanel(panel,m);
+      const panel=[...card.querySelectorAll('.lbg-checkin-panel')].find(p=>{const t=txt(p.querySelector('h4')?.textContent);return /bạn dạy ở đâu\?|Chiều nay bạn dạy ở đâu\?|Ngày mai bạn dạy ở đâu\?/i.test(t)});if(!panel)return;
+      const m=mode(),sh=shared(),manualValue=q('lbgCheckinManualSession')?.value||'';
+      const signature=[m.targetDate,m.session,m.open?'1':'0',manualValue,sh?.status||'',sh?.loadedAt||'',panel.querySelectorAll('.lbg-checkin-point[data-checkin-point]').length].join('|');
+      if(panel.dataset.lbgMemberWindowSignature===signature)return;panel.dataset.lbgMemberWindowSignature=signature;
+      if(m.targetDate!==todayKey())decorateTomorrow(panel,m);else decorateTodayPanel(panel,m);
     }finally{applying=false}
   }
   function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;apply()})}
-  function start(){style();queue();observer=new MutationObserver(queue);observer.observe(document.body,{childList:true,subtree:true});timer=setInterval(queue,30000)}
+  function start(){style();queue();observer=new MutationObserver(queue);observer.observe(document.body,{childList:true,subtree:true});timer=setInterval(()=>{const panel=q('lbgCheckinCard')?.querySelector('.lbg-checkin-panel');if(panel)delete panel.dataset.lbgMemberWindowSignature;queue()},30000)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-  document.addEventListener('lbg-access-ready',queue);window.addEventListener('focus',queue);window.addEventListener('beforeunload',()=>{observer?.disconnect();clearInterval(timer)},{once:true});
-  window.LBGCheckinMemberWindowV1={version:VERSION,refresh:queue};
+  document.addEventListener('lbg-access-ready',queue);window.addEventListener('focus',()=>{const panel=q('lbgCheckinCard')?.querySelector('.lbg-checkin-panel');if(panel)delete panel.dataset.lbgMemberWindowSignature;queue()});window.addEventListener('beforeunload',()=>{observer?.disconnect();clearInterval(timer)},{once:true});
+  window.LBGCheckinMemberWindowV1={version:VERSION,refresh:()=>{const panel=q('lbgCheckinCard')?.querySelector('.lbg-checkin-panel');if(panel)delete panel.dataset.lbgMemberWindowSignature;queue()}};
 })();
