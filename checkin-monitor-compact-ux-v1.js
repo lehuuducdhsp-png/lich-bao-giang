@@ -1,11 +1,12 @@
 'use strict';
 (function(){
-  const VERSION='20260812.1';
+  const VERSION='20260812.2';
   const STORE='lbg-checkin-monitor-compact-ux-v1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toLowerCase();
-  let observer=null,queued=false;
+  const escHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
+  let observer=null,queued=false,allGroupNames=[],groupsLoaded=false,groupLoading=false;
   const defaults={search:'',status:'missing',group:'all',size:10,pages:{'Sáng':1,'Chiều':1}};
   let state=loadState();
 
@@ -33,10 +34,25 @@
     `;document.head.appendChild(s)
   }
   function isOwner(){return Boolean(window.LBGAccess?.context?.is_owner)}
+  async function loadAllGroups(){
+    if(!isOwner()||groupsLoaded||groupLoading)return;
+    const api=window.LBGAuth;if(!api?.client)return;
+    groupLoading=true;
+    try{
+      const{data,error}=await api.client.rpc('my_group_dashboard');if(error)throw error;
+      allGroupNames=[...new Set((data?.groups||[]).map(g=>txt(g?.name)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+      groupsLoaded=true;
+    }catch(error){console.warn('Không tải được danh mục nhóm cho bộ lọc Check-in:',error)}
+    finally{groupLoading=false;queue()}
+  }
   function sessionKey(section){const t=txt(section.querySelector('.lbg-cdm-session-head h5')?.textContent);return /sáng/i.test(t)?'Sáng':/chiều/i.test(t)?'Chiều':''}
   function cards(section){return[...(section.querySelector('.lbg-cdm-list')?.querySelectorAll(':scope>.lbg-cdm-teacher')||[])]}
   function groupOf(card){
     const sub=txt(card.querySelector('.lbg-cdm-sub')?.textContent);const parts=sub.split('•').map(txt).filter(Boolean);return parts.length>1?parts.slice(1).join(' • '):'Chưa phân nhóm'
+  }
+  function teacherKey(card){
+    const sub=txt(card.querySelector('.lbg-cdm-sub')?.textContent),code=txt(sub.split('•')[0]);
+    return fold(code||card.querySelector('.lbg-cdm-name')?.textContent||card.textContent)
   }
   function matches(card){
     const needle=fold(state.search),missing=card.classList.contains('missing'),group=groupOf(card);
@@ -47,10 +63,18 @@
     return true
   }
   function allCards(monitor){return[...monitor.querySelectorAll('.lbg-cdm-session .lbg-cdm-list>.lbg-cdm-teacher')]}
-  function groupOptions(monitor){
-    const groups=[...new Set(allCards(monitor).map(groupOf).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
-    return groups
+  function groupStats(monitor){
+    const map=new Map();
+    for(const name of allGroupNames)map.set(name,new Set());
+    const total=new Set();
+    for(const card of allCards(monitor)){
+      const group=groupOf(card),key=teacherKey(card);if(!map.has(group))map.set(group,new Set());
+      if(key){map.get(group).add(key);total.add(key)}
+    }
+    const groups=[...map.keys()].filter(Boolean).sort((a,b)=>a.localeCompare(b,'vi'));
+    return{groups,total:total.size,count:name=>map.get(name)?.size||0}
   }
+  function groupOptions(monitor){return groupStats(monitor).groups}
   function statusCounts(monitor){
     const all=allCards(monitor).filter(c=>state.group==='all'||fold(groupOf(c))===fold(state.group));
     return{all:all.length,missing:all.filter(c=>c.classList.contains('missing')).length,done:all.filter(c=>!c.classList.contains('missing')).length}
@@ -64,7 +88,7 @@
         <label data-lbg-cdm-group-label>Nhóm<select data-lbg-cdm-group><option value="all">Tất cả nhóm</option></select></label>
         <label>Trạng thái<select data-lbg-cdm-status><option value="missing">Cần nhắc</option><option value="all">Tất cả</option><option value="done">Đã hoàn tất</option></select></label>
         <label>Hiển thị<select data-lbg-cdm-size><option value="10">10 GV/trang</option><option value="20">20 GV/trang</option><option value="50">50 GV/trang</option></select></label>
-        <div class="lbg-cdm-ux-hint">Mặc định chỉ hiện <b>giáo viên cần nhắc Check-in</b>. Các ô tổng phía trên vẫn luôn tính toàn bộ điểm dạy trong buổi.</div>`;
+        <div class="lbg-cdm-ux-hint">Số trong ngoặc ở tên nhóm là <b>số giáo viên có lịch Check-in hôm nay</b>; nhóm không có lịch vẫn hiện với số <b>(0)</b>. Mặc định chỉ hiện giáo viên cần nhắc.</div>`;
       const sessions=monitor.querySelector('.lbg-cdm-sessions');sessions?.insertAdjacentElement('beforebegin',bar);
       const search=bar.querySelector('[data-lbg-cdm-search]'),group=bar.querySelector('[data-lbg-cdm-group]'),status=bar.querySelector('[data-lbg-cdm-status]'),size=bar.querySelector('[data-lbg-cdm-size]');
       search.value=state.search;group.value=state.group;status.value=state.status;size.value=String(state.size);
@@ -74,10 +98,15 @@
       size.addEventListener('change',()=>{state.size=Number(size.value)||10;state.pages={'Sáng':1,'Chiều':1};saveState();queue()});
     }
     const groupLabel=bar.querySelector('[data-lbg-cdm-group-label]');if(groupLabel)groupLabel.hidden=!isOwner();
-    const groups=groupOptions(monitor),group=bar.querySelector('[data-lbg-cdm-group]');
+    if(isOwner())loadAllGroups();
+    const stats=groupStats(monitor),groups=stats.groups,group=bar.querySelector('[data-lbg-cdm-group]');
     if(group){
       const valid=state.group==='all'||groups.some(g=>fold(g)===fold(state.group));if(!valid)state.group='all';
-      const sig=groups.join('|');if(group.dataset.groups!==sig){group.dataset.groups=sig;group.innerHTML='<option value="all">Tất cả nhóm</option>'+groups.map(g=>`<option value="${g.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">${g.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</option>`).join('')}
+      const sig=`ALL:${stats.total}|`+groups.map(g=>`${g}:${stats.count(g)}`).join('|');
+      if(group.dataset.groups!==sig){
+        group.dataset.groups=sig;
+        group.innerHTML=`<option value="all">Tất cả nhóm (${stats.total})</option>`+groups.map(g=>`<option value="${escHtml(g)}">${escHtml(g)} (${stats.count(g)})</option>`).join('')
+      }
       group.value=state.group
     }
     const counts=statusCounts(monitor),status=bar.querySelector('[data-lbg-cdm-status]');if(status){
@@ -118,7 +147,7 @@
     queued=false;style();const monitor=q('lbgCheckinDailyMonitor');if(!monitor)return;ensureToolbar(monitor);monitor.querySelectorAll('.lbg-cdm-session').forEach(applySession)
   }
   function queue(){if(queued)return;queued=true;requestAnimationFrame(apply)}
-  function start(){style();queue();observer=new MutationObserver(queue);observer.observe(document.body,{childList:true,subtree:true});document.addEventListener('lbg-access-ready',queue);window.addEventListener('focus',queue);window.addEventListener('beforeunload',()=>observer?.disconnect(),{once:true})}
+  function start(){style();queue();observer=new MutationObserver(queue);observer.observe(document.body,{childList:true,subtree:true});document.addEventListener('lbg-access-ready',()=>{groupsLoaded=false;allGroupNames=[];queue()});window.addEventListener('focus',queue);window.addEventListener('beforeunload',()=>observer?.disconnect(),{once:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   window.LBGCheckinMonitorCompactUxV1={version:VERSION,refresh:queue};
 })();
