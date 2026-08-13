@@ -56,6 +56,7 @@
         ['readability-targeted-v2.js?v=20260811.1','lbgReadabilityTargetedV2'],
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
         ['checkin-member-window-v1.js?v=20260812.2','lbgCheckinMemberWindowV1'],
+        ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
         ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1']
       ];
