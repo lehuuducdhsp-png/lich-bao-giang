@@ -51,6 +51,7 @@
         ['section-order-fix-v1.js?v=20260808.13','lbgSectionOrderFixV1Script'],
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],
         ['monthly-teacher-search-v1.js?v=20260808.16','lbgMonthlyTeacherSearchV1Script'],
+        ['role-privacy-polish-v1.js?v=20260814.1','lbgRolePrivacyPolishV1Script'],
         ['production-mode-v1.js?v=20260808.17','lbgProductionModeV1Script'],
         ['sidebar-compact-readable-v1.js?v=20260811.3','lbgSidebarCompactReadableV1'],
         ['readability-targeted-v2.js?v=20260811.1','lbgReadabilityTargetedV2'],
@@ -58,7 +59,7 @@
         ['checkin-member-window-v1.js?v=20260812.2','lbgCheckinMemberWindowV1'],
         ['checkin-tomorrow-report-v2.js?v=20260814.3','lbgCheckinTomorrowReportV2Script'],
         ['schedule-ack-flexible-access-v1.js?v=20260814.2','lbgScheduleAckFlexibleAccessV1Script'],
-        ['schedule-ack-list-ux-v1.js?v=20260814.2','lbgScheduleAckListUxV1Script'],
+        ['schedule-ack-list-ux-v2.js?v=20260814.4','lbgScheduleAckListUxV2Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
         ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1']
