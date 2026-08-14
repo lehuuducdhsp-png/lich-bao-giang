@@ -1,13 +1,13 @@
 'use strict';
 (function(){
-  const VERSION='20260814.1';
+  const VERSION='20260814.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase();
   const cfg=window.LBG_SUPABASE_CONFIG||{};
   let accessCache={value:'',at:0},shared={status:'idle',row:null,workbook:null,at:0},historyCache={key:'',rows:[],at:0};
-  let observer=null,timer=null,rendering=false;
+  let timer=null,rendering=false;
   const state={search:'',group:'all',status:'all',page:1,pageSize:10,from:'',to:''};
 
   function auth(){return window.LBGAuth?.client||null}
@@ -50,7 +50,10 @@
     return[...byUserDate.values()].map(x=>{x.points.sort((a,b)=>(a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1)||a.school_name.localeCompare(b.school_name,'vi'));return{user_id:x.user_id,teaching_date:x.date,schedule_signature:signature(x.points,x.date),schedule_summary:summary(x.points,x.date)}})
   }
 
-  async function syncFuture(force=false){const a=await access(force);if(a!=='all')return null;await loadShared(force);if(shared.status!=='ready'||!shared.row?.id)return null;const syncKey=`${shared.row.id}|${shared.row.updated_at||shared.row.created_at||''}|${todayKey()}`;if(!force&&localStorage.getItem('lbgAckFutureSyncV1')===syncKey)return null;let people=[];try{people=await rpc('teaching_schedule_ack_dashboard',{p_teaching_date:tomorrowKey()})}catch(e){console.warn('Không đọc được danh sách để đồng bộ lịch:',e?.message||e);return null}const rows=buildFutureRows(people||[]);try{const res=await rpc('sync_teaching_schedule_expectations',{p_rows:rows,p_source_tkb_id:shared.row.id,p_source_tkb_updated_at:shared.row.updated_at||shared.row.created_at||null});localStorage.setItem('lbgAckFutureSyncV1',syncKey);historyCache.at=0;return res}catch(e){console.warn('Không đồng bộ được ảnh chụp lịch tương lai:',e?.message||e);return null}}
+  function localGet(k){try{return localStorage.getItem(k)}catch{return null}}
+  function localSet(k,v){try{localStorage.setItem(k,v)}catch{}}
+  function localRemove(k){try{localStorage.removeItem(k)}catch{}}
+  async function syncFuture(force=false){const a=await access(force);if(a!=='all')return null;await loadShared(force);if(shared.status!=='ready'||!shared.row?.id)return null;const syncKey=`${shared.row.id}|${shared.row.updated_at||shared.row.created_at||''}|${todayKey()}`;if(!force&&localGet('lbgAckFutureSyncV1')===syncKey)return null;let people=[];try{people=await rpc('teaching_schedule_ack_dashboard',{p_teaching_date:tomorrowKey()})}catch(e){console.warn('Không đọc được danh sách để đồng bộ lịch:',e?.message||e);return null}const rows=buildFutureRows(people||[]);try{const res=await rpc('sync_teaching_schedule_expectations',{p_rows:rows,p_source_tkb_id:shared.row.id,p_source_tkb_updated_at:shared.row.updated_at||shared.row.created_at||null});localSet('lbgAckFutureSyncV1',syncKey);historyCache.at=0;return res}catch(e){console.warn('Không đồng bộ được ảnh chụp lịch tương lai:',e?.message||e);return null}}
 
   const statusMeta={
     on_time:['✅ Đã xem đúng giờ','good'],late:['🕘 Đã xem muộn','late'],reacknowledged:['🔄 Đã xem lại sau đổi lịch','good'],
@@ -82,16 +85,16 @@
 
   async function liveRows(){const a=await access(false);if(a==='none')return[];try{return await rpc('teaching_schedule_ack_history',{p_from:tomorrowKey(),p_to:tomorrowKey()})||[]}catch{return[]}}
   function codeFromCell(cell){return fold(txt(cell?.querySelector('.lbg-checkin-meta')?.textContent).split('•')[0])}
-  async function polishLive(){const mins=minuteNow();if(mins<1020)return;let own=null;try{own=await rpc('my_teaching_schedule_ack_state',{p_teaching_date:tomorrowKey()})}catch{}const statusBox=q('lbgTomorrowStatusV2');if(statusBox&&own?.is_required){const label=statusLabel(own.status);if(own.status==='late'||own.status==='reacknowledged'||own.status==='on_time')statusBox.innerHTML=`<div class="lbg-tomorrow-status ok"><b>${esc(label)}</b> • ${esc(fmtTime(own.acknowledged_at))}</div>`;else if(own.status==='changed_pending')statusBox.innerHTML='<div class="lbg-tomorrow-status warn"><b>⚠ Cần xem lại.</b> Lịch đã thay đổi sau lần xác nhận trước.</div>';else if(own.status==='pending'&&mins>=1320)statusBox.innerHTML='<div class="lbg-tomorrow-status warn"><b>⏰ Bạn chưa xác nhận lịch ngày mai.</b> Sau 22:00, lần xác nhận đầu tiên sẽ được ghi là xem muộn.</div>'}
-    const rows=await liveRows();if(!rows.length)return;const map=new Map(rows.map(r=>[fold(r.teacher_code),r]));for(const box of [q('lbgAckMonitorV2'),q('lbgAckMonitorFlexible')].filter(Boolean)){box.querySelectorAll('tbody tr').forEach(tr=>{const cells=tr.cells;if(!cells||cells.length<5)return;const r=map.get(codeFromCell(cells[0]));if(!r)return;cells[3].textContent=statusLabel(r.status);cells[3].classList.toggle('lbg-ack-live-late',r.status==='late');cells[3].classList.toggle('lbg-ack-live-overdue',mins>=1320&&(r.status==='pending'||r.status==='changed_pending'));cells[4].textContent=fmtTime(r.acknowledged_at)});const sum=box.querySelector('.lbg-ack-summary');if(sum){const counts={};rows.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);sum.innerHTML=`<span class="lbg-checkin-pill">${mins>=1320?'🔔 Chưa xem – quá giờ':'🔴 Chưa xem'}: ${counts.pending||0}</span><span class="lbg-checkin-pill">⚠ Cần xem lại: ${counts.changed_pending||0}</span><span class="lbg-checkin-pill">🕘 Xem muộn: ${counts.late||0}</span><span class="lbg-checkin-pill lbg-checkin-good">✅ Đúng giờ: ${counts.on_time||0}</span><span class="lbg-checkin-pill lbg-checkin-good">🔄 Đã xem lại: ${counts.reacknowledged||0}</span>`}}
+  async function polishLive(){const mins=minuteNow();if(mins<1020)return;let own=null;try{own=await rpc('my_teaching_schedule_ack_state',{p_teaching_date:tomorrowKey()})}catch{}const statusBox=q('lbgTomorrowStatusV2');if(statusBox&&own?.is_required){let desired='';const label=statusLabel(own.status);if(own.status==='late'||own.status==='reacknowledged'||own.status==='on_time')desired=`<div class="lbg-tomorrow-status ok"><b>${esc(label)}</b> • ${esc(fmtTime(own.acknowledged_at))}</div>`;else if(own.status==='changed_pending')desired='<div class="lbg-tomorrow-status warn"><b>⚠ Cần xem lại.</b> Lịch đã thay đổi sau lần xác nhận trước.</div>';else if(own.status==='pending'&&mins>=1320)desired='<div class="lbg-tomorrow-status warn"><b>⏰ Bạn chưa xác nhận lịch ngày mai.</b> Sau 22:00, lần xác nhận đầu tiên sẽ được ghi là xem muộn.</div>';if(desired&&statusBox.innerHTML!==desired)statusBox.innerHTML=desired}
+    const rows=await liveRows();if(!rows.length)return;const map=new Map(rows.map(r=>[fold(r.teacher_code),r]));for(const box of [q('lbgAckMonitorV2'),q('lbgAckMonitorFlexible')].filter(Boolean)){box.querySelectorAll('tbody tr').forEach(tr=>{const cells=tr.cells;if(!cells||cells.length<5)return;const r=map.get(codeFromCell(cells[0]));if(!r)return;const wanted=statusLabel(r.status);if(cells[3].textContent!==wanted)cells[3].textContent=wanted;cells[3].classList.toggle('lbg-ack-live-late',r.status==='late');cells[3].classList.toggle('lbg-ack-live-overdue',mins>=1320&&(r.status==='pending'||r.status==='changed_pending'));const t=fmtTime(r.acknowledged_at);if(cells[4].textContent!==t)cells[4].textContent=t});const sum=box.querySelector('.lbg-ack-summary');if(sum){const counts={};rows.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);const desired=`<span class="lbg-checkin-pill">${mins>=1320?'🔔 Chưa xem – quá giờ':'🔴 Chưa xem'}: ${counts.pending||0}</span><span class="lbg-checkin-pill">⚠ Cần xem lại: ${counts.changed_pending||0}</span><span class="lbg-checkin-pill">🕘 Xem muộn: ${counts.late||0}</span><span class="lbg-checkin-pill lbg-checkin-good">✅ Đúng giờ: ${counts.on_time||0}</span><span class="lbg-checkin-pill lbg-checkin-good">🔄 Đã xem lại: ${counts.reacknowledged||0}</span>`;if(sum.innerHTML!==desired)sum.innerHTML=desired}}
   }
 
   async function cycle(force=false){style();await snapshotSelf();await syncFuture(force);await renderHistory(force);await polishLive()}
-  function start(){style();cycle(true).catch(console.error);timer=setInterval(()=>cycle(false).catch(console.error),30000);observer=new MutationObserver(()=>{clearTimeout(observer._t);observer._t=setTimeout(()=>polishLive().catch(console.error),120)});observer.observe(document.body,{childList:true,subtree:true})}
+  function start(){style();cycle(true).catch(console.error);timer=setInterval(()=>cycle(false).catch(console.error),30000)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   document.addEventListener('lbg-access-ready',()=>{accessCache.at=0;cycle(true).catch(console.error)});
-  document.addEventListener('lbg-cloud-file-opened',e=>{if(e?.detail?.scope==='shared'){shared.status='idle';localStorage.removeItem('lbgAckFutureSyncV1');cycle(true).catch(console.error)}});
+  document.addEventListener('lbg-cloud-file-opened',e=>{if(e?.detail?.scope==='shared'){shared.status='idle';localRemove('lbgAckFutureSyncV1');cycle(true).catch(console.error)}});
   window.addEventListener('focus',()=>{accessCache.at=0;shared.status='idle';cycle(true).catch(console.error)});
-  window.addEventListener('beforeunload',()=>{observer?.disconnect();clearInterval(timer)},{once:true});
+  window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
   window.LBGScheduleAckHistoryV1={version:VERSION,refresh:()=>cycle(true),sync:()=>syncFuture(true)};
 })();
