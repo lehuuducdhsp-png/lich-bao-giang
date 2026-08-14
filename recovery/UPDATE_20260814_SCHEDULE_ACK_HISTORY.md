@@ -37,6 +37,12 @@ Module `schedule-ack-history-v1.js` bổ sung:
 - Nút `Đồng bộ TKB hiện tại` dành cho người có quyền xem toàn hệ thống.
 - Sau 22:00, màn hình theo dõi hiện `Chưa xem – quá giờ` và phân biệt `Đã xem muộn`.
 
+Module `schedule-ack-history-ux-fix-v1.js` tinh chỉnh trải nghiệm:
+
+- Ô tìm kiếm được debounce khoảng 380 ms để không render lại sau từng ký tự, tránh mất focus và gõ khó.
+- Thêm nút nhanh `Hôm nay` ngay trước `7 ngày`.
+- Bộ lọc Nhóm lấy danh sách trực tiếp từ `schedule_ack_monitor_groups()`, nên hiển thị đầy đủ các nhóm đang hoạt động trong phạm vi quyền kể cả nhóm chưa có bản ghi lịch sử ở khoảng ngày đang xem.
+
 ## An toàn
 
 - Hai bảng lịch sử bật RLS và không cấp quyền đọc/ghi trực tiếp cho `anon` hoặc `authenticated`; truy cập qua RPC kiểm tra quyền.
