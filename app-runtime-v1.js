@@ -62,6 +62,7 @@
         ['schedule-ack-list-ux-v3.js?v=20260814.5','lbgScheduleAckListUxV3Script'],
         ['schedule-ack-permission-visual-v1.js?v=20260814.1','lbgScheduleAckPermissionVisualV1Script'],
         ['schedule-ack-history-v1.js?v=20260814.2','lbgScheduleAckHistoryV1Script'],
+        ['schedule-ack-history-ux-fix-v1.js?v=20260814.1','lbgScheduleAckHistoryUxFixV1Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
         ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1']
