@@ -67,6 +67,14 @@ Module `checkin-manager-review-ux-v2.js` đối chiếu danh sách được phé
 - Các điểm chưa Check-in được ghim phía trên để dễ xử lý.
 - Phần Check-in đã ghi mặc định `Mới → Cũ`, có thêm `Cũ → Mới` và `Tên A → Z`; các lần Check-in trong cùng một điểm cũng ưu tiên lần mới nhất trước.
 
+### Sửa lỗi bộ lọc Nhóm 15/08/2026
+
+- Trước bản sửa, dropdown `Nhóm` chỉ lọc các thẻ Check-in đã tồn tại trong database; các thẻ `chưa Check-in` mới sinh từ đối chiếu TKB không đi qua bộ lọc nên có thể chọn `Nhóm 2 (0 GV)` nhưng vẫn nhìn thấy giáo viên Nhóm 1.
+- `checkin-manager-review-ux-v2.js` bản `20260815.3` lọc danh sách giáo viên theo `group_id` trước khi quét TKB, vì vậy bộ đếm và danh sách thiếu Check-in đều đúng theo nhóm đang chọn.
+- `checkin-admin-polish-v1.js` bản `20260815.1` áp dụng bộ lọc cho cả thẻ đã Check-in và chưa Check-in, đồng thời mặc định chọn `Tất cả nhóm` nếu người dùng chưa lưu lựa chọn trước đó.
+- Khi chọn một nhóm không có giáo viên trong phạm vi kiểm tra, giao diện phải hiện thông báo rõ và bộ đếm `0/0`, không được rò dữ liệu của nhóm khác.
+- Nút `Làm mới`, đổi `Ngày`, đổi `Nhóm` và `Sắp xếp` được tách chức năng: đổi nhóm không làm mất lựa chọn sắp xếp; làm mới buộc nạp lại roster, dashboard và TKB; sắp xếp chỉ thay đổi thứ tự dữ liệu đã Check-in, còn các điểm chưa Check-in vẫn được ghim phía trên.
+
 ## An toàn
 
 - Hai bảng lịch sử bật RLS và không cấp quyền đọc/ghi trực tiếp cho `anon` hoặc `authenticated`; truy cập qua RPC kiểm tra quyền.
