@@ -1,5 +1,6 @@
 'use strict';
 (function(){
+  const VERSION='20260815.1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').trim();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -49,13 +50,17 @@
   function applyFilter(){
     const box=q('lbgCheckinManagerResult'),select=q('lbgCheckinGroupFilter');if(!box||!select)return;
     const group=groups.find(g=>g.id===select.value),codes=new Set((group?.member_codes||[]).map(x=>txt(x).toUpperCase()));
-    const slots=[...box.querySelectorAll('.lbg-checkin-manager-slot')];let visible=0;
-    for(const slot of slots){const show=!group||codes.has(codeOfSlot(slot));slot.hidden=!show;if(show)visible++}
+    const slots=[...box.querySelectorAll('.lbg-checkin-manager-slot')];let visibleSlots=0;
+    for(const slot of slots){const show=!group||codes.has(codeOfSlot(slot));slot.hidden=!show;if(show)visibleSlots++}
+    const missing=[...document.querySelectorAll('#lbgCmrMissing .lbg-cmr-missing-card')];let visibleMissing=0;
+    for(const card of missing){const show=!group||txt(card.dataset.cmrGroupId)===txt(group.id);card.hidden=!show;if(show)visibleMissing++}
     q('lbgCheckinGroupEmpty')?.remove();
-    if(group&&slots.length&&visible===0){const d=document.createElement('div');d.id='lbgCheckinGroupEmpty';d.className='lbg-checkin-empty';d.textContent=`${group.name} chưa có lượt Check-in nào trong ngày đang chọn.`;box.appendChild(d)}
+    const scopeEmpty=q('lbgCmrScopeEmpty');
+    if(group&&!scopeEmpty&&visibleSlots+visibleMissing===0){const d=document.createElement('div');d.id='lbgCheckinGroupEmpty';d.className='lbg-checkin-empty';d.textContent=`${group.name} không có dữ liệu Check-in phù hợp trong ngày đang chọn.`;box.appendChild(d)}
+    const base=[...box.querySelectorAll(':scope>.lbg-checkin-empty')].find(x=>x.id!=='lbgCheckinGroupEmpty');if(base&&group)base.hidden=true;
   }
   function optionsHtml(){
-    return groups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)} (${Number(g.member_count)||0} GV)</option>`).join('')+'<option value="">Tất cả nhóm</option>';
+    return '<option value="">Tất cả nhóm</option>'+groups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)} (${Number(g.member_count)||0} GV)</option>`).join('');
   }
   function ensureGroupFilter(){
     const panel=managerPanel(),toolbar=panel?.querySelector('.lbg-checkin-toolbar');if(!toolbar||!groups.length)return;
@@ -68,7 +73,7 @@
     const signature=groups.map(g=>`${g.id}:${g.name}:${g.member_count}`).join('|');
     if(select.dataset.signature!==signature){
       const old=sessionStorage.getItem(storageKey);select.innerHTML=optionsHtml();
-      const valid=old!==null&&(old===''||groups.some(g=>g.id===old));select.value=valid?old:groups[0].id;
+      const valid=old!==null&&(old===''||groups.some(g=>g.id===old));select.value=valid?old:'';
       select.dataset.signature=signature;
     }
     applyFilter();
@@ -89,4 +94,5 @@
   document.addEventListener('lbg-access-ready',()=>loadGroups(true).catch(console.error));
   window.addEventListener('focus',()=>{if(window.LBGAuth?.profile)loadGroups(true).catch(console.error)});
   window.addEventListener('beforeunload',()=>observer.disconnect(),{once:true});
+  window.LBGCheckinAdminPolishV1={version:VERSION,refresh:queue,reloadGroups:()=>loadGroups(true)};
 })();
