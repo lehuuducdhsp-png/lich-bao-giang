@@ -28,7 +28,7 @@
         ['group-management-v1.js?v=20260804.2','lbgGroupManagementV1'],
         ['group-delete-v1.js?v=20260810.1','lbgGroupDeleteV1'],
         ['group-member-remove-v1.js?v=20260810.1','lbgGroupMemberRemoveV1'],
-        ['checkin-admin-polish-v1.js?v=20260810.1','lbgCheckinAdminPolishV1'],
+        ['checkin-admin-polish-v1.js?v=20260815.1','lbgCheckinAdminPolishV1'],
         ['checkin-permission-admin-v3.js?v=20260811.3','lbgCheckinPermissionAdminV3Script'],
         ['checkin-permission-leader-context-v1.js?v=20260811.1','lbgCheckinPermissionLeaderContextV1'],
         ['teacher-code-linking-v2.js?v=20260807.3','lbgTeacherCodeLinkingV2'],
@@ -64,7 +64,7 @@
         ['schedule-ack-history-sort-v1.js?v=20260815.1','lbgScheduleAckHistorySortV1Script'],
         ['schedule-ack-history-v1.js?v=20260814.2','lbgScheduleAckHistoryV1Script'],
         ['schedule-ack-history-ux-fix-v1.js?v=20260814.1','lbgScheduleAckHistoryUxFixV1Script'],
-        ['checkin-manager-review-ux-v2.js?v=20260815.2','lbgCheckinManagerReviewUxV2Script'],
+        ['checkin-manager-review-ux-v2.js?v=20260815.3','lbgCheckinManagerReviewUxV2Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
         ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1']
