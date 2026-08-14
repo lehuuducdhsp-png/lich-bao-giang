@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260814.1';
+  const VERSION='20260814.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase();
@@ -21,7 +21,12 @@
     const c=context(),sel=q('month2Teacher'),button=q('month2TeacherPickerButton'),panel=q('month2TeacherPickerPanel');
     if(!c||!sel||!button)return;
     const restricted=!c.is_owner&&!c.can_view_payroll_details,own=fold(c.teacher_code);
-    if(!restricted){button.removeAttribute('data-lbg-self-only');button.removeAttribute('aria-disabled');return}
+    if(!restricted){
+      [...sel.options].forEach(opt=>{if(txt(opt.value)){opt.hidden=false;opt.disabled=false}});
+      button.removeAttribute('data-lbg-self-only');button.removeAttribute('aria-disabled');button.title='';
+      panel?.querySelectorAll('[data-value]').forEach(item=>item.hidden=false);
+      return;
+    }
     if(own){
       let found='';
       [...sel.options].forEach(opt=>{const code=fold(opt.value);if(!code)return;const ok=code===own;opt.hidden=!ok;opt.disabled=!ok;if(ok)found=opt.value});
