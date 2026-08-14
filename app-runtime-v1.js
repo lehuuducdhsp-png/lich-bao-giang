@@ -57,7 +57,7 @@
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
         ['checkin-member-window-v1.js?v=20260812.2','lbgCheckinMemberWindowV1'],
         ['checkin-tomorrow-report-v2.js?v=20260814.3','lbgCheckinTomorrowReportV2Script'],
-        ['schedule-ack-flexible-access-v1.js?v=20260814.1','lbgScheduleAckFlexibleAccessV1Script'],
+        ['schedule-ack-flexible-access-v1.js?v=20260814.2','lbgScheduleAckFlexibleAccessV1Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
         ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1']
