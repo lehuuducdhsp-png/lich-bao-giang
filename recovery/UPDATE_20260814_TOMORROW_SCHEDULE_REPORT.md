@@ -33,11 +33,14 @@ Bổ sung luồng báo lịch ngày mai dựa trên TKB chung đang áp dụng, 
 
 ## Database
 
-Ba migration đã được áp dụng lên Supabase và tên file trong repo đã đồng bộ đúng với lịch sử migration từ remote:
+Bốn migration đã được áp dụng lên Supabase và tên file trong repo đã đồng bộ đúng với lịch sử migration từ remote:
 
 - `20260814142054_teaching_schedule_acknowledgements.sql`
 - `20260814145757_schedule_ack_flexible_access.sql`
 - `20260814153711_schedule_ack_monitor_groups.sql`
+- `20260814160324_schedule_ack_revoke_anon_rpc.sql`
+
+Migration cuối thu hồi quyền `EXECUTE` mặc định của `PUBLIC/anon` đối với các RPC mới của chức năng xác nhận lịch, chỉ giữ quyền gọi cho `authenticated`. Bảng `teaching_schedule_acknowledgements` bật RLS và không mở policy đọc/ghi trực tiếp; thao tác đi qua các RPC kiểm tra tài khoản/quyền.
 
 Không sửa migration cũ. Không thay đổi lịch sử Check-in. Không đổi backend Check-in khỏi `phase = pilot`.
 
@@ -55,6 +58,8 @@ Hai module UX thử nghiệm cũ `schedule-ack-list-ux-v1.js` và `schedule-ack-
 ## Kiểm thử và duyệt
 
 Người dùng đã kiểm thử trên localhost branch `feature/tomorrow-schedule-report-20260814` qua nhiều vòng và xác nhận ổn trước khi yêu cầu đưa chính thức ngày 14/08/2026.
+
+Trước merge đã rà lại lịch sử migration remote và chạy Supabase Security Advisor. Các cảnh báo `anon` phát sinh từ RPC mới đã được xử lý bằng migration `20260814160324_schedule_ack_revoke_anon_rpc.sql`. Các cảnh báo bảo mật cũ của hệ thống không thuộc phạm vi cập nhật này chưa được thay đổi trong PR này.
 
 ## Rollback
 
