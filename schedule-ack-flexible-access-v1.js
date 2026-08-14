@@ -1,12 +1,12 @@
 'use strict';
 (function(){
-  const VERSION='20260814.1';
+  const VERSION='20260814.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase();
   const cfg=window.LBG_SUPABASE_CONFIG||{};
-  let timer=null,observer=null,accessCache={value:'',at:0},shared={status:'idle',row:null,workbook:null,at:0};
+  let timer=null,observer=null,polishQueued=false,accessCache={value:'',at:0},shared={status:'idle',row:null,workbook:null,at:0};
 
   function auth(){return window.LBGAuth?.client||null}
   function context(){return window.LBGAccess?.context||window.LBGCheckinV2?.getContext?.()||null}
@@ -29,10 +29,21 @@
 
   function polishPermissionCopy(){
     const box=q('lbgAckPermissionV2');if(!box)return;
+    const desired='Nhóm trưởng mặc định xem nhóm mình. Chủ sở hữu có thể cấp quyền xem toàn hệ thống cho bất kỳ tài khoản hoạt động nào: Trưởng ban chuyên môn, Hành chính/Quản lý, Nhóm trưởng hoặc giáo viên khi cần.';
     const p=box.querySelector('.lbg-tomorrow-head p');
-    if(p)p.textContent='Nhóm trưởng mặc định xem nhóm mình. Chủ sở hữu có thể cấp quyền xem toàn hệ thống cho bất kỳ tài khoản hoạt động nào: Trưởng ban chuyên môn, Hành chính/Quản lý, Nhóm trưởng hoặc giáo viên khi cần.';
-    box.querySelectorAll('.lbg-ack-perm-row > span:last-child').forEach(span=>{const input=span.querySelector('input');if(!input)return;[...span.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.nodeValue=' Xem toàn hệ thống')});
-    const empty=box.querySelector('.lbg-checkin-empty');if(empty&&/Quản lý/.test(empty.textContent||''))empty.textContent='Không có tài khoản hoạt động để cấp quyền.';
+    if(p&&txt(p.textContent)!==txt(desired))p.textContent=desired;
+    box.querySelectorAll('.lbg-ack-perm-row > span:last-child').forEach(span=>{
+      const input=span.querySelector('input');if(!input)return;
+      [...span.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>{if(txt(n.nodeValue)!=='Xem toàn hệ thống')n.nodeValue=' Xem toàn hệ thống'});
+    });
+    const empty=box.querySelector('.lbg-checkin-empty');
+    if(empty&&/Quản lý/.test(empty.textContent||'')&&txt(empty.textContent)!=='Không có tài khoản hoạt động để cấp quyền.')empty.textContent='Không có tài khoản hoạt động để cấp quyền.';
+  }
+
+  function queuePolish(){
+    if(polishQueued)return;
+    polishQueued=true;
+    requestAnimationFrame(()=>{polishQueued=false;polishPermissionCopy()});
   }
 
   async function renderFlexible(force=false){
@@ -47,12 +58,22 @@
     const grid=q('lbgCheckinCard')?.querySelector('.lbg-checkin-grid');if(!grid)return;
     let box=q('lbgAckMonitorFlexible');if(!box){box=document.createElement('div');box.id='lbgAckMonitorFlexible';box.className='lbg-checkin-panel lbg-checkin-wide lbg-ack-monitor';grid.appendChild(box)}
     const seen=items.filter(x=>x.status==='seen').length,changed=items.filter(x=>x.status==='changed').length,missing=items.filter(x=>x.status==='missing').length;
+    const renderKey=JSON.stringify(items.map(x=>[x.user_id,x.status,x.acknowledged_at,x.schedule_signature,x.summary]));
+    if(box.dataset.renderKey===renderKey)return;
+    box.dataset.renderKey=renderKey;
     box.innerHTML=`<div class="lbg-tomorrow-head"><div><h4>👥 Theo dõi xác nhận lịch ngày mai</h4><p>${esc(dateLabel(key))} • Quyền xem toàn hệ thống do Chủ sở hữu cấp.</p></div><button class="btn outline mini" id="lbgAckFlexRefresh">Làm mới</button></div><div class="lbg-ack-summary"><span class="lbg-checkin-pill">🔴 Chưa xem: ${missing}</span><span class="lbg-checkin-pill">⚠ Lịch đổi: ${changed}</span><span class="lbg-checkin-pill lbg-checkin-good">✅ Đã xem: ${seen}</span></div><div class="lbg-ack-table-wrap"><table class="lbg-ack-table"><thead><tr><th>Giáo viên</th><th>Nhóm</th><th>Lịch ngày mai</th><th>Trạng thái</th><th>Xác nhận lúc</th></tr></thead><tbody>${items.length?items.map(x=>`<tr class="${x.status==='missing'?'lbg-ack-row-missing':x.status==='changed'?'lbg-ack-row-changed':''}"><td><b>${esc(x.display_name)}</b><div class="lbg-checkin-meta">${esc(x.teacher_code)}${x.is_group_leader?' • Nhóm trưởng':''}</div></td><td>${esc(x.group_name||'—')}</td><td style="white-space:pre-wrap">${esc(x.summary)}</td><td>${x.status==='seen'?'✅ Đã xem':x.status==='changed'?'⚠ Lịch đã đổi':'🔴 Chưa xem'}</td><td>${esc(timeLabel(x.acknowledged_at))}</td></tr>`).join(''):'<tr><td colspan="5">Không có giáo viên nào có lịch ngày mai.</td></tr>'}</tbody></table></div>`;
-    q('lbgAckFlexRefresh').onclick=()=>{accessCache.at=0;shared.status='idle';renderFlexible(true).catch(console.error)};
+    q('lbgAckFlexRefresh').onclick=()=>{accessCache.at=0;shared.status='idle';box.dataset.renderKey='';renderFlexible(true).catch(console.error)};
   }
 
-  function apply(force=false){polishPermissionCopy();renderFlexible(force).catch(console.error)}
-  function start(){apply(true);observer=new MutationObserver(()=>polishPermissionCopy());observer.observe(document.body,{childList:true,subtree:true});timer=setInterval(()=>apply(false),30000)}
+  function apply(force=false){queuePolish();renderFlexible(force).catch(console.error)}
+  function start(){
+    apply(true);
+    observer=new MutationObserver(mutations=>{
+      if(mutations.some(m=>m.addedNodes?.length||m.removedNodes?.length))queuePolish();
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+    timer=setInterval(()=>apply(false),30000);
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   document.addEventListener('lbg-access-ready',()=>apply(true));
   window.addEventListener('focus',()=>{accessCache.at=0;shared.status='idle';apply(true)});
