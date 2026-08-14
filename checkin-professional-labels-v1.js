@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260813.1';
+  const VERSION='20260814.1';
   let queued=false,observer=null;
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
 
