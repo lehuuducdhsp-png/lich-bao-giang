@@ -82,8 +82,11 @@ Module `checkin-manager-review-ux-v2.js` đối chiếu danh sách được phé
 - `acknowledge_teaching_schedule` kiểm tra giờ Việt Nam phía server và không cho xác nhận trước 17:00.
 - Không thay đổi lịch sử Check-in GPS và không đổi backend Check-in khỏi `phase = pilot`.
 
-## Branch thử nghiệm
+## Đưa lên chính thức
 
-`feature/schedule-ack-history-20260814`
-
-Chưa merge `main`. Cần kiểm thử localhost trước khi đưa chính thức.
+- Người dùng đã kiểm thử localhost và xác nhận ổn ngày 15/08/2026.
+- PR #13 `Lịch sử xác nhận lịch dạy và rà soát Check-in` đã merge vào `main`.
+- Merge commit: `06c6b7e12e8f3697aee1c172b512aa418d425373`.
+- Rollback trước merge: `rollback/pre-schedule-ack-history-merge-20260815-0037` tại commit `5d23692dcaba2f6806178d513fe5cda103940c25`.
+- Backend Check-in vẫn giữ `phase = pilot`.
+- Sau merge, file recovery này được cập nhật trực tiếp trên `main` để ghi lại mốc triển khai và đường lui.
