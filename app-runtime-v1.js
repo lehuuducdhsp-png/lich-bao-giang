@@ -19,6 +19,7 @@
 
   (async()=>{
     try{
+      await add('school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script');
       await waitForAuth();
       const modules=[
         ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
