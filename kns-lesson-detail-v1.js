@@ -29,6 +29,7 @@
     const style=document.createElement('style');style.id='knsLessonDetailV1Css';style.textContent=`
       #detailCard .lbg-kns-status{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border:1px solid #f2d5c4;border-radius:999px;background:#fff8f3;color:#7a4b32;font-size:12px;font-weight:850;white-space:nowrap}
       #detailCard .lbg-kns-title{min-width:240px;white-space:normal;line-height:1.4;font-weight:750;color:#4b342b}
+      #detailCard .lbg-kns-period{font-weight:850;text-align:center;white-space:nowrap;color:#5b3828}
       #detailCard .lbg-kns-ga{font-weight:900;color:#9a5b36;text-align:center}#detailCard .lbg-kns-missing{color:#a16207;font-weight:800}#detailCard .lbg-kns-out{color:#64748b;font-weight:750}
       #detailCard .lbg-kns-note{display:block;margin-top:2px;color:#8a7569;font-size:11px;font-weight:600}#detailCard .lbg-kns-year-warning{color:#9a3412;font-weight:800}
       #detailCard table th,#detailCard table td{vertical-align:top}@media(max-width:760px){#detailCard .lbg-kns-status{white-space:normal}.lbg-ga-actions{align-items:center}}
@@ -61,9 +62,9 @@
     addCss();const a=currentResult(),card=q('detailCard'),tbody=q('detail');if(!a||!card||!tbody||card.hidden||!Array.isArray(a.entries))return;
     const sig=signature(a);if(sig===lastSignature){ensureStatusHost();return}lastSignature=sig;
     const headText=card.querySelector('.head p');if(headText)headText.textContent=`Tên bài chỉ lấy từ Ban Kỹ năng sống theo Kế hoạch ${PLAN_LABEL}; không hiển thị bài Finger Math / Abacus / STEM.`;
-    const tr=card.querySelector('thead tr');if(tr)tr.innerHTML='<th>STT</th><th>Thứ</th><th>Ngày</th><th>Buổi</th><th>Trường</th><th>Lớp</th><th>Giáo án</th><th>Tên bài dạy</th>';
+    const tr=card.querySelector('thead tr');if(tr)tr.innerHTML='<th>STT</th><th>Thứ</th><th>Ngày</th><th>Buổi</th><th>Trường</th><th>Lớp</th><th>Tiết</th><th>Giáo án</th><th>Tên bài dạy</th>';
     let kns=0,missing=0,out=0,other=0;
-    tbody.innerHTML=a.entries.map((e,i)=>{const ga=gaValue(a,e),info=lessonInfo(e,ga);if(info.kind==='kns')kns++;else if(info.kind==='missing'||info.kind==='grade')missing++;else if(info.kind==='out')out++;else other++;return`<tr><td>${i+1}</td><td>${escHtml(DAY_NAME[Number(e.day)]||`Thứ ${e.day}`)}</td><td>${escHtml(entryDate(a,e)||'—')}</td><td>${escHtml(e.session||'')}</td><td>${escHtml(e.school||'')}</td><td>${escHtml(e.className||'')}</td><td class="lbg-kns-ga">${escHtml(ga===null?'—':`GA${ga}`)}</td><td>${info.html}</td></tr>`}).join('');
+    tbody.innerHTML=a.entries.map((e,i)=>{const ga=gaValue(a,e),info=lessonInfo(e,ga);if(info.kind==='kns')kns++;else if(info.kind==='missing'||info.kind==='grade')missing++;else if(info.kind==='out')out++;else other++;return`<tr><td>${i+1}</td><td>${escHtml(DAY_NAME[Number(e.day)]||`Thứ ${e.day}`)}</td><td>${escHtml(entryDate(a,e)||'—')}</td><td>${escHtml(e.session||'')}</td><td>${escHtml(e.school||'')}</td><td>${escHtml(e.className||'')}</td><td class="lbg-kns-period">Tiết ${escHtml(e.period||'—')}</td><td class="lbg-kns-ga">${escHtml(ga===null?'—':`GA${ga}`)}</td><td>${info.html}</td></tr>`}).join('');
     const status=ensureStatusHost();if(status){const bits=[`📘 KNS: ${kns}`];if(missing)bits.push(`Thiếu GA: ${missing}`);if(out)bits.push(`Ngoài KNS: ${out}`);if(other)bits.push(`Cần kiểm tra: ${other}`);status.textContent=bits.join(' · ');status.title=`Đối chiếu tên bài Ban Kỹ năng sống theo kế hoạch ${PLAN_LABEL}`}
   }
 
