@@ -40,6 +40,7 @@
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
         ['report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script'],
+        ['week-number-guard-v1.js?v=20260903.1','lbgWeekNumberGuardV1Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
