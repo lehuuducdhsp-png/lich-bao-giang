@@ -1,10 +1,12 @@
 'use strict';
 (function(){
-  const VERSION='20260903.1';
+  const VERSION='20260903.2';
   const YEAR=2026;
+  const WEEK_COUNT=40;
   const OFFICIAL_START='2026-09-07';
+  const OFFICIAL_END='2027-06-12';
   const LEGACY_START='2026-08-31';
-  const DEFAULT_END='2027-05-31';
+  const LEGACY_END='2027-05-31';
   const STORAGE_KEY=`lbgSchoolYearConfig:${YEAR}`;
 
   function readStored(){
@@ -15,14 +17,24 @@
   }
 
   function migrateStored(){
-    const current=readStored();
-    if(current&&current.startDate&&current.startDate!==LEGACY_START)return current;
+    const current=readStored()||{};
+    const currentStart=String(current.startDate||'');
+    const currentEnd=String(current.endDate||'');
 
-    const next={
-      startDate:OFFICIAL_START,
-      endDate:String(current?.endDate||DEFAULT_END)
-    };
-    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(next))}catch{}
+    const startDate=(!currentStart||currentStart===LEGACY_START)
+      ?OFFICIAL_START
+      :currentStart;
+
+    // Chỉ tự đổi ngày kết thúc cũ khi năm 2026–2027 đang dùng đúng mốc Tuần 01 chính thức.
+    // Nếu người dùng đã chủ động đặt một mốc khác thì giữ nguyên để không ghi đè cấu hình cá nhân.
+    const endDate=(startDate===OFFICIAL_START&&(!currentEnd||currentEnd===LEGACY_END))
+      ?OFFICIAL_END
+      :(currentEnd||LEGACY_END);
+
+    const next={startDate,endDate};
+    if(next.startDate!==currentStart||next.endDate!==currentEnd){
+      try{localStorage.setItem(STORAGE_KEY,JSON.stringify(next))}catch{}
+    }
     return next;
   }
 
@@ -35,11 +47,21 @@
     if(!start)return false;
 
     const stored=migrateStored();
-    const shouldUpdate=!start.value||start.value===LEGACY_START;
-    if(shouldUpdate){
+    let changed=false;
+
+    if(!start.value||start.value===LEGACY_START){
       start.value=OFFICIAL_START;
-      if(end&&!end.value)end.value=stored.endDate||DEFAULT_END;
+      changed=true;
+    }
+
+    if(end&&start.value===OFFICIAL_START&&(!end.value||end.value===LEGACY_END)){
+      end.value=OFFICIAL_END;
+      changed=true;
+    }
+
+    if(changed){
       start.dispatchEvent(new Event('change',{bubbles:true}));
+      end?.dispatchEvent(new Event('change',{bubbles:true}));
     }
     return true;
   }
@@ -51,7 +73,7 @@
       if(yearStart===YEAR){
         const stored=migrateStored();
         const startDate=document.getElementById('schoolYearStartDate')?.value||stored.startDate||OFFICIAL_START;
-        const endDate=document.getElementById('schoolYearEndDate')?.value||stored.endDate||DEFAULT_END;
+        const endDate=document.getElementById('schoolYearEndDate')?.value||stored.endDate||OFFICIAL_END;
         const start=new Date(`${startDate}T12:00:00`);
         const end=new Date(`${endDate}T12:00:00`);
         return {
@@ -89,8 +111,11 @@
   window.LBGSchoolYearWeek1Official={
     version:VERSION,
     year:YEAR,
+    weekCount:WEEK_COUNT,
     startDate:OFFICIAL_START,
+    endDate:OFFICIAL_END,
     legacyStartDate:LEGACY_START,
+    legacyEndDate:LEGACY_END,
     migrateStored,
     applyToUi
   };
