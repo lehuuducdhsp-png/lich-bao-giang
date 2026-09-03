@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260812.2';
+  const VERSION='20260904.1';
   const STORE='lbg-checkin-monitor-compact-ux-v1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
@@ -35,7 +35,7 @@
   }
   function isOwner(){return Boolean(window.LBGAccess?.context?.is_owner)}
   async function loadAllGroups(){
-    if(!isOwner()||groupsLoaded||groupLoading)return;
+    if(!isOwner()||groupsLoaded||groupLoading||!window.LBGAuth?.session)return;
     const api=window.LBGAuth;if(!api?.client)return;
     groupLoading=true;
     try{
@@ -143,11 +143,14 @@
     pager.querySelector('[data-prev]').disabled=page<=1;pager.querySelector('[data-next]').disabled=page>=pages;
     pager.hidden=!filtered.length
   }
+  function observe(){if(observer&&document.body)observer.observe(document.body,{childList:true,subtree:true})}
   function apply(){
-    queued=false;style();const monitor=q('lbgCheckinDailyMonitor');if(!monitor)return;ensureToolbar(monitor);monitor.querySelectorAll('.lbg-cdm-session').forEach(applySession)
+    queued=false;observer?.disconnect();
+    try{style();const monitor=q('lbgCheckinDailyMonitor');if(!monitor)return;ensureToolbar(monitor);monitor.querySelectorAll('.lbg-cdm-session').forEach(applySession)}
+    finally{observe()}
   }
   function queue(){if(queued)return;queued=true;requestAnimationFrame(apply)}
-  function start(){style();queue();observer=new MutationObserver(queue);observer.observe(document.body,{childList:true,subtree:true});document.addEventListener('lbg-access-ready',()=>{groupsLoaded=false;allGroupNames=[];queue()});window.addEventListener('focus',queue);window.addEventListener('beforeunload',()=>observer?.disconnect(),{once:true})}
+  function start(){style();observer=new MutationObserver(queue);observe();queue();document.addEventListener('lbg-access-ready',()=>{groupsLoaded=false;allGroupNames=[];queue()});window.addEventListener('focus',queue);window.addEventListener('beforeunload',()=>observer?.disconnect(),{once:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   window.LBGCheckinMonitorCompactUxV1={version:VERSION,refresh:queue};
 })();
