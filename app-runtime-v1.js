@@ -38,6 +38,12 @@
   (async()=>{
     try{
       await add('school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script');
+
+      // Hai hotfix này phải có mặt ngay tại màn hình đăng nhập/đổi mật khẩu.
+      // Các mô-đun nặng và mô-đun gọi Supabase phía dưới vẫn chờ Auth ready thật sự.
+      await add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
+      await add('password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1');
+
       await waitForAuth();
       const modules=[
         ['sheets-sync-security-v1.js?v=20260904.1','lbgSheetsSyncSecurityV1Script'],
@@ -64,8 +70,6 @@
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
-        ['login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1'],
-        ['password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1'],
         ['checkin-history-order-v1.js?v=20260810.1','lbgCheckinHistoryOrderV1'],
         ['monthly-calendar-v3.js?v=20260808.12','lbgMonthlyCalendarV3Script'],
         ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script'],
