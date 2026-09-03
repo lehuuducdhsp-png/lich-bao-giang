@@ -10,7 +10,25 @@
   }
   function waitForAuth(){
     return new Promise((resolve,reject)=>{
-      let tries=0;const timer=setInterval(()=>{tries++;if(window.LBGAuth){clearInterval(timer);resolve()}else if(tries>300){clearInterval(timer);reject(new Error('Hệ thống đăng nhập chưa sẵn sàng.'))}},100);
+      let poll=null,tries=0,settled=false;
+      const finish=api=>{if(settled)return;settled=true;if(poll)clearInterval(poll);resolve(api)};
+      const bind=()=>{
+        const api=window.LBGAuth;if(!api)return false;
+        if(poll){clearInterval(poll);poll=null}
+        if(typeof api.onLogout==='function'&&!api.__lbgRuntimeReloadBound){
+          api.__lbgRuntimeReloadBound=true;
+          api.onLogout(()=>{try{window.location.reload()}catch{}});
+        }
+        if(api.profile&&!api.profile.must_change_password&&api.readyNotified){finish(api);return true}
+        if(typeof api.onReady==='function')api.onReady(()=>finish(api));
+        return true;
+      };
+      if(bind())return;
+      poll=setInterval(()=>{
+        tries++;
+        if(bind())return;
+        if(tries>300){clearInterval(poll);poll=null;reject(new Error('Hệ thống đăng nhập chưa sẵn sàng.'))}
+      },100);
     });
   }
 
@@ -20,6 +38,12 @@
   (async()=>{
     try{
       await add('school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script');
+
+      // Hai hotfix này phải có mặt ngay tại màn hình đăng nhập/đổi mật khẩu.
+      // Các mô-đun nặng và mô-đun gọi Supabase phía dưới vẫn chờ Auth ready thật sự.
+      await add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
+      await add('password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1');
+
       await waitForAuth();
       const modules=[
         ['sheets-sync-security-v1.js?v=20260904.1','lbgSheetsSyncSecurityV1Script'],
@@ -46,8 +70,6 @@
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
-        ['login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1'],
-        ['password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1'],
         ['checkin-history-order-v1.js?v=20260810.1','lbgCheckinHistoryOrderV1'],
         ['monthly-calendar-v3.js?v=20260808.12','lbgMonthlyCalendarV3Script'],
         ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script'],
@@ -64,13 +86,13 @@
         ['schedule-ack-flexible-access-v1.js?v=20260814.2','lbgScheduleAckFlexibleAccessV1Script'],
         ['schedule-ack-list-ux-v3.js?v=20260814.5','lbgScheduleAckListUxV3Script'],
         ['schedule-ack-permission-visual-v1.js?v=20260814.1','lbgScheduleAckPermissionVisualV1Script'],
-        ['schedule-ack-history-sort-v1.js?v=20260815.1','lbgScheduleAckHistorySortV1Script'],
+        ['schedule-ack-history-sort-v1.js?v=20260904.1','lbgScheduleAckHistorySortV1Script'],
         ['schedule-ack-history-v1.js?v=20260814.2','lbgScheduleAckHistoryV1Script'],
-        ['schedule-ack-history-ux-fix-v1.js?v=20260814.1','lbgScheduleAckHistoryUxFixV1Script'],
-        ['checkin-manager-review-ux-v2.js?v=20260815.3','lbgCheckinManagerReviewUxV2Script'],
+        ['schedule-ack-history-ux-fix-v1.js?v=20260904.1','lbgScheduleAckHistoryUxFixV1Script'],
+        ['checkin-manager-review-ux-v2.js?v=20260904.1','lbgCheckinManagerReviewUxV2Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
-        ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1'],
+        ['checkin-monitor-compact-ux-v1.js?v=20260904.1','lbgCheckinMonitorCompactUxV1'],
         ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script'],
         ['kns-lesson-detail-v1.js?v=20260903.1','lbgKnsLessonDetailV1Script']
       ];

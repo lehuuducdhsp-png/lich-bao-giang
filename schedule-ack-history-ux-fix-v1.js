@@ -1,9 +1,9 @@
 'use strict';
 (function(){
-  const VERSION='20260814.1';
+  const VERSION='20260904.1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').trim();
-  let timer=null,searchTimer=null,groupsCache={rows:[],at:0},groupsLoading=null,selectedGroup='all';
+  let observer=null,observedTarget=null,queued=false,searchTimer=null,groupsCache={rows:[],at:0},groupsLoading=null,selectedGroup='all';
 
   function auth(){return window.LBGAuth?.client||null}
   function vnParts(d=new Date()){const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);return Object.fromEntries(p.map(x=>[x.type,x.value]))}
@@ -15,7 +15,7 @@
     if(groupsLoading)return groupsLoading;
     groupsLoading=(async()=>{
       try{
-        const c=auth();if(!c)return[];
+        const c=auth();if(!c||!window.LBGAuth?.session)return[];
         const{data,error}=await c.rpc('schedule_ack_monitor_groups');
         if(error)throw error;
         groupsCache={rows:(data||[]).slice().sort((a,b)=>txt(a.group_name).localeCompare(txt(b.group_name),'vi')),at:Date.now()};
@@ -47,7 +47,7 @@
       const today=todayKey();from.value=today;to.value=today;
       from.dispatchEvent(new Event('change',{bubbles:true}));
       to.dispatchEvent(new Event('change',{bubbles:true}));
-      setTimeout(apply,120);
+      setTimeout(queue,120);
     };
     const seven=quick.querySelector('[data-ack-quick="7"]');
     seven?quick.insertBefore(b,seven):quick.prepend(b);
@@ -59,7 +59,7 @@
       select.dataset.ackGroupsSmooth='1';
       if(selectedGroup==='all'&&select.value)selectedGroup=select.value;
       const original=select.onchange;
-      select.onchange=function(e){selectedGroup=this.value||'all';if(typeof original==='function')original.call(this,e);setTimeout(apply,120)};
+      select.onchange=function(e){selectedGroup=this.value||'all';if(typeof original==='function')original.call(this,e);setTimeout(queue,120)};
     }
     const groups=await loadGroups(false);if(!document.contains(select))return;
     const existing=new Set([...select.options].map(o=>o.value));
@@ -68,10 +68,22 @@
   }
 
   function apply(){patchSearch();patchTodayButton();patchGroups().catch(()=>{})}
-  function start(){apply();timer=setInterval(apply,250)}
+  function retargetObserver(){
+    if(!observer||!document.body)return;
+    const wanted=q('lbgCheckinCard')||document.body;
+    if(observedTarget===wanted)return;
+    observer.disconnect();observedTarget=wanted;observer.observe(wanted,{childList:true,subtree:true});
+  }
+  function queue(){
+    if(queued)return;queued=true;
+    requestAnimationFrame(()=>{queued=false;retargetObserver();apply()});
+  }
+  function start(){
+    observer=new MutationObserver(queue);retargetObserver();queue();
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-  document.addEventListener('lbg-access-ready',()=>{groupsCache.at=0;apply()});
-  window.addEventListener('focus',()=>{groupsCache.at=0;apply()});
-  window.addEventListener('beforeunload',()=>{clearInterval(timer);clearTimeout(searchTimer)},{once:true});
-  window.LBGScheduleAckHistoryUxFixV1={version:VERSION,refresh:()=>{groupsCache.at=0;apply()}};
+  document.addEventListener('lbg-access-ready',()=>{groupsCache.at=0;queue()});
+  window.addEventListener('focus',()=>{groupsCache.at=0;queue()});
+  window.addEventListener('beforeunload',()=>{observer?.disconnect();clearTimeout(searchTimer)},{once:true});
+  window.LBGScheduleAckHistoryUxFixV1={version:VERSION,refresh:()=>{groupsCache.at=0;queue()}};
 })();
