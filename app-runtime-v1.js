@@ -40,6 +40,7 @@
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
         ['report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script'],
+        ['week-number-guard-v2.js?v=20260903.2','lbgWeekNumberGuardV2Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
@@ -67,7 +68,8 @@
         ['checkin-manager-review-ux-v2.js?v=20260815.3','lbgCheckinManagerReviewUxV2Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
-        ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1']
+        ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1'],
+        ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script']
       ];
       for(const [src,id] of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
