@@ -1,9 +1,9 @@
 'use strict';
 (function(){
-  const VERSION='20260815.1';
+  const VERSION='20260904.1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\s+/g,' ').trim();
-  let timer=null,patchedClient=null,originalRpc=null;
+  let observer=null,queued=false,patchedClient=null,originalRpc=null;
   let sortMode='newest';
 
   function compareDate(a,b){return txt(a?.teaching_date).localeCompare(txt(b?.teaching_date))}
@@ -59,8 +59,25 @@
   }
 
   function apply(){patchRpc();addStyle();addControl()}
-  function start(){window.LBG_ACK_HISTORY_SORT=sortMode;apply();timer=setInterval(apply,350)}
+  function observe(){
+    if(!observer||!document.body)return;
+    const target=q('lbgCheckinCard')||document.body;
+    observer.observe(target,{childList:true,subtree:true});
+  }
+  function queue(){
+    if(queued)return;queued=true;
+    requestAnimationFrame(()=>{
+      queued=false;observer?.disconnect();
+      try{apply()}finally{observe()}
+    });
+  }
+  function start(){
+    window.LBG_ACK_HISTORY_SORT=sortMode;
+    observer=new MutationObserver(queue);observe();queue();
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-  window.addEventListener('beforeunload',()=>{clearInterval(timer);if(patchedClient&&originalRpc)patchedClient.rpc=originalRpc},{once:true});
-  window.LBGScheduleAckHistorySortV1={version:VERSION,get mode(){return sortMode},refresh:apply};
+  document.addEventListener('lbg-access-ready',queue);
+  window.addEventListener('focus',queue);
+  window.addEventListener('beforeunload',()=>{observer?.disconnect();if(patchedClient&&originalRpc)patchedClient.rpc=originalRpc},{once:true});
+  window.LBGScheduleAckHistorySortV1={version:VERSION,get mode(){return sortMode},refresh:queue};
 })();
