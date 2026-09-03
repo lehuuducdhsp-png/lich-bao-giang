@@ -1,148 +1,228 @@
 /*
  * LỊCH BÁO GIẢNG — ĐỒNG BỘ MỤC LỤC 40 TUẦN 2026–2027
+ * Dành cho chính project Apps Script “KẾT NỐI LỊCH BÁO GIẢNG” hiện tại.
  * Mốc chính thức: Tuần 01 bắt đầu Thứ Hai 07/09/2026.
  *
- * NGUYÊN TẮC AN TOÀN
- * - Không xóa bất kỳ sheet nào.
- * - Không ghi đè nội dung báo giảng đã lưu.
- * - Chỉ đổi tên tab tuần cũ khi TỔNG SỐ TIẾT của tuần đó bằng 0.
- * - Nếu phát hiện tuần có dữ liệu, thiếu tab hoặc có hai tab cơ sở trùng tuần: DỪNG TOÀN BỘ trước khi ghi.
- * - Trước khi thay đổi, bắt buộc tạo một BẢN SAO TOÀN BỘ FILE trong Google Drive.
- * - Đồng thời tạo một bản sao ẩn của sheet MỤC LỤC ngay trong file hiện tại.
- * - Cột D (TỔNG SỐ TIẾT) của MỤC LỤC được giữ nguyên; Google Sheets tự cập nhật tham chiếu khi tab được đổi tên.
- * - Có bước xem trước/đồng ý trước khi chạy thật.
- *
- * CÁCH DÙNG
- * 1. Mở file Google Sheets Lịch Báo giảng 2026–2027.
- * 2. Tiện ích mở rộng > Apps Script.
- * 3. Thêm MỘT FILE .gs MỚI, không thay Code.gs/doPost hiện có.
- * 4. Dán toàn bộ nội dung này và Lưu.
- * 5. Chọn hàm LBG_syncSchoolYear2026_2027_40Weeks rồi bấm Chạy.
+ * QUAN TRỌNG
+ * - KHÔNG sửa Mã.gs / doGet / doPost hiện có.
+ * - File này dùng CONFIG.CURRENT_SPREADSHEET_ID đã có trong Mã.gs để mở đúng Google Sheets.
+ * - Không dùng SpreadsheetApp.getUi(), vì project hiện tại là Apps Script độc lập (standalone), không phải container-bound.
+ * - Phải chạy XEM TRƯỚC trước, sau đó mới được chạy ĐỒNG BỘ.
+ * - Không xóa sheet, không đụng BẢN 2/BẢN 3/COPY.
+ * - Nếu phát hiện dữ liệu bất thường: dừng trước khi ghi.
+ * - Trước khi ghi thật: bắt buộc tạo một bản sao TOÀN BỘ Google Sheets trên Drive.
  */
 
-function LBG_syncSchoolYear2026_2027_40Weeks() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) throw new Error('Không tìm thấy Google Sheets đang mở.');
+const LBG40_SYNC_VERSION = '20260903.3';
+const LBG40_PREVIEW_KEY = 'LBG40_PREVIEW_OK_20260903';
 
-  const INDEX_NAME = 'MỤC LỤC';
-  const WEEK_COUNT = 40;
-  const START = new Date(2026, 8, 7, 12, 0, 0); // 07/09/2026
-  const TZ = ss.getSpreadsheetTimeZone() || Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
-  const index = ss.getSheetByName(INDEX_NAME);
-  if (!index) throw new Error('Không tìm thấy sheet “MỤC LỤC”. Hệ thống dừng để tránh sửa nhầm file.');
+/**
+ * BƯỚC 1 — CHẠY HÀM NÀY TRƯỚC.
+ * Chỉ kiểm tra, KHÔNG thay đổi Google Sheets.
+ * Sau khi chạy, xem “Nhật ký thực thi”.
+ */
+function LBG_previewSchoolYear2026_2027_40Weeks() {
+  const ss = LBG40_getSpreadsheet_();
+  const context = LBG40_buildContext_(ss);
+  const preview = LBG40_inspectPlan_(ss, context.index, context.layout, context.plan);
 
-  const layout = detectIndexLayout_(index);
-  const plan = build40WeekPlan_(START, WEEK_COUNT, TZ);
-  const preview = inspectPlan_(ss, index, layout, plan);
+  console.log('=== XEM TRƯỚC ĐỒNG BỘ 40 TUẦN ===');
+  console.log('Phiên bản: ' + LBG40_SYNC_VERSION);
+  console.log('File: ' + ss.getName());
+  console.log('Spreadsheet ID: ' + ss.getId());
+  console.log('Tuần 01: 07/09/2026 → 12/09/2026');
+  console.log('Tuần 40: 07/06/2027 → 12/06/2027');
+  console.log('Tab cần đổi tên: ' + preview.rename.length);
+  console.log('Tab đã đúng tên: ' + preview.already.length);
+  console.log('Vấn đề chặn đồng bộ: ' + preview.blockers.length);
+
+  if (preview.rename.length) {
+    console.log('--- CÁC TAB SẼ ĐỔI TÊN ---');
+    preview.rename.forEach(item => console.log(item.sheet.getName() + '  →  ' + item.week.sheetName));
+  }
 
   if (preview.blockers.length) {
-    const detail = preview.blockers.slice(0, 12).map(x => '• ' + x).join('\n');
-    const more = preview.blockers.length > 12 ? `\n… và ${preview.blockers.length - 12} vấn đề khác.` : '';
-    SpreadsheetApp.getUi().alert(
-      'Chưa đồng bộ — hệ thống đang bảo vệ dữ liệu',
-      [
-        `File: ${ss.getName()}`,
-        '',
-        'Không có thay đổi nào được thực hiện.',
-        'Cần xử lý các mục sau trước khi chạy lại:',
-        detail + more
-      ].join('\n'),
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
+    console.error('--- HỆ THỐNG DỪNG, CHƯA CHO PHÉP ĐỒNG BỘ ---');
+    preview.blockers.forEach(item => console.error('• ' + item));
+    PropertiesService.getUserProperties().deleteProperty(LBG40_PREVIEW_KEY);
     return;
   }
 
-  const answer = SpreadsheetApp.getUi().alert(
-    'Xác nhận đồng bộ 40 tuần',
-    [
-      `File: ${ss.getName()}`,
-      'Tuần 01: 07/09/2026 → 12/09/2026',
-      'Tuần 40: 07/06/2027 → 12/06/2027',
-      '',
-      `Tab sẽ đổi tên: ${preview.rename.length}`,
-      `Tab đã đúng tên: ${preview.already.length}`,
-      '',
-      'Trước khi sửa, hệ thống sẽ tạo một bản sao TOÀN BỘ file trong Google Drive.',
-      'Không xóa sheet. Không đụng các tab BẢN 2. Cột TỔNG SỐ TIẾT được giữ nguyên.',
-      '',
-      'Bạn có muốn tiếp tục?'
-    ].join('\n'),
-    SpreadsheetApp.getUi().ButtonSet.YES_NO
-  );
-  if (answer !== SpreadsheetApp.getUi().Button.YES) return;
+  const stamp = {
+    version: LBG40_SYNC_VERSION,
+    spreadsheetId: ss.getId(),
+    createdAt: Date.now(),
+    renameCount: preview.rename.length,
+    alreadyCount: preview.already.length
+  };
+  PropertiesService.getUserProperties().setProperty(LBG40_PREVIEW_KEY, JSON.stringify(stamp));
 
-  const lock = LockService.getDocumentLock();
+  console.log('✅ XEM TRƯỚC HỢP LỆ. CHƯA CÓ DỮ LIỆU NÀO BỊ THAY ĐỔI.');
+  console.log('Bây giờ có thể chọn hàm LBG_syncSchoolYear2026_2027_40Weeks và bấm Chạy trong vòng 15 phút.');
+}
+
+/**
+ * BƯỚC 2 — CHỈ CHẠY SAU KHI XEM TRƯỚC HỢP LỆ.
+ * Có backup toàn file trước khi ghi.
+ */
+function LBG_syncSchoolYear2026_2027_40Weeks() {
+  const ss = LBG40_getSpreadsheet_();
+  LBG40_requireFreshPreview_(ss);
+
+  const lock = LockService.getScriptLock();
   lock.waitLock(30000);
 
   try {
-    // Kiểm tra lại một lần nữa sau khi có lock để tránh dữ liệu thay đổi giữa lúc xem trước và bấm Có.
-    const latest = inspectPlan_(ss, index, layout, plan);
+    const context = LBG40_buildContext_(ss);
+    const latest = LBG40_inspectPlan_(ss, context.index, context.layout, context.plan);
+
     if (latest.blockers.length) {
-      throw new Error('Dữ liệu đã thay đổi trong lúc xác nhận. Hệ thống dừng trước khi ghi; hãy chạy lại để kiểm tra.');
+      PropertiesService.getUserProperties().deleteProperty(LBG40_PREVIEW_KEY);
+      throw new Error(
+        'Dữ liệu đã thay đổi hoặc có vấn đề sau bước xem trước. Hệ thống DỪNG trước khi ghi.\n' +
+        latest.blockers.map(x => '• ' + x).join('\n')
+      );
     }
 
-    const backup = createFullSpreadsheetBackup_(ss, TZ);
-    const indexBackupName = createIndexBackup_(ss, index, TZ);
+    console.log('Đang tạo backup toàn bộ Google Sheets trước khi thay đổi...');
+    const backup = LBG40_createFullSpreadsheetBackup_(ss, context.timeZone);
+    console.log('✅ Backup toàn file: ' + backup.name);
+    console.log('Backup URL: ' + backup.url);
+
+    const indexBackupName = LBG40_createIndexBackup_(ss, context.index, context.timeZone);
+    console.log('✅ Backup MỤC LỤC trong file: ' + indexBackupName);
 
     const changes = [];
 
     latest.rename.forEach(item => {
       const oldName = item.sheet.getName();
       item.sheet.setName(item.week.sheetName);
-      const headerSnapshot = updateWeekSheetHeader_(item.sheet, item.week);
+      const snapshot = LBG40_updateWeekSheetHeader_(item.sheet, item.week);
       changes.push([
         item.week.weekText,
         oldName,
         item.week.sheetName,
         'Đã đổi tên',
-        headerSnapshot.oldWeekText,
-        headerSnapshot.oldDateText
+        snapshot.oldWeekText,
+        snapshot.oldDateText
       ]);
     });
 
     latest.already.forEach(item => {
-      const headerSnapshot = updateWeekSheetHeader_(item.sheet, item.week);
+      const snapshot = LBG40_updateWeekSheetHeader_(item.sheet, item.week);
       changes.push([
         item.week.weekText,
         item.sheet.getName(),
         item.sheet.getName(),
         'Đã đúng tên',
-        headerSnapshot.oldWeekText,
-        headerSnapshot.oldDateText
+        snapshot.oldWeekText,
+        snapshot.oldDateText
       ]);
     });
 
-    updateIndex_(ss, index, layout, plan);
-    writeSyncLog_(ss, changes, backup, indexBackupName, TZ);
+    LBG40_updateIndex_(ss, context.index, context.layout, context.plan);
+    LBG40_writeSyncLog_(ss, changes, backup, indexBackupName, context.timeZone);
     SpreadsheetApp.flush();
 
-    SpreadsheetApp.getUi().alert(
-      'Đồng bộ thành công',
-      [
-        'MỤC LỤC 40 TUẦN đã được đồng bộ theo mốc 07/09/2026.',
-        '',
-        `Đã đổi tên: ${latest.rename.length}`,
-        `Đã đúng tên: ${latest.already.length}`,
-        '',
-        `Backup toàn file: ${backup.name}`,
-        `Backup MỤC LỤC: ${indexBackupName}`,
-        '',
-        'Hãy kiểm tra Tuần 01, Tuần 02, Tuần 39 và Tuần 40 trước khi đóng file.'
-      ].join('\n'),
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
+    PropertiesService.getUserProperties().deleteProperty(LBG40_PREVIEW_KEY);
+
+    console.log('=== ✅ ĐỒNG BỘ THÀNH CÔNG ===');
+    console.log('Đã đổi tên: ' + latest.rename.length);
+    console.log('Đã đúng tên: ' + latest.already.length);
+    console.log('Tuần 01: 07/09/2026 → 12/09/2026');
+    console.log('Tuần 40: 07/06/2027 → 12/06/2027');
+    console.log('Backup toàn file: ' + backup.url);
+    console.log('Trong Google Sheets có sheet nhật ký: __LBG_NHAT_KY_SYNC_20260903');
+  } catch (error) {
+    console.error(error && error.stack ? error.stack : error);
+    throw error;
   } finally {
     lock.releaseLock();
   }
 }
 
-function build40WeekPlan_(start, count, timeZone) {
+function LBG40_getSpreadsheet_() {
+  let spreadsheetId = '';
+
+  try {
+    if (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.CURRENT_SPREADSHEET_ID) {
+      spreadsheetId = String(CONFIG.CURRENT_SPREADSHEET_ID).trim();
+    }
+  } catch (error) {}
+
+  if (!spreadsheetId) {
+    spreadsheetId = String(
+      PropertiesService.getScriptProperties().getProperty('CURRENT_SPREADSHEET_ID') || ''
+    ).trim();
+  }
+
+  if (spreadsheetId) {
+    try {
+      return SpreadsheetApp.openById(spreadsheetId);
+    } catch (error) {
+      throw new Error(
+        'Có CURRENT_SPREADSHEET_ID nhưng không mở được Google Sheets. ID: ' + spreadsheetId +
+        '. Chi tiết: ' + (error && error.message ? error.message : error)
+      );
+    }
+  }
+
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+
+  throw new Error(
+    'Không xác định được Google Sheets đích. Project này cần CONFIG.CURRENT_SPREADSHEET_ID trong Mã.gs.'
+  );
+}
+
+function LBG40_buildContext_(ss) {
+  const index = ss.getSheetByName('MỤC LỤC');
+  if (!index) throw new Error('Không tìm thấy sheet “MỤC LỤC”. Dừng để tránh sửa nhầm file.');
+
+  const layout = LBG40_detectIndexLayout_(index);
+  const timeZone = ss.getSpreadsheetTimeZone() ||
+    (typeof CONFIG !== 'undefined' && CONFIG.TIME_ZONE ? CONFIG.TIME_ZONE : '') ||
+    Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
+
+  const start = new Date(2026, 8, 7, 12, 0, 0);
+  const plan = LBG40_build40WeekPlan_(start, 40, timeZone);
+
+  return { index, layout, timeZone, plan };
+}
+
+function LBG40_requireFreshPreview_(ss) {
+  const raw = PropertiesService.getUserProperties().getProperty(LBG40_PREVIEW_KEY);
+  if (!raw) {
+    throw new Error(
+      'Chưa có bước XEM TRƯỚC hợp lệ. Hãy chạy LBG_previewSchoolYear2026_2027_40Weeks trước.'
+    );
+  }
+
+  let stamp;
+  try { stamp = JSON.parse(raw); }
+  catch (error) { stamp = null; }
+
+  const age = stamp ? Date.now() - Number(stamp.createdAt || 0) : Infinity;
+  const valid = stamp &&
+    stamp.version === LBG40_SYNC_VERSION &&
+    stamp.spreadsheetId === ss.getId() &&
+    age >= 0 && age <= 15 * 60 * 1000;
+
+  if (!valid) {
+    PropertiesService.getUserProperties().deleteProperty(LBG40_PREVIEW_KEY);
+    throw new Error(
+      'Bước XEM TRƯỚC đã hết hạn hoặc không khớp file hiện tại. Hãy chạy lại LBG_previewSchoolYear2026_2027_40Weeks.'
+    );
+  }
+}
+
+function LBG40_build40WeekPlan_(start, count, timeZone) {
   const weeks = [];
   for (let i = 0; i < count; i++) {
     const s = new Date(start.getTime());
     s.setDate(start.getDate() + i * 7);
     const e = new Date(s.getTime());
-    e.setDate(s.getDate() + 5); // Thứ Hai → Thứ Bảy
+    e.setDate(s.getDate() + 5);
     const weekNo = i + 1;
     const weekText = String(weekNo).padStart(2, '0');
     weeks.push({
@@ -158,14 +238,14 @@ function build40WeekPlan_(start, count, timeZone) {
   return weeks;
 }
 
-function detectIndexLayout_(indexSheet) {
+function LBG40_detectIndexLayout_(indexSheet) {
   const maxRows = Math.min(12, indexSheet.getMaxRows());
   const maxCols = Math.min(10, indexSheet.getMaxColumns());
   const values = indexSheet.getRange(1, 1, maxRows, maxCols).getDisplayValues();
   const expected = ['TUAN', 'TU NGAY', 'DEN NGAY', 'TONG SO TIET', 'MO NHANH'];
 
   for (let r = 0; r < values.length; r++) {
-    const normalized = values[r].map(normalizeText_);
+    const normalized = values[r].map(LBG40_normalizeText_);
     for (let c = 0; c <= normalized.length - expected.length; c++) {
       const slice = normalized.slice(c, c + expected.length);
       if (expected.every((value, i) => slice[i] === value)) {
@@ -183,23 +263,23 @@ function detectIndexLayout_(indexSheet) {
   }
 
   throw new Error(
-    'Không nhận diện được hàng tiêu đề “TUẦN | TỪ NGÀY | ĐẾN NGÀY | TỔNG SỐ TIẾT | MỞ NHANH” trong MỤC LỤC. Hệ thống dừng để tránh sửa sai vị trí.'
+    'Không nhận diện được hàng “TUẦN | TỪ NGÀY | ĐẾN NGÀY | TỔNG SỐ TIẾT | MỞ NHANH” trong MỤC LỤC.'
   );
 }
 
-function inspectPlan_(ss, indexSheet, layout, plan) {
+function LBG40_inspectPlan_(ss, indexSheet, layout, plan) {
   const rename = [];
   const already = [];
   const blockers = [];
 
   plan.forEach((week, i) => {
     const row = layout.dataStartRow + i;
-    const baseSheets = findBaseWeekSheets_(ss, week.weekNo);
+    const baseSheets = LBG40_findBaseWeekSheets_(ss, week.weekNo);
     const desired = baseSheets.find(s => s.getName() === week.sheetName) || null;
 
     if (baseSheets.length > 1) {
       blockers.push(
-        `Tuần ${week.weekText}: có nhiều tab cơ sở (${baseSheets.map(s => s.getName()).join(', ')}). Không tự chọn để tránh nhầm dữ liệu.`
+        `Tuần ${week.weekText}: có nhiều tab cơ sở (${baseSheets.map(s => s.getName()).join(', ')}).`
       );
       return;
     }
@@ -210,14 +290,14 @@ function inspectPlan_(ss, indexSheet, layout, plan) {
     }
 
     if (!baseSheets.length) {
-      blockers.push(`Tuần ${week.weekText}: chưa tìm thấy tab cơ sở để đổi thành ${week.sheetName}.`);
+      blockers.push(`Tuần ${week.weekText}: không tìm thấy tab cơ sở để đổi thành ${week.sheetName}.`);
       return;
     }
 
-    const totalState = readIndexTotalState_(indexSheet, row, layout.totalCol);
+    const totalState = LBG40_readIndexTotalState_(indexSheet, row, layout.totalCol);
     if (!totalState.safeToRename) {
       blockers.push(
-        `Tuần ${week.weekText}: giữ nguyên “${baseSheets[0].getName()}” vì TỔNG SỐ TIẾT = ${totalState.label}.`
+        `Tuần ${week.weekText}: tab “${baseSheets[0].getName()}” có TỔNG SỐ TIẾT = ${totalState.label}; không tự đổi tên.`
       );
       return;
     }
@@ -228,20 +308,18 @@ function inspectPlan_(ss, indexSheet, layout, plan) {
   return { rename, already, blockers };
 }
 
-function findBaseWeekSheets_(ss, weekNo) {
+function LBG40_findBaseWeekSheets_(ss, weekNo) {
   const wanted = Number(weekNo);
   return ss.getSheets().filter(sheet => {
     const name = String(sheet.getName() || '').trim();
     const m = name.match(/^TUẦN\s+0*(\d{1,2})(?:_|$)/i);
     if (!m || Number(m[1]) !== wanted) return false;
-    // BẢN 2/BẢN 3/COPY là lịch sử đối chiếu; không đụng vào trong lần đồng bộ này.
     return !/\bBẢN\s*\d+\b/i.test(name) && !/\bCOPY\b/i.test(name);
   });
 }
 
-function readIndexTotalState_(indexSheet, row, totalCol) {
-  const cell = indexSheet.getRange(row, totalCol);
-  const raw = String(cell.getDisplayValue() || '').trim();
+function LBG40_readIndexTotalState_(indexSheet, row, totalCol) {
+  const raw = String(indexSheet.getRange(row, totalCol).getDisplayValue() || '').trim();
   const cleaned = raw.replace(/[^0-9,.-]/g, '').replace(',', '.');
   if (!cleaned) return { safeToRename: false, label: 'không đọc được' };
   const n = Number(cleaned);
@@ -249,12 +327,19 @@ function readIndexTotalState_(indexSheet, row, totalCol) {
   return { safeToRename: n === 0, label: String(n) };
 }
 
-function updateIndex_(ss, index, layout, plan) {
-  ensureRows_(index, layout.dataStartRow + plan.length - 1);
+function LBG40_updateIndex_(ss, index, layout, plan) {
+  LBG40_ensureRows_(index, layout.dataStartRow + plan.length - 1);
 
-  const titleCell = findCellContaining_(index, 'MỤC LỤC 40 TUẦN', 1, Math.max(1, layout.headerRow - 1), 1, Math.min(10, index.getMaxColumns()));
+  const titleCell = LBG40_findCellContaining_(
+    index,
+    'MỤC LỤC 40 TUẦN',
+    1,
+    Math.max(1, layout.headerRow - 1),
+    1,
+    Math.min(10, index.getMaxColumns())
+  );
   if (!titleCell) {
-    throw new Error('Không tìm thấy dòng “MỤC LỤC 40 TUẦN”. Backup đã được tạo nhưng hệ thống dừng trước khi sửa bảng mục lục.');
+    throw new Error('Không tìm thấy dòng “MỤC LỤC 40 TUẦN”. Backup đã tạo; dừng trước khi sửa MỤC LỤC.');
   }
   titleCell.setValue('MỤC LỤC 40 TUẦN • TUẦN 01 BẮT ĐẦU 07/09/2026');
 
@@ -267,20 +352,20 @@ function updateIndex_(ss, index, layout, plan) {
   plan.forEach((week, i) => {
     const row = startRow + i;
     const target = ss.getSheetByName(week.sheetName);
-    if (!target) throw new Error(`Sau khi đổi tên vẫn không tìm thấy ${week.sheetName}. Hệ thống dừng; dùng backup toàn file nếu cần hoàn tác.`);
+    if (!target) throw new Error(`Không tìm thấy ${week.sheetName} sau khi đổi tên.`);
 
     const cell = index.getRange(row, layout.linkCol);
     const link = `${ss.getUrl()}#gid=${target.getSheetId()}`;
-    const rich = SpreadsheetApp.newRichTextValue()
-      .setText(`MỞ TUẦN ${week.weekText}`)
-      .setLinkUrl(link)
-      .build();
-    cell.setRichTextValue(rich).clearNote();
+    cell.setRichTextValue(
+      SpreadsheetApp.newRichTextValue()
+        .setText(`MỞ TUẦN ${week.weekText}`)
+        .setLinkUrl(link)
+        .build()
+    ).clearNote();
   });
 }
 
-function updateWeekSheetHeader_(sheet, week) {
-  // Chỉ quét vùng đầu trang; không chạm bảng báo giảng bên dưới.
+function LBG40_updateWeekSheetHeader_(sheet, week) {
   const maxRows = Math.min(15, sheet.getMaxRows());
   const maxCols = Math.min(15, sheet.getMaxColumns());
   const values = sheet.getRange(1, 1, maxRows, maxCols).getDisplayValues();
@@ -309,26 +394,32 @@ function updateWeekSheetHeader_(sheet, week) {
   return { oldWeekText, oldDateText };
 }
 
-function createFullSpreadsheetBackup_(ss, timeZone) {
+function LBG40_createFullSpreadsheetBackup_(ss, timeZone) {
   const stamp = Utilities.formatDate(new Date(), timeZone, 'yyyyMMdd-HHmmss');
   const backupName = `${ss.getName()} — BACKUP TRƯỚC SYNC 40 TUẦN ${stamp}`;
-  let copy;
 
   try {
     const source = DriveApp.getFileById(ss.getId());
     const parents = source.getParents();
-    copy = parents.hasNext()
+    const copy = parents.hasNext()
       ? source.makeCopy(backupName, parents.next())
       : source.makeCopy(backupName);
-  } catch (error) {
-    throw new Error('Không tạo được bản sao toàn bộ Google Sheets trong Drive nên hệ thống DỪNG trước khi sửa. Chi tiết: ' + (error && error.message ? error.message : error));
-  }
 
-  if (!copy || !copy.getId()) throw new Error('Không xác nhận được file backup; hệ thống dừng trước khi sửa.');
-  return { id: copy.getId(), name: copy.getName(), url: `https://docs.google.com/spreadsheets/d/${copy.getId()}/edit` };
+    if (!copy || !copy.getId()) throw new Error('Không nhận được ID file backup.');
+    return {
+      id: copy.getId(),
+      name: copy.getName(),
+      url: `https://docs.google.com/spreadsheets/d/${copy.getId()}/edit`
+    };
+  } catch (error) {
+    throw new Error(
+      'Không tạo được BACKUP TOÀN FILE nên hệ thống DỪNG trước khi sửa. Chi tiết: ' +
+      (error && error.message ? error.message : error)
+    );
+  }
 }
 
-function createIndexBackup_(ss, indexSheet, timeZone) {
+function LBG40_createIndexBackup_(ss, indexSheet, timeZone) {
   const stamp = Utilities.formatDate(new Date(), timeZone, 'HHmmss');
   const suffix = Utilities.getUuid().slice(0, 6);
   const name = `__LBG_BACKUP_MUC_LUC_${stamp}_${suffix}`;
@@ -336,37 +427,7 @@ function createIndexBackup_(ss, indexSheet, timeZone) {
   return name;
 }
 
-function findCellContaining_(sheet, needle, startRow, numRows, startCol, numCols) {
-  const values = sheet.getRange(startRow, startCol, numRows, numCols).getDisplayValues();
-  const key = normalizeText_(needle);
-  for (let r = 0; r < values.length; r++) {
-    for (let c = 0; c < values[r].length; c++) {
-      if (normalizeText_(values[r][c]).indexOf(key) >= 0) {
-        return sheet.getRange(startRow + r, startCol + c);
-      }
-    }
-  }
-  return null;
-}
-
-function normalizeText_(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/Đ/g, 'D')
-    .replace(/đ/g, 'd')
-    .toUpperCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function ensureRows_(sheet, neededRows) {
-  if (sheet.getMaxRows() < neededRows) {
-    sheet.insertRowsAfter(sheet.getMaxRows(), neededRows - sheet.getMaxRows());
-  }
-}
-
-function writeSyncLog_(ss, changes, backup, indexBackupName, timeZone) {
+function LBG40_writeSyncLog_(ss, changes, backup, indexBackupName, timeZone) {
   const name = '__LBG_NHAT_KY_SYNC_20260903';
   let log = ss.getSheetByName(name);
   if (!log) log = ss.insertSheet(name);
@@ -394,4 +455,34 @@ function writeSyncLog_(ss, changes, backup, indexBackupName, timeZone) {
   log.setFrozenRows(headerRow);
   log.autoResizeColumns(1, 6);
   log.setTabColor('#F4A261');
+}
+
+function LBG40_findCellContaining_(sheet, needle, startRow, numRows, startCol, numCols) {
+  const values = sheet.getRange(startRow, startCol, numRows, numCols).getDisplayValues();
+  const key = LBG40_normalizeText_(needle);
+  for (let r = 0; r < values.length; r++) {
+    for (let c = 0; c < values[r].length; c++) {
+      if (LBG40_normalizeText_(values[r][c]).indexOf(key) >= 0) {
+        return sheet.getRange(startRow + r, startCol + c);
+      }
+    }
+  }
+  return null;
+}
+
+function LBG40_normalizeText_(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/Đ/g, 'D')
+    .replace(/đ/g, 'd')
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function LBG40_ensureRows_(sheet, neededRows) {
+  if (sheet.getMaxRows() < neededRows) {
+    sheet.insertRowsAfter(sheet.getMaxRows(), neededRows - sheet.getMaxRows());
+  }
 }
