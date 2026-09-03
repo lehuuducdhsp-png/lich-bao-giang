@@ -10,7 +10,25 @@
   }
   function waitForAuth(){
     return new Promise((resolve,reject)=>{
-      let tries=0;const timer=setInterval(()=>{tries++;if(window.LBGAuth){clearInterval(timer);resolve()}else if(tries>300){clearInterval(timer);reject(new Error('Hệ thống đăng nhập chưa sẵn sàng.'))}},100);
+      let poll=null,tries=0,settled=false;
+      const finish=api=>{if(settled)return;settled=true;if(poll)clearInterval(poll);resolve(api)};
+      const bind=()=>{
+        const api=window.LBGAuth;if(!api)return false;
+        if(poll){clearInterval(poll);poll=null}
+        if(typeof api.onLogout==='function'&&!api.__lbgRuntimeReloadBound){
+          api.__lbgRuntimeReloadBound=true;
+          api.onLogout(()=>{try{window.location.reload()}catch{}});
+        }
+        if(api.profile&&!api.profile.must_change_password&&api.readyNotified){finish(api);return true}
+        if(typeof api.onReady==='function')api.onReady(()=>finish(api));
+        return true;
+      };
+      if(bind())return;
+      poll=setInterval(()=>{
+        tries++;
+        if(bind())return;
+        if(tries>300){clearInterval(poll);poll=null;reject(new Error('Hệ thống đăng nhập chưa sẵn sàng.'))}
+      },100);
     });
   }
 
@@ -64,13 +82,13 @@
         ['schedule-ack-flexible-access-v1.js?v=20260814.2','lbgScheduleAckFlexibleAccessV1Script'],
         ['schedule-ack-list-ux-v3.js?v=20260814.5','lbgScheduleAckListUxV3Script'],
         ['schedule-ack-permission-visual-v1.js?v=20260814.1','lbgScheduleAckPermissionVisualV1Script'],
-        ['schedule-ack-history-sort-v1.js?v=20260815.1','lbgScheduleAckHistorySortV1Script'],
+        ['schedule-ack-history-sort-v1.js?v=20260904.1','lbgScheduleAckHistorySortV1Script'],
         ['schedule-ack-history-v1.js?v=20260814.2','lbgScheduleAckHistoryV1Script'],
-        ['schedule-ack-history-ux-fix-v1.js?v=20260814.1','lbgScheduleAckHistoryUxFixV1Script'],
-        ['checkin-manager-review-ux-v2.js?v=20260815.3','lbgCheckinManagerReviewUxV2Script'],
+        ['schedule-ack-history-ux-fix-v1.js?v=20260904.1','lbgScheduleAckHistoryUxFixV1Script'],
+        ['checkin-manager-review-ux-v2.js?v=20260904.1','lbgCheckinManagerReviewUxV2Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
-        ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1'],
+        ['checkin-monitor-compact-ux-v1.js?v=20260904.1','lbgCheckinMonitorCompactUxV1'],
         ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script'],
         ['kns-lesson-detail-v1.js?v=20260903.1','lbgKnsLessonDetailV1Script']
       ];
