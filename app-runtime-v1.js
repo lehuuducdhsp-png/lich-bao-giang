@@ -67,7 +67,8 @@
         ['checkin-manager-review-ux-v2.js?v=20260815.3','lbgCheckinManagerReviewUxV2Script'],
         ['checkin-manual-detail-v1.js?v=20260813.1','lbgCheckinManualDetailV1'],
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
-        ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1']
+        ['checkin-monitor-compact-ux-v1.js?v=20260812.2','lbgCheckinMonitorCompactUxV1'],
+        ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script']
       ];
       for(const [src,id] of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
