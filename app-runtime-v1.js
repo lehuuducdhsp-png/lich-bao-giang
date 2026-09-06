@@ -40,11 +40,16 @@
       await add('school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script');
 
       // Hai hotfix này phải có mặt ngay tại màn hình đăng nhập/đổi mật khẩu.
-      // Các mô-đun nặng và mô-đun gọi Supabase phía dưới vẫn chờ Auth ready thật sự.
       await add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
       await add('password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1');
 
       await waitForAuth();
+
+      // Parser V2 phải vào trước các mô-đun dùng dữ liệu TKB.
+      await add('tkb-parser-v2.js?v=20260906.1','lbgTkbParserV2Script');
+      await add('tkb-parser-bridge-v1.js?v=20260906.1','lbgTkbParserBridgeV1Script');
+      await add('conflict-check-v6.js?v=20260906.1','lbgConflictCheckV6Script');
+
       const modules=[
         ['sheets-sync-security-v1.js?v=20260904.1','lbgSheetsSyncSecurityV1Script'],
         ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
