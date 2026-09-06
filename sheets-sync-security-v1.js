@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const OWNER_SRC='sheets-sync-owner-v2.js?v=20260904.1';
+  const OWNER_SRC='sheets-sync-owner-v2.js?v=20260906.1';
   const OWNER_SCRIPT_ID='lbgSheetsSyncOwnerV2Secure';
 
   function clearLegacyUi(){
@@ -16,7 +16,7 @@
     const existing=document.querySelector('script[src*="sheets-sync-owner-v2.js"]');
     if(existing){
       const src=existing.getAttribute('src')||'';
-      if(src.includes('v=20260904.1'))return;
+      if(src.includes('v=20260906.1'))return;
       existing.remove();
     }
     document.getElementById(OWNER_SCRIPT_ID)?.remove();
