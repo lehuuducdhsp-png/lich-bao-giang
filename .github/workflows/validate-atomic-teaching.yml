@@ -7,7 +7,9 @@ on:
       - 'tkb-parser-bridge-v2.js'
       - 'tkb-atomic-teaching-v1.js'
       - 'checkin-tomorrow-order-v1.js'
+      - 'sheets-ga-sync-compat-v1.js'
       - 'tests/atomic-teaching-v1.test.cjs'
+      - 'tests/sheets-ga-sync-compat-v1.test.cjs'
       - '.github/workflows/validate-atomic-teaching.yml'
   workflow_dispatch:
 
@@ -28,6 +30,10 @@ jobs:
           node --check tkb-parser-bridge-v2.js
           node --check tkb-atomic-teaching-v1.js
           node --check checkin-tomorrow-order-v1.js
+          node --check sheets-ga-sync-compat-v1.js
           node --check tests/atomic-teaching-v1.test.cjs
+          node --check tests/sheets-ga-sync-compat-v1.test.cjs
       - name: Run atomic teaching regression
         run: node tests/atomic-teaching-v1.test.cjs
+      - name: Run Google Sheets GA compatibility regression
+        run: node tests/sheets-ga-sync-compat-v1.test.cjs
