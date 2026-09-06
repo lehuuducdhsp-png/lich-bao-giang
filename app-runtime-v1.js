@@ -44,7 +44,8 @@
 
       await add('tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script');
       await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
-      await add('tkb-parser-bridge-v2.js?v=20260906.2','lbgTkbParserBridgeV2Script');
+      await add('tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script');
+      await add('tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script');
       await add('conflict-check-v7.js?v=20260906.2','lbgConflictCheckV7Script');
 
       const modules=[
@@ -85,6 +86,7 @@
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
         ['checkin-member-window-v1.js?v=20260812.2','lbgCheckinMemberWindowV1'],
         ['checkin-tomorrow-report-v2.js?v=20260814.3','lbgCheckinTomorrowReportV2Script'],
+        ['checkin-tomorrow-order-v1.js?v=20260906.1','lbgCheckinTomorrowOrderV1Script'],
         ['schedule-ack-flexible-access-v1.js?v=20260814.2','lbgScheduleAckFlexibleAccessV1Script'],
         ['schedule-ack-list-ux-v3.js?v=20260814.5','lbgScheduleAckListUxV3Script'],
         ['schedule-ack-permission-visual-v1.js?v=20260814.1','lbgScheduleAckPermissionVisualV1Script'],
