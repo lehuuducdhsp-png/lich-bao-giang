@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260907.1';
+  const VERSION='20260907.2';
   const PREFIX='hoannang';
   const txt=v=>String(v??'').trim();
   const q=id=>document.getElementById(id);
@@ -9,6 +9,26 @@
   function passwordForUsername(username){
     const m=txt(username).toLowerCase().match(/^gv(\d+)$/);
     return m?PREFIX+m[1]:'';
+  }
+
+  async function invokeAdmin(body){
+    const api=window.LBGAuth;
+    if(!api?.client)throw new Error('Hệ thống đăng nhập chưa sẵn sàng.');
+    const {data,error}=await api.client.functions.invoke('admin-users',{body});
+    if(error){
+      let message=error?.message||String(error);
+      try{
+        const response=error?.context;
+        if(response){
+          const copy=typeof response.clone==='function'?response.clone():response;
+          const payload=await copy.json();
+          if(payload?.error)message=payload.error;
+        }
+      }catch{}
+      throw new Error(message);
+    }
+    if(data?.error)throw new Error(data.error);
+    return data||{};
   }
 
   function setPasswordField(field,value){
@@ -69,13 +89,53 @@
     const password=passwordForUsername(username);
     if(!password)return false;
     if(!confirm(`Đặt lại mật khẩu tạm của ${username.toUpperCase()} thành ${password}?\n\nNgười dùng sẽ buộc đổi mật khẩu ngay ở lần đăng nhập tiếp theo.`))return true;
-    const api=window.LBGAuth;
-    if(!api?.client)throw new Error('Hệ thống đăng nhập chưa sẵn sàng.');
-    const {data,error}=await api.client.functions.invoke('admin-users',{body:{action:'reset_password',user_id:button.dataset.reset,password}});
-    if(error)throw error;
-    if(data?.error)throw new Error(data.error);
+    await invokeAdmin({action:'reset_password',user_id:button.dataset.reset,password});
     alert(`Đã đặt lại mật khẩu tạm: ${password}\nNgười dùng phải đổi mật khẩu sau khi đăng nhập.`);
     return true;
+  }
+
+  function pendingGvRows(){
+    return [...document.querySelectorAll('#lbgOwnerRows tr')].filter(row=>{
+      const username=txt(row.querySelector('td:first-child small')?.textContent);
+      return Boolean(passwordForUsername(username))&&/Phải đổi mật khẩu/i.test(row.textContent||'');
+    });
+  }
+
+  function ensurePendingResetButton(){
+    const card=q('lbgOwnerCard');
+    if(!card||!window.LBGAuth?.isOwner?.())return;
+    let box=q('lbgTempPasswordPolicyBox');
+    if(!box){
+      box=document.createElement('div');
+      box.id='lbgTempPasswordPolicyBox';
+      box.className='notice';
+      box.style.cssText='display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap';
+      box.innerHTML='<div><b>🔐 Mật khẩu tạm giáo viên</b><br><small>GV035 → hoannang035. Chỉ áp dụng khi tạo mới hoặc khi Chủ sở hữu đặt lại. Tài khoản đã đổi mật khẩu không bị tác động.</small></div><button class="btn outline" type="button" id="lbgNormalizePendingPasswords">Chuẩn hóa tài khoản chưa đổi</button>';
+      const toolbar=card.querySelector('.lbg-owner-toolbar');
+      if(toolbar)toolbar.insertAdjacentElement('afterend',box);else card.querySelector('.head')?.insertAdjacentElement('afterend',box);
+      q('lbgNormalizePendingPasswords').onclick=async()=>{
+        const button=q('lbgNormalizePendingPasswords');
+        const count=pendingGvRows().length;
+        const detail=count?`Hiện bảng quản lý có ${count} tài khoản GV đang ở trạng thái “Phải đổi mật khẩu”.`:'Hệ thống sẽ tự kiểm tra lại trên máy chủ.';
+        if(!confirm(`${detail}\n\nChỉ các tài khoản GV### còn must_change_password=true mới được đưa về mật khẩu tạm hoannang###. Tài khoản đã đổi mật khẩu sẽ được bỏ qua. Tiếp tục?`))return;
+        const old=button.textContent;button.disabled=true;button.textContent='Đang chuẩn hóa…';
+        try{
+          const result=await invokeAdmin({action:'reset_pending_gv_passwords'});
+          const reset=Array.isArray(result.reset)?result.reset:[];
+          const failed=Array.isArray(result.failed)?result.failed:[];
+          const lines=[`Đã chuẩn hóa ${reset.length} tài khoản chưa đổi mật khẩu.`];
+          if(reset.length)lines.push('Tài khoản: '+reset.map(x=>String(x).toUpperCase()).join(', '));
+          if(failed.length)lines.push(`Có ${failed.length} tài khoản lỗi; chưa thay đổi các tài khoản lỗi.`);
+          alert(lines.join('\n'));
+        }catch(error){alert('Không chuẩn hóa được mật khẩu tạm: '+(error?.message||String(error)))}
+        finally{button.disabled=false;button.textContent=old}
+      };
+    }
+    const button=q('lbgNormalizePendingPasswords');
+    if(button){
+      const count=pendingGvRows().length;
+      button.textContent=count?`Chuẩn hóa ${count} tài khoản chưa đổi`:'Chuẩn hóa tài khoản chưa đổi';
+    }
   }
 
   function bindResetCapture(){
@@ -92,7 +152,7 @@
     },true);
   }
 
-  function run(){queued=false;syncSingle();syncBulk();bindResetCapture()}
+  function run(){queued=false;syncSingle();syncBulk();ensurePendingResetButton();bindResetCapture()}
   function queue(){if(queued)return;queued=true;requestAnimationFrame(run)}
   function start(){
     run();
