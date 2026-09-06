@@ -47,6 +47,7 @@
 
       // Parser V2 phải vào trước các mô-đun dùng dữ liệu TKB.
       await add('tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script');
+      await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
       await add('tkb-parser-bridge-v2.js?v=20260906.2','lbgTkbParserBridgeV2Script');
       await add('conflict-check-v7.js?v=20260906.2','lbgConflictCheckV7Script');
 
