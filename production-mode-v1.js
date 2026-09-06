@@ -11,6 +11,15 @@
     document.head.appendChild(s);
   }
 
+  if(!document.getElementById('lbgTempPasswordPolicyV1Script')){
+    const s=document.createElement('script');
+    s.id='lbgTempPasswordPolicyV1Script';
+    s.src='temp-password-policy-v1.js?v=20260907.1';
+    s.async=false;
+    s.onerror=()=>console.error('Không tải được chính sách mật khẩu tạm giáo viên.');
+    document.body.appendChild(s);
+  }
+
   function clean(){
     document.querySelectorAll('.lbg-finish-test-badge').forEach(el=>{el.hidden=true;el.setAttribute('aria-hidden','true')});
     const footer=document.querySelector('footer');
