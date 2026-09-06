@@ -23,6 +23,7 @@
   }
   const daysForWorksheet=ws=>weekHasSunday(ws)?[2,3,4,5,6,7,8]:[2,3,4,5,6,7],daysForReport=a=>daysForWorksheet(worksheet(a?.sheet)||currentWorksheet()),dayLabel=d=>Number(d)===8?'Chủ nhật':`Thứ ${Number(d)}`,endDate=(start,sun)=>start instanceof Date&&!Number.isNaN(start.getTime())?new Date(start.getTime()+(sun?6:5)*864e5):null;
   const slotEntries=(a,d,s,p)=>(a?.entries||[]).filter(e=>Number(e.day)===Number(d)&&e.session===s&&Number(e.period)===Number(p));
+  const classReportText=e=>{const base=txt(e?.className),note=txt(e?.groupNote);return note?`${base} - ${note}`:base};
 
   function locOf(e){
     const schoolName=txt(e?.schoolName||e?.school),siteDisplay=txt(e?.siteDisplay||e?.siteName),label=txt(e?.locationLabel)||(siteDisplay?`${schoolName}\n${siteDisplay}`:schoolName);
@@ -84,7 +85,8 @@
       .lbg-r4-school-name{font-weight:900;line-height:1.15;text-transform:uppercase}
       .lbg-r4-site{font-weight:700;line-height:1.15;font-size:12px}
       .lbg-r4-location label{font-weight:800;white-space:nowrap}
-      .lbg-r4-ga{width:45px;padding:2px 3px;border:1px solid #94a3b8;border-radius:6px;background:#fff;text-align:center;font:700 13px "Times New Roman",serif}
+      .lbg-r4-ga{width:68px;min-width:68px;height:34px;box-sizing:border-box;padding:4px 8px;border:1px solid #94a3b8;border-radius:8px;background:#fff;text-align:center;font:800 15px "Times New Roman",serif;appearance:textfield;-moz-appearance:textfield}
+      .lbg-r4-ga::-webkit-outer-spin-button,.lbg-r4-ga::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
       .lbg-r4-ga:focus{outline:2px solid #0f766e;border-color:#0f766e}.lbg-r4-sep{font-weight:900}
       .sheet.lbg-r4-seven{min-width:1180px}.sheet.lbg-r4-six{min-width:1020px}
       #compare[data-lbg-r4="1"]{white-space:nowrap}`;
@@ -97,12 +99,12 @@
       rows+=`<tr><td class="session" rowspan="6">${session}</td><td class="session">Tiết</td>${ds.map(d=>`<td class="school">${locationEditor(a,d,session)}</td>`).join('')}</tr>`;
       for(let p=1;p<=5;p++)rows+=`<tr><td>Tiết ${p}</td>${ds.map(d=>{
         const first=locationList(a,d,session)[0]?.key||'';
-        return`<td>${slotEntries(a,d,session,p).map(e=>{const loc=locOf(e);return`<span class="${first&&loc.key!==first?'red':''}">${escHtml(e.className)}</span>`}).join(' & ')}</td>`
+        return`<td>${slotEntries(a,d,session,p).map(e=>{const loc=locOf(e);return`<span class="${first&&loc.key!==first?'red':''}">${escHtml(classReportText(e))}</span>`}).join(' & ')}</td>`
       }).join('')}</tr>`
     }
     const cap=q('caption');if(cap)cap.innerHTML=`${escHtml(a.teacherName)} • ${Number(a.total)||0} tiết${sun?'<span class="lbg-r4-sunday">Tuần có Chủ nhật</span>':''}`;
     const preview=q('preview');
-    if(preview)preview.innerHTML=`<div class="lbg-r4-help"><b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp gộp hiển thị theo nhãn nguồn nhưng số tiết vẫn lấy theo cột Tiết thực tế. Số GA có thể chỉnh trực tiếp.</div><div class="sheet ${sun?'lbg-r4-seven':'lbg-r4-six'}"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${escHtml(q('year')?.value)} - ${Number(q('year')?.value)+1}</h2><h3>Tuần ${escHtml(a.week||'...')}</h3><p>${a.start&&end?'(Từ ngày '+a.start.toLocaleDateString('vi-VN')+' đến ngày '+end.toLocaleDateString('vi-VN')+')':'(Chưa xác định ngày từ tên sheet)'}</p></div><table class="report"><tr>${['Buổi','Tiết',...ds.map(dayLabel)].map(x=>`<th style="height:62px;vertical-align:middle">${escHtml(x)}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>TỔNG: ${Number(a.total)||0} tiết</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div></div>`;
+    if(preview)preview.innerHTML=`<div class="lbg-r4-help"><b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp gộp giữ nguyên phần “TIẾT …” của nhãn nguồn; hàng Tiết 1–5 bên trái vẫn là tiết thực tế trong thời khóa biểu. Số GA có thể chỉnh trực tiếp.</div><div class="sheet ${sun?'lbg-r4-seven':'lbg-r4-six'}"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${escHtml(q('year')?.value)} - ${Number(q('year')?.value)+1}</h2><h3>Tuần ${escHtml(a.week||'...')}</h3><p>${a.start&&end?'(Từ ngày '+a.start.toLocaleDateString('vi-VN')+' đến ngày '+end.toLocaleDateString('vi-VN')+')':'(Chưa xác định ngày từ tên sheet)'}</p></div><table class="report"><tr>${['Buổi','Tiết',...ds.map(dayLabel)].map(x=>`<th style="height:62px;vertical-align:middle">${escHtml(x)}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>TỔNG: ${Number(a.total)||0} tiết</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div></div>`;
     bindGa(a);if(q('previewCard'))q('previewCard').hidden=false
   }
 
@@ -129,14 +131,14 @@
         const col=i+3,primary=locationList(a,d,session)[0]?.key||'';ws.getCell(sr,col).value=gaLocationText(a,d,session);
         for(let p=1;p<=5;p++){
           const items=slotEntries(a,d,session,p),cell=ws.getCell(pr+p-1,col);
-          cell.value=items.length?{richText:items.flatMap((e,k)=>{const loc=locOf(e);return[{text:(k?' & ':'')+txt(e.className),font:{name:'Times New Roman',size:12,color:{argb:primary&&loc.key!==primary?'FFFF0000':'FF000000'}}}]})}:''
+          cell.value=items.length?{richText:items.flatMap((e,k)=>{const loc=locOf(e);return[{text:(k?' & ':'')+classReportText(e),font:{name:'Times New Roman',size:12,color:{argb:primary&&loc.key!==primary?'FFFF0000':'FF000000'}}}]})}:''
         }
       })
     }
     ws.getCell('A17').value='TỔNG: '+(Number(a.total)||0)+' tiết';ws.getCell('E17').value='Giáo viên: '+txt(a.teacherName);
     ws.columns=[{width:9},{width:10},...ds.map(()=>({width:sun?19:21}))];
     for(let r=1;r<=17;r++){
-      ws.getRow(r).height=r<=3?26:r===4?42:(r===5||r===11?82:27);
+      ws.getRow(r).height=r<=3?26:r===4?42:(r===5||r===11?86:34);
       for(let c=1;c<=last;c++)styleCell(ws.getCell(r,c),[1,2,3,17].includes(r)?'FFB9E6A5':(r===4||c<=2?'FFF6C9AE':'FFDFF5E4'),[4,5,11,17].includes(r),r===1?18:r===2?15:12)
     }
     ws.getCell('E17').font={name:'Times New Roman',size:12,bold:true,italic:true};return ws
@@ -182,7 +184,7 @@
   function trackButtons(event){const b=event.target?.closest?.('button');if(!b)return;if(b.id==='multiClearAll')setTimeout(()=>selection.clear(),0);if(b.id==='multiSelectAll')setTimeout(()=>{selection.clear();readTeachers(currentWorksheet(),false).forEach(x=>selection.set(txt(x.code),{code:txt(x.code),name:txt(x.name||x.teacherName||x.code)}))},0)}
   function compareLabel(){const b=q('compare');if(!b)return;const label='⇄ So sánh phiên bản TKB',title='So sánh lịch của cùng một giáo viên giữa phiên bản TKB đang dùng và một phiên bản TKB khác.';if(b.textContent!==label)b.textContent=label;if(b.title!==title)b.title=title;if(b.dataset.lbgR4!=='1')b.dataset.lbgR4='1'}
   function weeklyDays(){const select=q('weeklyOffDay');if(!select)return;const weekName=q('weeklyStatsWeek')?.value||q('week')?.value,ws=worksheet(weekName);if(!ws)return;const ds=daysForWorksheet(ws),start=typeof startDate==='function'?startDate(ws.name):null,old=Number(select.value),sig=ds.join(',')+'|'+ws.name;if(select.dataset.lbgR4Days===sig)return;select.dataset.lbgR4Days=sig;select.innerHTML=ds.map(d=>{let label=dayLabel(d);if(start instanceof Date&&!Number.isNaN(start.getTime())){const date=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);date.setDate(date.getDate()+(d===8?6:d-2));label+=` – ${date.toLocaleDateString('vi-VN')}`}return`<option value="${d}">${escHtml(label)}</option>`}).join('');if(ds.includes(old))select.value=String(old);select.disabled=false}
-  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList};compareLabel();weeklyDays()}
+  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText};compareLabel();weeklyDays()}
   function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})}
 
   document.addEventListener('change',event=>{trackSelection(event);if(event.target?.id==='week'){selection.clear();sundayCache.delete(currentWorksheet());setTimeout(queue,40)}if(event.target?.id==='weeklyStatsWeek')setTimeout(()=>{const s=q('weeklyOffDay');if(s)s.dataset.lbgR4Days='';weeklyDays()},20)},true);
