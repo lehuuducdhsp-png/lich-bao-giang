@@ -60,7 +60,7 @@
       requestAnimationFrame(()=>{queued=false;fixTomorrowDetail()});
     };
     const observer=new MutationObserver(queueFix);
-    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+    observer.observe(document.body,{childList:true,subtree:true});
     queueFix();
 
     document.dispatchEvent(new CustomEvent('lbg-operational-period-hotfix-ready'));
