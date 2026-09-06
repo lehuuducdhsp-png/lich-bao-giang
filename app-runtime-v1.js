@@ -38,15 +38,17 @@
   (async()=>{
     try{
       await add('school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script');
-
-      // Hai hotfix này phải có mặt ngay tại màn hình đăng nhập/đổi mật khẩu.
-      // Các mô-đun nặng và mô-đun gọi Supabase phía dưới vẫn chờ Auth ready thật sự.
       await add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
       await add('password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1');
-
       await waitForAuth();
+
+      await add('tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script');
+      await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
+      await add('tkb-parser-bridge-v2.js?v=20260906.2','lbgTkbParserBridgeV2Script');
+      await add('conflict-check-v7.js?v=20260906.2','lbgConflictCheckV7Script');
+
       const modules=[
-        ['sheets-sync-security-v1.js?v=20260904.1','lbgSheetsSyncSecurityV1Script'],
+        ['sheets-sync-security-v1.js?v=20260906.1','lbgSheetsSyncSecurityV1Script'],
         ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
         ['access-control-v1.js?v=20260806.2','lbgAccessControlV1'],
         ['self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1'],
@@ -65,7 +67,7 @@
         ['branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1'],
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
-        ['report-engine-v3.js?v=20260807.4','lbgReportEngineV3Script'],
+        ['report-engine-v4.js?v=20260906.2','lbgReportEngineV4Script'],
         ['week-number-guard-v2.js?v=20260903.2','lbgWeekNumberGuardV2Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
@@ -96,7 +98,7 @@
         ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script'],
         ['kns-lesson-detail-v1.js?v=20260903.1','lbgKnsLessonDetailV1Script']
       ];
-      for(const [src,id] of modules)await add(src,id);
+      for(const [src,id]of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
   })();
 })();

@@ -1,0 +1,347 @@
+'use strict';
+(function(){
+  const blocked=new Set(['SÁNG','CHIỀU','THỨ','TIẾT','TỔNG','TÊN GV','TÊN GIÁO VIÊN','OFF','BUỔI','TRƯỜNG','PHÂN HIỆU','ĐIỂM TRƯỜNG','CƠ SỞ']);
+  const headerCache=new WeakMap(),teacherCache=new WeakMap(),mergeCache=new WeakMap(),noteCache=new WeakMap();
+  const txt=v=>String(v??'').replace(/\r/g,'').trim();
+  const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
+  const accentKey=v=>fold(v).replace(/\s+/g,'');
+  const escHtml=v=>typeof window.esc==='function'?window.esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const colLetters=n=>{let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s};
+  const lettersCol=s=>{let n=0;for(const ch of String(s||''))n=n*26+ch.charCodeAt(0)-64;return n};
+
+  function cellText(cell){
+    try{
+      const v=cell?.value;
+      if(v===null||v===undefined)return'';
+      if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')return String(v);
+      if(v instanceof Date)return v.toISOString();
+      if(Array.isArray(v?.richText))return v.richText.map(x=>x?.text??'').join('');
+      if(v?.result!==null&&v?.result!==undefined){
+        const r=v.result;
+        if(Array.isArray(r?.richText))return r.richText.map(x=>x?.text??'').join('');
+        return typeof r==='object'?'':String(r)
+      }
+      if(typeof v?.text==='string')return v.text;
+      return''
+    }catch{return''}
+  }
+  function formula(cell){try{return String(cell?.value?.formula||cell?.value?.sharedFormula||'')}catch{return''}}
+  function formulaCode(cell){const m=formula(cell).match(/COUNTIF\s*\([^,;]+[,;]\s*"([^"]+)"/i);return m?txt(m[1]).toUpperCase():''}
+
+  function mergeRanges(ws){
+    if(mergeCache.has(ws))return mergeCache.get(ws);
+    const out=[];
+    for(const range of ws?.model?.merges||[]){
+      const m=String(range).match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+      if(m)out.push({c1:lettersCol(m[1]),r1:+m[2],c2:lettersCol(m[3]),r2:+m[4],ref:String(range)})
+    }
+    mergeCache.set(ws,out);return out
+  }
+  function mergeFor(ws,row,col){for(const m of mergeRanges(ws))if(row>=m.r1&&row<=m.r2&&col>=m.c1&&col<=m.c2)return m;return null}
+  function master(ws,row,col){const m=mergeFor(ws,row,col);return m?ws.getCell(m.r1,m.c1):ws.getCell(row,col)}
+  const masterText=(ws,row,col)=>txt(cellText(master(ws,row,col)));
+
+  function dayNo(value){const f=fold(value);if(/CHU\s*NHAT/.test(f))return 8;const m=f.match(/THU\s*([2-7])/);return m?Number(m[1]):null}
+  function sessionName(value){const f=fold(value);if(f==='SANG')return'Sáng';if(f==='CHIEU')return'Chiều';return''}
+  function periodNo(value){const s=txt(value);return /^[1-5]$/.test(s)?Number(s):null}
+
+  function buildHeader(ws){
+    if(headerCache.has(ws))return headerCache.get(ws);
+    let best=null;
+    const maxHeaderRow=Math.min(12,ws?.rowCount||12),maxCol=Math.min(ws?.columnCount||100,140);
+    for(let hr=1;hr<=maxHeaderRow;hr++){
+      let hasTiet=false;
+      for(let c=1;c<=Math.min(maxCol,16);c++)if(fold(masterText(ws,hr,c))==='TIET'){hasTiet=true;break}
+      if(!hasTiet)continue;
+      const map=new Map();
+      for(let c=1;c<=maxCol;c++){
+        const p=periodNo(masterText(ws,hr,c));if(!p)continue;
+        let d=null,s='';
+        for(let r=hr-1;r>=1;r--){
+          if(!s)s=sessionName(masterText(ws,r,c));
+          if(!d)d=dayNo(masterText(ws,r,c));
+          if(s&&d)break
+        }
+        if(d&&s)map.set(c,{day:d,session:s,period:p,col:c,address:`${colLetters(c)}${hr}`})
+      }
+      if(map.size>=10&&(!best||map.size>best.map.size))best={headerRow:hr,map}
+    }
+    if(!best)best={headerRow:4,map:new Map()};
+    const cols=[...best.map.keys()].sort((a,b)=>a-b);
+    best.firstCol=cols[0]||0;best.lastCol=cols[cols.length-1]||0;
+    headerCache.set(ws,best);return best
+  }
+  const colInfoFor=(ws,col)=>buildHeader(ws).map.get(Number(col))||null;
+  const timetableColumns=ws=>[...buildHeader(ws).map.keys()].sort((a,b)=>a-b);
+
+  function teacherSummary(ws){
+    if(teacherCache.has(ws))return teacherCache.get(ws);
+    let h=null;
+    ws.eachRow({includeEmpty:false},row=>{
+      if(h)return;
+      row.eachCell({includeEmpty:false},cell=>{
+        if(!h&&/^(TÊN\s*GV|TÊN\s*GIÁO\s*VIÊN)$/i.test(txt(cellText(cell))))h={row:row.number,col:cell.col}
+      })
+    });
+    const byCode=new Map(),ordered=[],accentGroups=new Map();
+    if(h){
+      let blanks=0;
+      for(let r=h.row+1;r<=ws.rowCount;r++){
+        const raw=txt(cellText(ws.getCell(r,h.col)));
+        if(!raw){if(++blanks>=10&&ordered.length)break;continue}
+        blanks=0;
+        if(/^(OFF|TC|TỔNG\s*LỚP)$/i.test(raw))break;
+        let code=formulaCode(ws.getCell(r,h.col+1));
+        if(!code){
+          for(let c=h.col+2;c<=Math.min(ws.columnCount,h.col+6);c++){
+            const x=formulaCode(ws.getCell(r,c));
+            if(x&&!/[+P]$/i.test(x)){code=x;break}
+          }
+        }
+        if(!code)continue;
+        const name=raw.replace(/^\d+[.)-]?\s*/,'').replace(/\s+/g,' ').trim();
+        const item={name,code:code.toUpperCase(),row:r};
+        if(!byCode.has(item.code)){byCode.set(item.code,item);ordered.push(item)}
+      }
+      for(const code of byCode.keys()){
+        const k=accentKey(code);
+        if(!accentGroups.has(k))accentGroups.set(k,[]);
+        accentGroups.get(k).push(code)
+      }
+    }
+    const out={header:h,byCode,ordered,accentGroups};
+    teacherCache.set(ws,out);return out
+  }
+
+  function resolveTeacherCode(ws,rawCode){
+    const raw=txt(rawCode).toUpperCase();if(!raw)return null;
+    const summary=teacherSummary(ws);
+    if(summary.byCode.has(raw))return{code:raw,sourceCode:raw,mapping:'exact'};
+    const candidates=summary.accentGroups.get(accentKey(raw))||[];
+    if(candidates.length===1)return{code:candidates[0],sourceCode:raw,mapping:'accent-unique'};
+    return null
+  }
+  function codeLooksSafe(v){
+    const code=txt(v).toUpperCase();
+    if(!code||code.length>18||blocked.has(code)||/^\d+$/.test(code)||/^\d+\s*\/\s*\d+$/.test(code))return false;
+    return /^[A-ZÀ-ỸĐ0-9.]+$/.test(code)||(/^[A-ZÀ-ỸĐ0-9. ]+$/.test(code)&&/(^| )CTV($| )/.test(code))
+  }
+  function codeCounts(ws){
+    const counts=new Map(),summary=teacherSummary(ws),hasSummary=summary.byCode.size>0,header=buildHeader(ws);
+    for(const c of timetableColumns(ws))for(let r=header.headerRow+1;r<=ws.rowCount;r++){
+      const raw=txt(cellText(ws.getCell(r,c))).toUpperCase();if(!raw)continue;
+      const resolved=resolveTeacherCode(ws,raw);
+      if(resolved){counts.set(resolved.code,(counts.get(resolved.code)||0)+1);continue}
+      if(!hasSummary&&codeLooksSafe(raw))counts.set(raw,(counts.get(raw)||0)+1)
+    }
+    return counts
+  }
+  function teachers(ws){
+    const summary=teacherSummary(ws),counts=codeCounts(ws),out=[];
+    for(const item of summary.ordered){
+      const n=counts.get(item.code)||0;
+      if(n>0)out.push({name:item.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),code:item.code,expected:n,mapping:'summary-countif'})
+    }
+    if(!summary.byCode.size)for(const[code,n]of counts)out.push({name:'Mã '+code,code,expected:n,mapping:'unmapped'});
+    return out.sort((a,b)=>a.name.localeCompare(b.name,'vi'))
+  }
+
+  const cleanLines=raw=>txt(raw).split(/\n+/).map(x=>txt(x).replace(/^[-–]\s*/,'').replace(/\s+/g,' ')).filter(Boolean);
+  function parseSchool(raw){
+    const lines=cleanLines(raw),schoolName=lines[0]||'',schoolNote=lines.slice(1).join(' – ');
+    return{schoolName,schoolNote,schoolKey:fold(schoolName)}
+  }
+  function parseSite(raw){
+    const lines=cleanLines(raw);if(!lines.length)return{siteRaw:'',siteType:'',siteName:'',siteDisplay:'',siteKey:''};
+    const flat=lines.join(' – ').replace(/\s+([,:;)])/g,'$1').replace(/\(\s+/g,'(').trim();
+    const patterns=[
+      [/^TRỤ SỞ CHÍNH\s*[-–:]\s*(.*)$/i,'Trụ sở chính'],
+      [/^C[ƠỞ] SỞ CHÍNH\s*[-–:]\s*(.*)$/i,'Cơ sở chính'],
+      [/^TRƯỜNG CHÍNH\s*[-–:]\s*(.*)$/i,'Trường chính'],
+      [/^PHÂN HIỆU\s*(\d+)?\s*[-–:]\s*(.*)$/i,'Phân hiệu'],
+      [/^ĐIỂM TRƯỜNG\s*(\d+)?\s*[-–:]\s*(.*)$/i,'Điểm trường'],
+      [/^C[ƠỞ] SỞ\s*(\d+)?\s*[-–:]\s*(.*)$/i,'Cơ sở']
+    ];
+    for(const[prefix,type]of patterns){
+      const m=flat.match(prefix);if(!m)continue;
+      const numbered=/^(PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(type)&&m[1]?`${type} ${m[1]}`:type;
+      const name=txt(m[m.length-1]).replace(/^[–-]\s*/,'');
+      return{siteRaw:flat,siteType:numbered,siteName:name,siteDisplay:name?`${numbered}: ${name}`:numbered,siteKey:fold(`${numbered}|${name}`)}
+    }
+    return{siteRaw:flat,siteType:'Địa điểm',siteName:flat,siteDisplay:`Địa điểm: ${flat}`,siteKey:fold(flat)}
+  }
+  function blockNotes(ws,siteMerge,schoolMerge){
+    let cache=noteCache.get(ws);if(!cache){cache=new Map();noteCache.set(ws,cache)}
+    const key=siteMerge?.ref||schoolMerge?.ref||'';
+    if(cache.has(key))return cache.get(key);
+    const r1=siteMerge?.r1??schoolMerge?.r1??1,r2=siteMerge?.r2??schoolMerge?.r2??r1,notes=[];
+    for(let r=r1;r<=r2;r++)for(const c of timetableColumns(ws)){
+      const v=txt(cellText(ws.getCell(r,c)));if(!v)continue;
+      if(/GHI\s*CHÚ|DI\s*CHUYỂN|CÓ\s*DI\s*CHUYỂN/i.test(v)&&!notes.includes(v))notes.push(v)
+    }
+    cache.set(key,notes);return notes
+  }
+  function locationAt(ws,row){
+    let schoolRaw='',schoolAnchor=1,schoolMerge=null;
+    for(let r=row;r>=1&&!schoolRaw;r--){
+      const v=masterText(ws,r,2),parsed=parseSchool(v);
+      if(parsed.schoolName&&!/^(TRƯỜNG|LỚP|TIẾT|SÁNG|CHIỀU|THỨ)$/i.test(parsed.schoolName)){
+        schoolRaw=v;schoolMerge=mergeFor(ws,r,2);schoolAnchor=schoolMerge?.r1||r
+      }
+    }
+    let siteRaw='',siteMerge=null;
+    for(let r=row;r>=schoolAnchor&&!siteRaw;r--){
+      const v=masterText(ws,r,3);
+      if(!v)continue;
+      const f=fold(v);
+      if(/^(PHAN HIEU|DIEM TRUONG|CO SO)$/.test(f))continue;
+      siteRaw=v;siteMerge=mergeFor(ws,r,3)
+    }
+    const school=parseSchool(schoolRaw),site=parseSite(siteRaw);
+    const locationLabel=site.siteDisplay?`${school.schoolName}\n${site.siteDisplay}`:school.schoolName;
+    const locationKey=`${school.schoolKey}|${site.siteKey}`;
+    return{...school,...site,locationLabel,locationKey,notes:blockNotes(ws,siteMerge,schoolMerge)}
+  }
+
+  function classMeta(raw){
+    const classRaw=txt(raw).replace(/\s+/g,' ').trim();
+    let m=classRaw.match(/KHỐI\s*(\d+)\s*\(\s*(\d+)\s*LỚP\s*\)(?:\s*-\s*TIẾT\s*(\d+))?/i);
+    if(m)return{classRaw,classType:'combined',classCount:Number(m[2]),classDisplay:`KHỐI ${m[1]} (${m[2]} LỚP)`,groupNote:m[3]?`TIẾT ${m[3]}`:''};
+    if(/^\d{1,2}\s*\/\s*\d{1,2}$/.test(classRaw))return{classRaw,classType:'single',classCount:1,classDisplay:classRaw.replace(/\s/g,''),groupNote:''};
+    if(/[+&]/.test(classRaw)){
+      const parts=classRaw.split(/\s*(?:\+|&)\s*/).map(txt).filter(Boolean);
+      return{classRaw,classType:'combined-explicit',classCount:parts.length||1,classDisplay:parts.join(' + '),groupNote:''}
+    }
+    return{classRaw,classType:'unknown',classCount:1,classDisplay:classRaw,groupNote:''}
+  }
+  function isNoteText(v){return /^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(txt(v))}
+  function classAt(ws,row,col){
+    let fallback='';
+    const floor=Math.max(buildHeader(ws).headerRow+1,row-8);
+    for(let r=row-1;r>=floor;r--){
+      const v=txt(masterText(ws,r,col)).replace(/\s+/g,' ').trim();if(!v)continue;
+      if(resolveTeacherCode(ws,v)){
+        return classMeta(fallback)
+      }
+      const up=v.toUpperCase();
+      if(blocked.has(up)||/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI)$/i.test(v)||isNoteText(v))continue;
+      const meta=classMeta(v);
+      if(meta.classType!=='unknown')return meta;
+      if(!fallback&&v.length<=100)fallback=v
+    }
+    return classMeta(fallback)
+  }
+
+  function isBlue(cell){
+    try{
+      const c=cell?.font?.color||{},rgb=String(c.argb||'').slice(-6).toUpperCase();
+      if(Number(c.indexed)===12)return true;
+      if(!/^[0-9A-F]{6}$/.test(rgb))return false;
+      const[r,g,b]=[rgb.slice(0,2),rgb.slice(2,4),rgb.slice(4,6)].map(x=>parseInt(x,16));
+      return b>=90&&b>r*1.25&&b>g*1.05
+    }catch{return false}
+  }
+
+  function scanAssignments(ws,onlyCode=''){
+    if(!ws)return[];
+    const list=teachers(ws),allowed=new Set(list.map(x=>txt(x.code).toUpperCase())),nameMap=new Map(list.map(x=>[txt(x.code).toUpperCase(),x.name]));
+    const want=txt(onlyCode).toUpperCase(),entries=[],cols=timetableColumns(ws),startRow=buildHeader(ws).headerRow+1;
+    for(let r=startRow;r<=ws.rowCount;r++)for(const c of cols){
+      const cell=ws.getCell(r,c),sourceCode=txt(cellText(cell)).toUpperCase();if(!sourceCode)continue;
+      const resolved=resolveTeacherCode(ws,sourceCode);if(!resolved||!allowed.has(resolved.code)||(want&&resolved.code!==want))continue;
+      const info=colInfoFor(ws,c);if(!info)continue;
+      const loc=locationAt(ws,r),cm=classAt(ws,r,c);
+      entries.push({...info,
+        school:loc.schoolName,schoolName:loc.schoolName,schoolNote:loc.schoolNote,
+        siteRaw:loc.siteRaw,siteType:loc.siteType,siteName:loc.siteName,siteDisplay:loc.siteDisplay,
+        locationLabel:loc.locationLabel,locationKey:loc.locationKey,locationNotes:loc.notes,
+        className:cm.classDisplay,classRaw:cm.classRaw,classType:cm.classType,classCount:cm.classCount,groupNote:cm.groupNote,
+        code:resolved.code,sourceCode,resolution:resolved.mapping,teacherName:nameMap.get(resolved.code)||resolved.code,
+        address:cell.address,row:r,col:c,makeUp:isBlue(cell)
+      })
+    }
+    entries.sort((a,b)=>a.day-b.day||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.period-b.period||a.row-b.row||a.col-b.col);
+    return entries
+  }
+
+  const dayLabel=d=>Number(d)===8?'Chủ nhật':`Thứ ${Number(d)}`;
+  function analyze(ws,code,name){
+    if(!ws)throw new Error('Không tìm thấy sheet tuần đã chọn.');
+    if(!code)throw new Error('Chưa chọn giáo viên.');
+    const entries=scanAssignments(ws,code),warnings=[];
+    if(!entries.length)warnings.push(`Không tìm thấy ô mã ${code} trong vùng thời khóa biểu của sheet ${ws.name}.`);
+    for(const e of entries){
+      if(!e.schoolName)warnings.push(`Chưa xác định được trường tại ô ${e.address}.`);
+      if(!e.className)warnings.push(`Chưa xác định được lớp/nhóm lớp tại ô ${e.address}.`);
+      if(e.classType==='unknown'&&e.className)warnings.push(`Lớp/nhóm lớp tại ô ${e.address} có định dạng cần kiểm tra: ${e.className}.`);
+      if(e.resolution==='accent-unique'&&e.sourceCode!==e.code)warnings.push(`Chuẩn hóa mã tại ${e.address}: ${e.sourceCode} → ${e.code} vì chỉ có một mã giáo viên tương ứng sau khi bỏ dấu.`);
+      for(const note of e.locationNotes||[])warnings.push(`Ghi chú tại ${e.locationLabel||e.schoolName}: ${note}`)
+    }
+    const slots=new Map();
+    for(const e of entries){const k=`${e.day}|${e.session}|${e.period}`;if(!slots.has(k))slots.set(k,[]);slots.get(k).push(e)}
+    for(const[k,a]of slots)if(a.length>1){
+      const places=new Set(a.map(x=>x.locationKey).filter(Boolean)),[d,s,p]=k.split('|');
+      warnings.push(places.size>1
+        ?`CẢNH BÁO: ${a.length} phân công cùng khung ${dayLabel(+d)} ${s}, tiết ${p} nhưng khác điểm dạy/cơ sở.`
+        :`Có ${a.length} phân công cùng khung ${dayLabel(+d)} ${s}, tiết ${p}; cần xác nhận đây có phải lớp gộp/ghép hợp lệ.`)
+    }
+    const start=typeof window.startDate==='function'?window.startDate(ws.name):null;
+    let week='';try{week=start&&typeof window.weekNo==='function'?window.weekNo(start):''}catch{}
+    return{sheet:ws.name,code,teacherName:name||entries[0]?.teacherName||code,entries,total:entries.length,warnings:[...new Set(warnings)],start,week}
+  }
+
+  function enhanceDetail(a){
+    const table=document.querySelector('#detailCard table');if(!table)return;
+    const head=table.querySelector('thead tr');
+    if(head)head.innerHTML='<th>STT</th><th>Thứ</th><th>Buổi</th><th>Tiết</th><th>Trường</th><th>Phân hiệu / Điểm trường / Cơ sở</th><th>Loại lớp</th><th>Lớp / Nhóm lớp</th><th>Mã nguồn</th><th>Ô nguồn</th>';
+    const body=table.querySelector('tbody');
+    if(body)body.innerHTML=(a.entries||[]).map((e,i)=>`<tr>
+      <td>${i+1}</td><td>${escHtml(dayLabel(e.day))}</td><td>${escHtml(e.session)}</td><td><b>${e.period}</b></td>
+      <td>${escHtml(e.schoolName)}</td><td>${escHtml(e.siteDisplay||'—')}${e.locationNotes?.length?`<br><small>⚠ ${escHtml(e.locationNotes.join(' • '))}</small>`:''}</td>
+      <td>${e.classType==='combined'?'Lớp gộp':e.classType==='single'?'Lớp lẻ':e.classType==='combined-explicit'?'Lớp ghép':'Cần kiểm tra'}</td>
+      <td>${escHtml(e.className||'—')}${e.groupNote?`<br><small>Nhãn nguồn: ${escHtml(e.groupNote)}</small>`:''}</td>
+      <td>${escHtml(e.sourceCode)}${e.sourceCode!==e.code?` → <b>${escHtml(e.code)}</b>`:''}</td><td>${escHtml(e.address)}</td>
+    </tr>`).join('')
+  }
+  function currentWs(){try{const w=typeof wb!=='undefined'?wb:null,name=document.getElementById('week')?.value;return w&&name?w.getWorksheet(name):null}catch{return null}}
+  function installUi(){
+    const originalRender=typeof window.render==='function'?window.render:null;
+    if(originalRender&&!originalRender.__lbgParserV2){
+      const wrapped=function(a){originalRender(a);enhanceDetail(a)};wrapped.__lbgParserV2=true;window.render=wrapped
+    }
+    const btn=document.getElementById('analyze');
+    if(btn&&btn.dataset.lbgParserV2!=='1'){
+      btn.dataset.lbgParserV2='1';
+      btn.onclick=function(){
+        const sel=document.getElementById('teacher'),week=document.getElementById('week'),opt=sel?.selectedOptions?.[0],code=sel?.value||'',name=opt?.dataset?.name||code,old=btn.textContent;
+        btn.disabled=true;btn.textContent='Đang kiểm tra…';
+        try{
+          const ws=typeof wb!=='undefined'&&wb?wb.getWorksheet(week?.value):null;
+          window.result=analyze(ws,code,name);window.render?.(window.result);
+          const ex=document.getElementById('export');if(ex)ex.disabled=!window.result.total;
+          if(typeof window.toast==='function')window.toast(`Đã kiểm tra ${window.result.total} tiết.`)
+        }catch(error){console.error(error);alert('Không kiểm tra được lịch: '+(error?.message||error))}
+        finally{btn.textContent=old;btn.disabled=!sel?.value}
+      }
+    }
+  }
+  function refreshTeachers(){
+    try{
+      const w=typeof wb!=='undefined'?wb:null,week=document.getElementById('week'),sel=document.getElementById('teacher');
+      if(!w||!week||!sel||!week.value)return;
+      const ws=w.getWorksheet(week.value);if(!ws)return;
+      const list=teachers(ws),prev=sel.value;
+      sel.innerHTML='<option value="">Chọn giáo viên…</option>'+list.map(x=>`<option value="${escHtml(x.code)}" data-name="${escHtml(x.name)}">${escHtml(x.name)} — ${escHtml(x.code)} (${x.expected} tiết)</option>`).join('');
+      sel.disabled=!list.length;if(prev&&list.some(x=>x.code===prev))sel.value=prev
+    }catch(error){console.error('Parser V2: không làm mới được danh sách giáo viên',error)}
+  }
+
+  const api={version:'2.1.0',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,scanAssignments,analyze,dayLabel};
+  window.LBGTkbParserV2=api;window.teachers=teachers;window.analyzeNow=analyze;
+  window.colInfo=function(c){const ws=currentWs();return ws?colInfoFor(ws,c):null};
+  window.LBGAllTeachers=teachers;
+  installUi();
+  setTimeout(()=>{installUi();refreshTeachers()},80);
+  document.addEventListener('lbg-cloud-file-opened',()=>setTimeout(refreshTeachers,80));
+  document.getElementById('week')?.addEventListener('change',()=>setTimeout(refreshTeachers,30));
+})();

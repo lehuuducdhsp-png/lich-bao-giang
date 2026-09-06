@@ -65,13 +65,21 @@
     return out;
   }
 
+  function fullLocation(e){
+    const explicit=txt(e?.locationLabel);
+    if(explicit)return explicit;
+    const school=txt(e?.schoolName||e?.school),site=txt(e?.siteDisplay||e?.siteName);
+    return site?[school,site].filter(Boolean).join('\n'):school;
+  }
+
   function buildReport(mode){
     const a=current();
     if(!a||!Array.isArray(a.entries)||!a.entries.length)throw new Error('Hãy nhấn Kiểm tra và bảo đảm lịch có ít nhất một tiết trước khi lưu.');
     const c=yearConfig();
     if(!c.valid)throw new Error('Cấu hình năm học chưa hợp lệ. Ngày bắt đầu Tuần 01 phải là Thứ Hai và ngày kết thúc phải ở phía sau.');
     const start=a.start instanceof Date?new Date(a.start):null;
-    const end=start?new Date(start.getTime()+5*864e5):null;
+    const hasSunday=a.entries.some(e=>Number(e.day)===8);
+    const end=start?new Date(start.getTime()+(hasSunday?6:5)*864e5):null;
     const weekText=pad2(a.week);
     const destinationSheet=tabName(weekText,start,a.week,c.yearStart,c);
     const entries=a.entries.map((e,i)=>({
@@ -79,8 +87,17 @@
       day:Number(e.day),
       session:txt(e.session),
       period:Number(e.period),
-      school:txt(e.school),
+      school:fullLocation(e),
+      schoolName:txt(e.schoolName||e.school),
+      siteName:txt(e.siteName),
+      siteDisplay:txt(e.siteDisplay||e.siteName),
+      locationKey:txt(e.locationKey),
       className:txt(e.className),
+      classRaw:txt(e.classRaw||e.className),
+      classType:txt(e.classType),
+      classCount:Number(e.classCount)||1,
+      groupNote:txt(e.groupNote),
+      sourceCode:txt(e.sourceCode||e.code),
       sourceCell:txt(e.address),
       address:txt(e.address)
     }));
@@ -94,7 +111,7 @@
       yearStart:c.yearStart,yearEnd:c.yearStart+1,
       teacherName:txt(a.teacherName),teacherCode:txt(a.code),
       total:Number(a.total)||entries.length,totalPeriods:Number(a.total)||entries.length,
-      startDate:iso(start),endDate:iso(end),mode,saveMode:mode,existingAction:mode,
+      startDate:iso(start),endDate:iso(end),hasSunday,mode,saveMode:mode,existingAction:mode,
       gaValues,lessonPlanCounts:gaValues,entries,schedule:entries
     };
   }
@@ -249,5 +266,5 @@
     auth=null;
   });
 
-  window.LBG_SHEETS_OWNER_BRIDGE_VERSION='20260904.1';
+  window.LBG_SHEETS_OWNER_BRIDGE_VERSION='20260906.1';
 })();
