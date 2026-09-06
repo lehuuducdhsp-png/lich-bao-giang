@@ -14,7 +14,7 @@
   if(!document.getElementById('lbgTempPasswordPolicyV1Script')){
     const s=document.createElement('script');
     s.id='lbgTempPasswordPolicyV1Script';
-    s.src='temp-password-policy-v1.js?v=20260907.1';
+    s.src='temp-password-policy-v1.js?v=20260907.2';
     s.async=false;
     s.onerror=()=>console.error('Không tải được chính sách mật khẩu tạm giáo viên.');
     document.body.appendChild(s);
