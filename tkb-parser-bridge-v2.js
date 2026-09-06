@@ -19,30 +19,43 @@
     if(e.classType==='combined-explicit')return txt(e.className).split(/\s*\+\s*/).map(txt).filter(Boolean);
     return e.className?[e.className]:[]
   }
+  function actualPeriod(e){
+    const direct=Number(e?.teachingPeriod);if(Number.isFinite(direct)&&direct>0)return direct;
+    const m=txt(e?.groupNote||e?.classRaw).match(/\bTIẾT\s*([1-5])\b/i);if(m)return Number(m[1]);
+    return Number(e?.period)||null
+  }
+  function payUnits(e){const n=Number(e?.payUnits);return Number.isFinite(n)&&n>0?n:1}
+
   function scanSheet(ws,api){
     const parser=window.LBGTkbParserV2,roles=api.summaryRoles(ws),assignments=parser.scanAssignments(ws),source=[];
     for(const e of assignments){
       const meta=roles.get(txt(e.code).toUpperCase()),date=dateFor(ws,e.day);
       source.push({...e,sheet:ws.name,teacherName:meta?.name||e.teacherName||e.code,role:meta?.role||'UNKNOWN',date,dateKey:dateKey(date)})
     }
+
+    // groups = sự kiện dạy thực tế để đọc lịch/GA. source = từng ô mã GV để báo giảng và tính lương.
+    // Hai ô nguồn có thể cùng teachingPeriod và cùng lớp; khi đó groups gộp thành 1 sự kiện nhưng payPeriods vẫn giữ đủ số lượt nguồn.
     const grouped=new Map();
     for(const e of source){
-      const k=[e.code,e.locationKey,e.dateKey,e.day,e.session,e.period].join('|');
+      const eventPeriod=actualPeriod(e),slotPeriod=Number(e.slotPeriod??e.period)||null;
+      const k=[e.code,e.locationKey,e.dateKey,e.day,e.session,eventPeriod].join('|');
       if(!grouped.has(k))grouped.set(k,{
         id:`${ws.name}|${k}`,sheet:ws.name,code:e.code,teacherName:e.teacherName,role:e.role,makeUp:false,
-        day:e.day,session:e.session,period:e.period,
+        day:e.day,session:e.session,period:eventPeriod,teachingPeriod:eventPeriod,slotPeriods:[],
         school:e.locationLabel||e.schoolName||e.school,schoolName:e.schoolName||e.school,schoolKey:fold(e.schoolName||e.school),
         siteName:e.siteName||'',siteDisplay:e.siteDisplay||'',locationLabel:e.locationLabel||e.school,locationKey:e.locationKey,
         locationNotes:[...(e.locationNotes||[])],
-        date:e.date,dateKey:e.dateKey,source:[],addresses:[],classTexts:[],members:[],row:e.row,col:e.col
+        date:e.date,dateKey:e.dateKey,source:[],addresses:[],classTexts:[],members:[],row:e.row,col:e.col,payPeriods:0
       });
-      const g=grouped.get(k);g.source.push(e);g.addresses.push(e.address);g.makeUp=g.makeUp||e.makeUp;g.row=Math.min(g.row,e.row);g.col=Math.min(g.col,e.col);
+      const g=grouped.get(k);
+      g.source.push(e);g.addresses.push(e.address);g.payPeriods+=payUnits(e);g.makeUp=g.makeUp||e.makeUp;g.row=Math.min(g.row,e.row);g.col=Math.min(g.col,e.col);
+      if(slotPeriod&&!g.slotPeriods.includes(slotPeriod))g.slotPeriods.push(slotPeriod);
       if(e.className&&!g.classTexts.includes(e.className))g.classTexts.push(e.className);
       for(const note of e.locationNotes||[])if(!g.locationNotes.includes(note))g.locationNotes.push(note);
       for(const m of splitMembers(e))if(!g.members.some(x=>keyText(x)===keyText(m)))g.members.push(m)
     }
     const groups=[...grouped.values()];
-    groups.forEach(g=>{g.classDisplay=g.classTexts.join(' & ');g.payPeriods=g.source.length});
+    groups.forEach(g=>{g.classDisplay=g.classTexts.join(' & ');g.slotPeriods.sort((a,b)=>a-b)});
     groups.sort((a,b)=>(a.date?.getTime()||0)-(b.date?.getTime()||0)||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.period-b.period||a.row-b.row||a.col-b.col);
     return{ws,roles,source,groups}
   }
@@ -88,7 +101,7 @@
     if(installed)return true;
     const parser=window.LBGTkbParserV2,api=window.LBGTeacherIntelligenceV6;
     if(!parser||!api?.summaryRoles)return false;
-    api.scanSheet=ws=>scanSheet(ws,api);api.buildHistory=sheet=>buildHistory(sheet,api);api.__lbgParserV2=true;api.__lbgParserBridgeV2=true;
+    api.scanSheet=ws=>scanSheet(ws,api);api.buildHistory=sheet=>buildHistory(sheet,api);api.__lbgParserV2=true;api.__lbgParserBridgeV2=true;api.__lbgAtomicTeachingEvents=true;
     installed=true;document.dispatchEvent(new CustomEvent('lbg-tkb-parser-v2-ready'));return true
   }
   if(install())return;let tries=0;const timer=setInterval(()=>{tries++;if(install()||tries>300)clearInterval(timer)},50);

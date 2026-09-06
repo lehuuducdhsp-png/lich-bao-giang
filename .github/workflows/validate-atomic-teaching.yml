@@ -1,0 +1,39 @@
+name: Validate atomic teaching semantics
+
+on:
+  pull_request:
+    paths:
+      - 'app-runtime-v1.js'
+      - 'tkb-parser-bridge-v2.js'
+      - 'tkb-atomic-teaching-v1.js'
+      - 'checkin-tomorrow-order-v1.js'
+      - 'sheets-ga-sync-compat-v1.js'
+      - 'tests/atomic-teaching-v1.test.cjs'
+      - 'tests/sheets-ga-sync-compat-v1.test.cjs'
+      - '.github/workflows/validate-atomic-teaching.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check app-runtime-v1.js
+          node --check tkb-parser-bridge-v2.js
+          node --check tkb-atomic-teaching-v1.js
+          node --check checkin-tomorrow-order-v1.js
+          node --check sheets-ga-sync-compat-v1.js
+          node --check tests/atomic-teaching-v1.test.cjs
+          node --check tests/sheets-ga-sync-compat-v1.test.cjs
+      - name: Run atomic teaching regression
+        run: node tests/atomic-teaching-v1.test.cjs
+      - name: Run Google Sheets GA compatibility regression
+        run: node tests/sheets-ga-sync-compat-v1.test.cjs

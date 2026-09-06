@@ -44,7 +44,8 @@
 
       await add('tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script');
       await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
-      await add('tkb-parser-bridge-v2.js?v=20260906.2','lbgTkbParserBridgeV2Script');
+      await add('tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script');
+      await add('tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script');
       await add('conflict-check-v7.js?v=20260906.2','lbgConflictCheckV7Script');
 
       const modules=[
@@ -68,6 +69,7 @@
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
         ['report-engine-v4.js?v=20260906.2','lbgReportEngineV4Script'],
+        ['sheets-ga-sync-compat-v1.js?v=20260906.1','lbgSheetsGaSyncCompatV1Script'],
         ['week-number-guard-v2.js?v=20260903.2','lbgWeekNumberGuardV2Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
@@ -85,6 +87,7 @@
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
         ['checkin-member-window-v1.js?v=20260812.2','lbgCheckinMemberWindowV1'],
         ['checkin-tomorrow-report-v2.js?v=20260814.3','lbgCheckinTomorrowReportV2Script'],
+        ['checkin-tomorrow-order-v1.js?v=20260906.1','lbgCheckinTomorrowOrderV1Script'],
         ['schedule-ack-flexible-access-v1.js?v=20260814.2','lbgScheduleAckFlexibleAccessV1Script'],
         ['schedule-ack-list-ux-v3.js?v=20260814.5','lbgScheduleAckListUxV3Script'],
         ['schedule-ack-permission-visual-v1.js?v=20260814.1','lbgScheduleAckPermissionVisualV1Script'],
