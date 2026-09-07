@@ -49,7 +49,7 @@
       await add('conflict-check-v7.js?v=20260906.2','lbgConflictCheckV7Script');
 
       const modules=[
-        ['sheets-sync-security-v1.js?v=20260906.1','lbgSheetsSyncSecurityV1Script'],
+        ['sheets-sync-security-v1.js?v=20260907.2','lbgSheetsSyncSecurityV1Script'],
         ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
         ['access-control-v1.js?v=20260806.2','lbgAccessControlV1'],
         ['self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1'],
