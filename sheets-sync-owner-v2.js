@@ -82,25 +82,31 @@
     const end=start?new Date(start.getTime()+(hasSunday?6:5)*864e5):null;
     const weekText=pad2(a.week);
     const destinationSheet=tabName(weekText,start,a.week,c.yearStart,c);
-    const entries=a.entries.map((e,i)=>({
-      index:i+1,
-      day:Number(e.day),
-      session:txt(e.session),
-      period:Number(e.period),
-      school:fullLocation(e),
-      schoolName:txt(e.schoolName||e.school),
-      siteName:txt(e.siteName),
-      siteDisplay:txt(e.siteDisplay||e.siteName),
-      locationKey:txt(e.locationKey),
-      className:txt(e.className),
-      classRaw:txt(e.classRaw||e.className),
-      classType:txt(e.classType),
-      classCount:Number(e.classCount)||1,
-      groupNote:txt(e.groupNote),
-      sourceCode:txt(e.sourceCode||e.code),
-      sourceCell:txt(e.address),
-      address:txt(e.address)
-    }));
+    const entries=a.entries.map((e,i)=>{
+      const fullClassName=txt(e.classRaw||e.className);
+      return {
+        index:i+1,
+        day:Number(e.day),
+        session:txt(e.session),
+        period:Number(e.period),
+        school:fullLocation(e),
+        schoolName:txt(e.schoolName||e.school),
+        siteName:txt(e.siteName),
+        siteDisplay:txt(e.siteDisplay||e.siteName),
+        locationKey:txt(e.locationKey),
+        // Google Sheets cũ đọc className. Với lớp gộp, className đã được chuẩn hóa
+        // và làm mất hậu tố “- TIẾT N”, nên gửi nhãn gốc đầy đủ ở trường này.
+        className:fullClassName,
+        classBase:txt(e.className),
+        classRaw:fullClassName,
+        classType:txt(e.classType),
+        classCount:Number(e.classCount)||1,
+        groupNote:txt(e.groupNote),
+        sourceCode:txt(e.sourceCode||e.code),
+        sourceCell:txt(e.address),
+        address:txt(e.address)
+      };
+    });
     const gaValues=gaValuesOf(a);
     return {
       requestId:`lbg-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -266,5 +272,5 @@
     auth=null;
   });
 
-  window.LBG_SHEETS_OWNER_BRIDGE_VERSION='20260906.1';
+  window.LBG_SHEETS_OWNER_BRIDGE_VERSION='20260907.1';
 })();
