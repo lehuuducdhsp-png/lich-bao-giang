@@ -55,7 +55,7 @@
         ['self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1'],
         ['teacher-select-refresh-v1.js?v=20260807.3','lbgTeacherSelectRefreshV1'],
         ['group-management-v1.js?v=20260804.2','lbgGroupManagementV1'],
-        ['report-group-picker-v1.js?v=20260907.2','lbgReportGroupPickerV1Script'],
+        ['report-group-picker-v1.js?v=20260907.3','lbgReportGroupPickerV1Script'],
         ['group-delete-v1.js?v=20260810.1','lbgGroupDeleteV1'],
         ['group-member-remove-v1.js?v=20260810.1','lbgGroupMemberRemoveV1'],
         ['checkin-admin-polish-v1.js?v=20260815.1','lbgCheckinAdminPolishV1'],
