@@ -1,0 +1,28 @@
+name: Validate Sheets class label
+
+on:
+  pull_request:
+    paths:
+      - 'sheets-sync-owner-v2.js'
+      - 'index.html'
+      - 'tests/sheets-class-label-preserve.test.cjs'
+      - '.github/workflows/validate-sheets-class-label.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check sheets-sync-owner-v2.js
+          node --check tests/sheets-class-label-preserve.test.cjs
+      - name: Run Sheets label regression
+        run: node tests/sheets-class-label-preserve.test.cjs
