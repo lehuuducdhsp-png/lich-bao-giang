@@ -1,0 +1,31 @@
+name: Validate report group picker
+
+on:
+  pull_request:
+    paths:
+      - 'report-group-picker-v1.js'
+      - 'production-mode-v1.js'
+      - 'tests/report-group-picker-v1.test.cjs'
+      - '.github/workflows/validate-report-group-picker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check report-group-picker-v1.js
+          node --check production-mode-v1.js
+          node --check tests/report-group-picker-v1.test.cjs
+      - name: Check runtime loader
+        run: grep -Fq 'report-group-picker-v1.js?v=20260907.1' production-mode-v1.js
+      - name: Run group picker regression
+        run: node tests/report-group-picker-v1.test.cjs
