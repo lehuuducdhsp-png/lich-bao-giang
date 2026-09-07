@@ -1,0 +1,37 @@
+name: Validate Sheets class label
+
+on:
+  pull_request:
+    paths:
+      - 'sheets-sync-owner-v2.js'
+      - 'sheets-sync-security-v1.js'
+      - 'app-runtime-v1.js'
+      - 'index.html'
+      - 'tests/sheets-class-label-preserve.test.cjs'
+      - '.github/workflows/validate-sheets-class-label.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check sheets-sync-owner-v2.js
+          node --check sheets-sync-security-v1.js
+          node --check app-runtime-v1.js
+          node --check tests/sheets-class-label-preserve.test.cjs
+      - name: Check localhost cache-bust chain
+        run: |
+          grep -Fq "app-runtime-v1.js?v=20260907.3" index.html
+          grep -Fq "sheets-sync-security-v1.js?v=20260907.2" app-runtime-v1.js
+          grep -Fq "sheets-sync-owner-v2.js?v=20260907.2" sheets-sync-security-v1.js
+      - name: Run Sheets label regression
+        run: node tests/sheets-class-label-preserve.test.cjs

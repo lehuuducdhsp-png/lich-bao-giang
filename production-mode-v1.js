@@ -20,6 +20,15 @@
     document.body.appendChild(s);
   }
 
+  if(!document.getElementById('lbgReportGroupPickerV1Script')){
+    const s=document.createElement('script');
+    s.id='lbgReportGroupPickerV1Script';
+    s.src='report-group-picker-v1.js?v=20260907.1';
+    s.async=false;
+    s.onerror=()=>console.error('Không tải được bộ chọn khối / nhóm của báo giảng.');
+    document.body.appendChild(s);
+  }
+
   function clean(){
     document.querySelectorAll('.lbg-finish-test-badge').forEach(el=>{el.hidden=true;el.setAttribute('aria-hidden','true')});
     const footer=document.querySelector('footer');
