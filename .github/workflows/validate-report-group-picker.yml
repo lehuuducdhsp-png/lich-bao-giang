@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - 'report-group-picker-v1.js'
-      - 'production-mode-v1.js'
+      - 'app-runtime-v1.js'
+      - 'index.html'
       - 'tests/report-group-picker-v1.test.cjs'
+      - 'supabase/migrations/20260907190000_report_picker_global_specialist_groups.sql'
       - '.github/workflows/validate-report-group-picker.yml'
   workflow_dispatch:
 
@@ -23,9 +25,17 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check report-group-picker-v1.js
-          node --check production-mode-v1.js
+          node --check app-runtime-v1.js
           node --check tests/report-group-picker-v1.test.cjs
-      - name: Check runtime loader
-        run: grep -Fq 'report-group-picker-v1.js?v=20260907.1' production-mode-v1.js
+      - name: Check runtime loader and cache versions
+        run: |
+          grep -Fq 'report-group-picker-v1.js?v=20260907.3' app-runtime-v1.js
+          grep -Fq 'app-runtime-v1.js?v=20260907.2' index.html
+      - name: Check narrow report-group permission contract
+        run: |
+          grep -Fq 'report_picker_groups' supabase/migrations/20260907190000_report_picker_global_specialist_groups.sql
+          grep -Fq 'can_review_all_reports' supabase/migrations/20260907190000_report_picker_global_specialist_groups.sql
+          grep -Fq 'manager_can_review_all_reports' supabase/migrations/20260907190000_report_picker_global_specialist_groups.sql
+          grep -Fq 'can_view_teacher_group(g.id,v_uid)' supabase/migrations/20260907190000_report_picker_global_specialist_groups.sql
       - name: Run group picker regression
         run: node tests/report-group-picker-v1.test.cjs
