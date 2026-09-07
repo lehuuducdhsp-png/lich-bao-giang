@@ -50,6 +50,7 @@
 
       const modules=[
         ['sheets-sync-security-v1.js?v=20260907.2','lbgSheetsSyncSecurityV1Script'],
+        ['sheets-classraw-hotfix-v1.js?v=20260907.1','lbgSheetsClassRawHotfixV1Script'],
         ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
         ['access-control-v1.js?v=20260806.2','lbgAccessControlV1'],
         ['self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1'],
