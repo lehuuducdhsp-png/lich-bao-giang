@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260907.1';
+  const VERSION='20260907.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').trim();
   const normCode=v=>txt(v).toUpperCase();
@@ -119,8 +119,8 @@
   async function loadGroups(){
     if(!auth?.client)return;
     try{
-      const {data,error}=await auth.client.rpc('my_group_dashboard');if(error)throw error;
-      groups=Array.isArray(data?.groups)?data.groups:[];
+      const {data,error}=await auth.client.rpc('report_picker_groups');if(error)throw error;
+      groups=Array.isArray(data)?data:[];
       groups.sort((a,b)=>txt(a.name).localeCompare(txt(b.name),'vi'));
       ensureUi();renderOptions();
     }catch(error){
