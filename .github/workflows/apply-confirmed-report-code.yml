@@ -1,0 +1,87 @@
+name: Apply confirmed report code
+
+on:
+  push:
+    branches:
+      - fix/kns-lesson-title-20260908
+    paths:
+      - '.github/workflows/apply-confirmed-report-code.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/kns-lesson-title-20260908
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch code only
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def read(name): return Path(name).read_text(encoding='utf-8')
+          def write(name,s): Path(name).write_text(s,encoding='utf-8')
+          def must_replace(s,old,new,label):
+              if old not in s: raise SystemExit(f'Missing replacement target: {label}')
+              return s.replace(old,new,1)
+
+          p='report-engine-v4.js'; s=read(p)
+          old="  const slotEntries=(a,d,s,p)=>(a?.entries||[]).filter(e=>Number(e.day)===Number(d)&&e.session===s&&Number(e.period)===Number(p));\n  const classReportText=e=>{const base=txt(e?.className),note=txt(e?.groupNote);return note?`${base} - ${note}`:base};"
+          new="  const reportRules=()=>window.LBGReportPayRulesV1;\n  const slotEntries=(a,d,s,p)=>reportRules()?.displayEntries(a?.entries||[],d,s,p)||(a?.entries||[]).filter(e=>Number(e.day)===Number(d)&&e.session===s&&Number(e.teachingPeriod??e.period)===Number(p));\n  const classReportText=e=>{const base=txt(e?.className),note=txt(e?.groupNote);return note?`${base} - ${note}`:base};\n  function reportTotals(a){const main=Number(a?.total)||0,plus=reportRules()?.scanPlus(worksheet(a?.sheet)||currentWorksheet(),a?.code)||0;return reportRules()?.totals(main,plus)||{main,plus,total:main+plus}}\n  function reportTotalText(a){const t=reportTotals(a);return reportRules()?.totalText(t.main,t.plus)||(t.plus?`TỔNG: ${t.main} tiết + ${t.plus} tiết = ${t.total} tiết`:`TỔNG: ${t.main} tiết`)}"
+          s=must_replace(s,old,new,'report slot helpers')
+          s=must_replace(s,"    if(!a)return;style();ensureGa(a);\n    const ds=daysForReport(a),sun=ds.includes(8),end=endDate(a.start,sun);let rows='';","    if(!a)return;style();ensureGa(a);\n    const totals=reportTotals(a),ds=daysForReport(a),sun=ds.includes(8),end=endDate(a.start,sun);let rows='';",'preview totals')
+          s=must_replace(s,"    const cap=q('caption');if(cap)cap.innerHTML=`${escHtml(a.teacherName)} • ${Number(a.total)||0} tiết${sun?'<span class=\"lbg-r4-sunday\">Tuần có Chủ nhật</span>':''}`;","    const cap=q('caption');if(cap)cap.innerHTML=`${escHtml(a.teacherName)} • ${totals.total} tiết${totals.plus?` (${totals.main} + ${totals.plus} cộng)`:''}${sun?'<span class=\"lbg-r4-sunday\">Tuần có Chủ nhật</span>':''}`;",'preview caption')
+          s=must_replace(s,'<b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp gộp giữ nguyên phần “TIẾT …” của nhãn nguồn; hàng Tiết 1–5 bên trái vẫn là tiết thực tế trong thời khóa biểu. Số GA có thể chỉnh trực tiếp.','<b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp/nhóm có nhãn “- TIẾT N” được đặt đúng vào hàng Tiết N và các ô nguồn của cùng một lớp ghép chỉ hiển thị một lần. Số GA có thể chỉnh trực tiếp.','preview help')
+          s=must_replace(s,'<div class="foot"><span>TỔNG: ${Number(a.total)||0} tiết</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div>','<div class="foot"><span>${escHtml(reportTotalText(a))}</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div>','preview total label')
+          s=must_replace(s,"    ensureGa(a);\n    const ws=bookOut.addWorksheet(uniqueSheetName(bookOut,name)),ds=daysForReport(a),sun=ds.includes(8),last=2+ds.length,endCol=colLetter(last),year=Number(q('year')?.value)||new Date().getFullYear();","    ensureGa(a);\n    const totals=reportTotals(a),ws=bookOut.addWorksheet(uniqueSheetName(bookOut,name)),ds=daysForReport(a),sun=ds.includes(8),last=2+ds.length,endCol=colLetter(last),year=Number(q('year')?.value)||new Date().getFullYear();",'export totals')
+          s=must_replace(s,"    ws.getCell('A17').value='TỔNG: '+(Number(a.total)||0)+' tiết';ws.getCell('E17').value='Giáo viên: '+txt(a.teacherName);","    ws.getCell('A17').value=reportTotalText(a);ws.getCell('E17').value='Giáo viên: '+txt(a.teacherName);",'export total label')
+          s=must_replace(s,"    return list.map(t=>{const a=analyzeNow(ws,t.code,t.name);ensureGa(a);return a}).filter(a=>a.total>0)","    return list.map(t=>{const a=analyzeNow(ws,t.code,t.name);ensureGa(a);return a}).filter(a=>reportTotals(a).total>0)",'export filter')
+          s=must_replace(s,"window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText}","window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText,slotEntries,reportTotals,reportTotalText}",'export API')
+          write(p,s)
+
+          p='monthly-calendar-v3.js'; s=read(p)
+          s=must_replace(s,"  const dedupe=a=>[...new Set(a.filter(Boolean))];","  const dedupe=a=>[...new Set(a.filter(Boolean))];\n  const reportRules=()=>window.LBGReportPayRulesV1;",'monthly rules helper')
+          s=must_replace(s,"    const counts=new Map(),schools=[],seen=new Set(),warnings=[],usableSheets=[];\n    let sourceEntryTotal=0;","    const counts=new Map(),schools=[],seen=new Set(),warnings=[],usableSheets=[],plusByWeek=new Map();\n    let sourceEntryTotal=0;",'monthly plus map')
+          s=must_replace(s,"      seg.usable=true;usableSheets.push(item.ws.name);\n      for(const w of a.warnings||[])warnings.push(`${item.ws.name}: ${w}`);","      seg.usable=true;usableSheets.push(item.ws.name);\n      const allowedDays=seg.dates.map(d=>d.getDay()===0?8:d.getDay()+1);\n      plusByWeek.set(seg.key,reportRules()?.scanPlus(item.ws,teacher.code,{allowedDays})||0);\n      for(const w of a.warnings||[])warnings.push(`${item.ws.name}: ${w}`);",'monthly scan plus')
+          s=must_replace(s,"    const built={version:VERSION,contextKey:currentContextKey(),year,month,teacherCode:teacher.code,teacherName:teacher.name,segments,dates,counts,schools,warnings:dedupe(warnings),sourceSheets:usableSheets,sourceEntryTotal,autoTotal};","    const built={version:VERSION,contextKey:currentContextKey(),year,month,teacherCode:teacher.code,teacherName:teacher.name,segments,dates,counts,schools,warnings:dedupe(warnings),sourceSheets:usableSheets,sourceEntryTotal,autoTotal,plusByWeek};",'monthly built plus')
+          old="  function weekTotal(b,seg){let t=0;for(const school of b.schools)for(const d of seg.dates)t+=val(b,school,d);return t}\n  function monthTotal(b){let t=0;for(const school of b.schools)for(const d of b.dates)t+=val(b,school,d);return t}\n  const assistTotal=b=>b.segments.reduce((t,s)=>t+n0(b.manual.weeklyAssist[s.key]||0),0);"
+          new="  function weekTotal(b,seg){let t=0;for(const school of b.schools)for(const d of seg.dates)t+=val(b,school,d);return t}\n  const weekPlus=(b,seg)=>n0(b.plusByWeek?.get?.(seg.key)||b.plusByWeek?.[seg.key]||0);\n  const weekLabel=(b,seg)=>reportRules()?.weekLabel(weekTotal(b,seg),weekPlus(b,seg))||(weekPlus(b,seg)?`${weekTotal(b,seg)} Chính (T) + Cộng ${weekPlus(b,seg)}`:`${weekTotal(b,seg)} Chính (T)`);\n  function monthBaseTotal(b){let t=0;for(const school of b.schools)for(const d of b.dates)t+=val(b,school,d);return t}\n  const plusTotal=b=>b.segments.reduce((t,s)=>t+weekPlus(b,s),0);\n  const monthTotal=b=>monthBaseTotal(b)+plusTotal(b);\n  const assistTotal=b=>b.segments.reduce((t,s)=>t+n0(b.manual.weeklyAssist[s.key]||0),0);"
+          s=must_replace(s,old,new,'monthly total helpers')
+          s=must_replace(s,"strong.textContent=`${weekTotal(b,b.segments[i])} Chính (T)`","strong.textContent=weekLabel(b,b.segments[i])",'monthly refresh week label')
+          s=must_replace(s,"    const total=monthTotal(b),delta=total-b.autoTotal,summary=q('month2Summary');","    const total=monthTotal(b),baseTotal=monthBaseTotal(b),delta=baseTotal-b.autoTotal,summary=q('month2Summary');",'monthly delta')
+          s=must_replace(s,"so với TKB (${b.autoTotal} → ${total}).","so với TKB chính (${b.autoTotal} → ${baseTotal}).",'monthly delta text')
+          s=must_replace(s,"<b>${weekTotal(b,s)} Chính (T)</b><label>Trợ (P)","<b>${weekLabel(b,s)}</b><label>Trợ (P)",'monthly preview week label')
+          s=must_replace(s,"ws.getCell(tr,col).value=`${weekTotal(b,seg)} Chính (T)\\n${n0(b.manual.weeklyAssist[seg.key]||0)||'..........'} Trợ (P)`;","ws.getCell(tr,col).value=`${weekLabel(b,seg)}\\n${n0(b.manual.weeklyAssist[seg.key]||0)||'..........'} Trợ (P)`;",'monthly export week label')
+          s=must_replace(s,"ws.getCell(gr,1).value=`TỔNG CỘNG SỐ TIẾT THÁNG ${pad(b.month)}/${b.year}: ${monthTotal(b)} TIẾT CHÍNH • ${assistTotal(b)} TIẾT TRỢ GIẢNG`;","ws.getCell(gr,1).value=`TỔNG CỘNG SỐ TIẾT THÁNG ${pad(b.month)}/${b.year}: ${monthTotal(b)} TIẾT${plusTotal(b)?` (${monthBaseTotal(b)}+${plusTotal(b)})`:''} CHÍNH • ${assistTotal(b)} TIẾT TRỢ GIẢNG`;",'monthly grand total')
+          s=s.replace("const VERSION='20260808.12';","const VERSION='20260908.1';",1)
+          write(p,s)
+
+          p='app-runtime-v1.js'; s=read(p)
+          s=must_replace(s,"        ['report-engine-v4.js?v=20260906.2','lbgReportEngineV4Script'],","        ['report-pay-rules-v1.js?v=20260908.1','lbgReportPayRulesV1Script'],\n        ['report-engine-v4.js?v=20260908.1','lbgReportEngineV4Script'],",'runtime report rules')
+          s=s.replace("['monthly-calendar-v3.js?v=20260808.12','lbgMonthlyCalendarV3Script']","['monthly-calendar-v3.js?v=20260908.1','lbgMonthlyCalendarV3Script']",1)
+          write(p,s)
+          PY
+
+          node --check report-pay-rules-v1.js
+          node --check report-engine-v4.js
+          node --check monthly-calendar-v3.js
+          node --check app-runtime-v1.js
+          node --check kns-lesson-detail-v2.js
+          node tests/report-pay-rules-v1.test.cjs
+          node tests/kns-lesson-detail-v2.test.cjs
+          node tests/sheets-class-label-preserve.test.cjs
+          node tests/report-group-picker-v1.test.cjs
+
+          git config user.name 'lbg-ci-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add report-engine-v4.js monthly-calendar-v3.js app-runtime-v1.js
+          git commit -m 'Hoàn thiện lịch báo giảng theo tiết thực dạy và tiết cộng'
+          git push origin HEAD:fix/kns-lesson-title-20260908
