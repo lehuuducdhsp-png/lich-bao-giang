@@ -1,33 +1,29 @@
 'use strict';
 const assert=require('node:assert/strict');
-
 global.window={};
-global.document={
-  readyState:'loading',
-  getElementById(){return null;},
-  addEventListener(){},
-  head:{appendChild(){}},
-  createElement(){return{style:{},appendChild(){},remove(){}};}
-};
+global.localStorage={getItem(){return null}};
+global.document={readyState:'loading',getElementById(){return null},addEventListener(){},head:{appendChild(){}},createElement(){return{style:{},appendChild(){},remove(){}};}};
 global.MutationObserver=class{observe(){} disconnect(){}};
 global.setInterval=()=>0;
-
+require('../teaching-plan-progress-v1.js');
 require('../kns-lesson-detail-v2.js');
 const api=global.window.LBGKnsLessonDetailV2;
 assert.ok(api,'helper API must be exposed');
-assert.equal(api.version,'20260908.1');
+assert.equal(api.version,'20260909.1');
 assert.deepEqual(api.gradesOf('KHỐI 4 (4 LỚP) - TIẾT 4'),[4]);
 assert.deepEqual(api.gradesOf('4/1 + 4/2 + 5/1'),[4,5]);
-assert.equal(api.lookupLesson(4,12).title,'Giá trị của gia đình');
-assert.equal(api.lookupLesson(4,12).sourcePeriod,13);
-assert.equal(api.lookupLesson(4,12).overridden,true);
-assert.equal(api.lookupLesson(5,12).title,'Kĩ năng tạo cảm hứng trong học tập');
-assert.equal(api.lookupLesson(5,12).sourcePeriod,13);
-assert.equal(api.lookupLesson(4,13).kind,'moved');
-assert.equal(api.lookupLesson(4,13).movedTo,12);
-assert.equal(api.lookupLesson(1,12).title,'Thể hiện lễ phép trong gia đình');
-assert.equal(api.lookupLesson(4,16).kind,'out');
+assert.equal(api.lookupLesson(4,12,'kns').title,'Giá trị của gia đình');
+assert.equal(api.lookupLesson(4,12,'kns').sourcePeriod,13);
+assert.equal(api.lookupLesson(4,12,'kns').overridden,true);
+assert.equal(api.lookupLesson(5,12,'kns').title,'Kĩ năng tạo cảm hứng trong học tập');
+assert.equal(api.lookupLesson(5,12,'kns').sourcePeriod,13);
+assert.equal(api.lookupLesson(4,13,'kns').kind,'moved');
+assert.equal(api.lookupLesson(4,13,'kns').movedTo,12);
+assert.equal(api.lookupLesson(4,13,'stem').title,'Kèn cổ vũ');
+assert.equal(api.lookupLesson(4,13,'stem').sourcePeriod,12);
+assert.equal(api.lookupLesson(5,13,'stem').title,'Thiết bị đo độ dẫn điện');
+assert.equal(api.lookupLesson(1,12,'kns').title,'Thể hiện lễ phép trong gia đình');
 const a={gaValues:{'2|Sáng|TRUONG A|DIEM 1':'12'}};
 const e={day:2,session:'Sáng',locationKey:'TRUONG A|DIEM 1',school:'Trường A'};
 assert.equal(api.gaValue(a,e),12);
-console.log('kns-lesson-detail-v2 tests: ok');
+console.log('kns-lesson-detail-v2 tests: KNS/STEM titles and grade 4-5 remap ok');
