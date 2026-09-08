@@ -10,7 +10,7 @@ assert.match(sync,/className:fullClassName/,'className gửi sang Apps Script ph
 assert.match(sync,/classBase:txt\(e\.className\)/,'Vẫn phải giữ className chuẩn hóa ở classBase để tương thích về sau.');
 assert.match(sync,/classRaw:fullClassName/,'classRaw phải giữ cùng nhãn đầy đủ.');
 assert.match(index,/sheets-sync-owner-v2\.js\?v=20260907\.2/,'Phải bump cache để trình duyệt tải bản sửa Google Sheets mới.');
-assert.match(index,/app-runtime-v1\.js\?v=20260907\.3/,'Phải bump cache runtime để localhost không dùng mã cũ.');
+assert.match(index,/app-runtime-v1\.js\?v=20260908\.1/,'Runtime mới phải được cache-bust để localhost không dùng mã cũ.');
 
 const sample={className:'KHỐI 3 (4 LỚP)',classRaw:'KHỐI 3 (4 LỚP) - TIẾT 4'};
 const fullClassName=String(sample.classRaw||sample.className).trim();
