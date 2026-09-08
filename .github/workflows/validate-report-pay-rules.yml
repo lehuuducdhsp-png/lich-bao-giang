@@ -34,6 +34,6 @@ jobs:
           grep -Fq "report-pay-rules-v1.js?v=20260908.1" app-runtime-v1.js
           grep -Fq "report-engine-v4.js?v=20260908.1" app-runtime-v1.js
           grep -Fq "monthly-calendar-v3.js?v=20260908.1" app-runtime-v1.js
-          grep -Fq "app-runtime-v1.js?v=20260909.1" index.html
+          grep -Fq "app-runtime-v1.js?v=20260909.2" index.html
       - name: Run report/pay regression
         run: node tests/report-pay-rules-v1.test.cjs
