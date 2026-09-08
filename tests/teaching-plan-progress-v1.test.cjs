@@ -34,10 +34,10 @@ const book={worksheets:[ws]};
 const ledger=H.buildLedger(book,{parser,startDateFor(){return new Date(2026,8,7,12)}});
 const collab=ledger.events.find(e=>e.teachingPeriod===4&&e.track==='kns');
 assert.ok(collab,'combined KNS event exists');
-assert.equal(collab.participants.length,2,'black KNS + blue CTV are one collaborative event');
+assert.equal(collab.participants.length,2,'black KNS + blue/green-style CTV are one collaborative event');
 assert.deepEqual(new Set(collab.participants.map(p=>p.role)),new Set(['kns','ctv-kns']));
 const knsCycles=ledger.cycles.filter(c=>c.track==='kns').sort((a,b)=>a.time-b.time);
-assert.deepEqual(knsCycles.map(c=>c.ga),[1,2,4],'make-up/extra actual day in the same week advances the KNS sequence');
+assert.deepEqual(knsCycles.map(c=>c.ga),[1,2,4],'extra actual teaching in the same week advances the KNS sequence without waiting for next week');
 const stemCycles=ledger.cycles.filter(c=>c.track==='stem');
 assert.deepEqual(stemCycles.map(c=>c.ga),[3],'red teacher uses independent STEM sequence');
 
@@ -54,4 +54,4 @@ const normal=[
 assert.equal(H.detectTeacherConflicts(normal,wsConflict).red.length,0,'periods 2,3 then 5 at another school are not a conflict');
 const trueConflict=[...normal,{code:'P',row:2,col:7,day:2,session:'Sáng',period:4,teachingPeriod:3,locationKey:'DA_LE',className:'4/4',classType:'single'}];
 assert.equal(H.detectTeacherConflicts(trueConflict,wsConflict).red.length,1,'same actual teaching period at different locations is a true conflict');
-console.log('OK teaching plan progress: colors, nearest GA, collaboration, make-up, true conflicts');
+console.log('OK teaching plan progress: colors, nearest GA, collaboration, same-week extra teaching, true conflicts');
