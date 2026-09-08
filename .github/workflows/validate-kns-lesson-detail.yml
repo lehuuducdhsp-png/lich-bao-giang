@@ -1,0 +1,54 @@
+name: Validate KNS lesson detail
+
+on:
+  pull_request:
+    paths:
+      - 'teaching-plan-progress-v1.js'
+      - 'kns-lesson-detail-v2.js'
+      - 'conflict-check-v8.js'
+      - 'ga-suggestion-v7.js'
+      - 'production-mode-v1.js'
+      - 'app-runtime-v1.js'
+      - 'index.html'
+      - 'tests/teaching-plan-progress-v1.test.cjs'
+      - 'tests/kns-lesson-detail-v2.test.cjs'
+      - 'tests/ga-suggestion-v7.test.cjs'
+      - '.github/workflows/validate-kns-lesson-detail.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check teaching-plan-progress-v1.js
+          node --check kns-lesson-detail-v2.js
+          node --check conflict-check-v8.js
+          node --check ga-suggestion-v7.js
+          node --check production-mode-v1.js
+          node --check app-runtime-v1.js
+          node --check tests/teaching-plan-progress-v1.test.cjs
+          node --check tests/kns-lesson-detail-v2.test.cjs
+          node --check tests/ga-suggestion-v7.test.cjs
+      - name: Check runtime contract
+        run: |
+          grep -Fq "teaching-plan-progress-v1.js?v=20260909.1" app-runtime-v1.js
+          grep -Fq "conflict-check-v8.js?v=20260909.1" app-runtime-v1.js
+          grep -Fq "kns-lesson-detail-v2.js?v=20260909.1" app-runtime-v1.js
+          grep -Fq "ga-suggestion-v7.js?v=20260909.2" app-runtime-v1.js
+          grep -Fq "production-mode-v1.js?v=20260909.2" app-runtime-v1.js
+          grep -Fq "app-runtime-v1.js?v=20260909.2" index.html
+          ! grep -Fq "conflict-check-v7.js?v=" app-runtime-v1.js
+      - name: Run teaching progress regression
+        run: node tests/teaching-plan-progress-v1.test.cjs
+      - name: Run lesson title regression
+        run: node tests/kns-lesson-detail-v2.test.cjs
+      - name: Run GA suggestion regression
+        run: node tests/ga-suggestion-v7.test.cjs

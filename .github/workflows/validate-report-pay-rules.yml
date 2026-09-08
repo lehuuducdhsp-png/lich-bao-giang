@@ -1,0 +1,39 @@
+name: Validate report pay rules
+
+on:
+  pull_request:
+    paths:
+      - 'report-pay-rules-v1.js'
+      - 'report-engine-v4.js'
+      - 'monthly-calendar-v3.js'
+      - 'app-runtime-v1.js'
+      - 'index.html'
+      - 'tests/report-pay-rules-v1.test.cjs'
+      - '.github/workflows/validate-report-pay-rules.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check report-pay-rules-v1.js
+          node --check report-engine-v4.js
+          node --check monthly-calendar-v3.js
+          node --check app-runtime-v1.js
+          node --check tests/report-pay-rules-v1.test.cjs
+      - name: Check runtime contract
+        run: |
+          grep -Fq "report-pay-rules-v1.js?v=20260908.1" app-runtime-v1.js
+          grep -Fq "report-engine-v4.js?v=20260908.1" app-runtime-v1.js
+          grep -Fq "monthly-calendar-v3.js?v=20260908.1" app-runtime-v1.js
+          grep -Fq "app-runtime-v1.js?v=20260909.2" index.html
+      - name: Run report/pay regression
+        run: node tests/report-pay-rules-v1.test.cjs

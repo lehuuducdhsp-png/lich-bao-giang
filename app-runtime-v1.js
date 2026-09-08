@@ -46,7 +46,9 @@
       await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
       await add('tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script');
       await add('tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script');
-      await add('conflict-check-v7.js?v=20260906.2','lbgConflictCheckV7Script');
+      await add('teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script');
+      await add('conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script');
+      await add('ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script');
 
       const modules=[
         ['sheets-sync-security-v1.js?v=20260907.2','lbgSheetsSyncSecurityV1Script'],
@@ -70,20 +72,21 @@
         ['branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1'],
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
-        ['report-engine-v4.js?v=20260906.2','lbgReportEngineV4Script'],
+        ['report-pay-rules-v1.js?v=20260908.1','lbgReportPayRulesV1Script'],
+        ['report-engine-v4.js?v=20260908.1','lbgReportEngineV4Script'],
         ['sheets-ga-sync-compat-v1.js?v=20260906.1','lbgSheetsGaSyncCompatV1Script'],
         ['week-number-guard-v2.js?v=20260903.2','lbgWeekNumberGuardV2Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
         ['checkin-history-order-v1.js?v=20260810.1','lbgCheckinHistoryOrderV1'],
-        ['monthly-calendar-v3.js?v=20260808.12','lbgMonthlyCalendarV3Script'],
+        ['monthly-calendar-v3.js?v=20260908.1','lbgMonthlyCalendarV3Script'],
         ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script'],
         ['section-order-fix-v1.js?v=20260808.13','lbgSectionOrderFixV1Script'],
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],
         ['monthly-teacher-search-v1.js?v=20260808.16','lbgMonthlyTeacherSearchV1Script'],
         ['role-privacy-polish-v1.js?v=20260814.2','lbgRolePrivacyPolishV1Script'],
-        ['production-mode-v1.js?v=20260808.17','lbgProductionModeV1Script'],
+        ['production-mode-v1.js?v=20260909.2','lbgProductionModeV1Script'],
         ['sidebar-compact-readable-v1.js?v=20260811.3','lbgSidebarCompactReadableV1'],
         ['readability-targeted-v2.js?v=20260811.1','lbgReadabilityTargetedV2'],
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
@@ -101,7 +104,7 @@
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
         ['checkin-monitor-compact-ux-v1.js?v=20260904.1','lbgCheckinMonitorCompactUxV1'],
         ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script'],
-        ['kns-lesson-detail-v1.js?v=20260903.1','lbgKnsLessonDetailV1Script']
+        ['kns-lesson-detail-v2.js?v=20260909.1','lbgKnsLessonDetailV2Script']
       ];
       for(const [src,id]of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}

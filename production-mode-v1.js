@@ -29,6 +29,15 @@
     document.body.appendChild(s);
   }
 
+  if(!document.getElementById('lbgGaSuggestionV7Script')){
+    const s=document.createElement('script');
+    s.id='lbgGaSuggestionV7Script';
+    s.src='ga-suggestion-v7.js?v=20260909.1';
+    s.async=false;
+    s.onerror=()=>console.error('Không tải được bộ phân tích giáo án V7.');
+    document.body.appendChild(s);
+  }
+
   function clean(){
     document.querySelectorAll('.lbg-finish-test-badge').forEach(el=>{el.hidden=true;el.setAttribute('aria-hidden','true')});
     const footer=document.querySelector('footer');

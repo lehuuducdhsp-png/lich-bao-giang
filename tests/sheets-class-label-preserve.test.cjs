@@ -1,19 +1,15 @@
 'use strict';
 const fs=require('fs');
 const assert=require('assert');
-
 const sync=fs.readFileSync('sheets-sync-owner-v2.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
-
 assert.match(sync,/const fullClassName=txt\(e\.classRaw\|\|e\.className\)/,'Payload Google Sheets phải ưu tiên classRaw đầy đủ.');
 assert.match(sync,/className:fullClassName/,'className gửi sang Apps Script phải giữ nhãn đầy đủ.');
 assert.match(sync,/classBase:txt\(e\.className\)/,'Vẫn phải giữ className chuẩn hóa ở classBase để tương thích về sau.');
 assert.match(sync,/classRaw:fullClassName/,'classRaw phải giữ cùng nhãn đầy đủ.');
 assert.match(index,/sheets-sync-owner-v2\.js\?v=20260907\.2/,'Phải bump cache để trình duyệt tải bản sửa Google Sheets mới.');
-assert.match(index,/app-runtime-v1\.js\?v=20260907\.3/,'Phải bump cache runtime để localhost không dùng mã cũ.');
-
+assert.match(index,/app-runtime-v1\.js\?v=20260909\.2/,'Runtime tổng hợp phải giữ đúng chuỗi cache của bản test mới.');
 const sample={className:'KHỐI 3 (4 LỚP)',classRaw:'KHỐI 3 (4 LỚP) - TIẾT 4'};
 const fullClassName=String(sample.classRaw||sample.className).trim();
 assert.strictEqual(fullClassName,'KHỐI 3 (4 LỚP) - TIẾT 4');
-
 console.log('OK Sheets class label: giữ nguyên - TIẾT N khi lưu Google Sheets');
