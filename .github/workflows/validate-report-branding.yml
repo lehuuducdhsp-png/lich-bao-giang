@@ -1,0 +1,27 @@
+name: Validate report branding
+
+on:
+  pull_request:
+    paths:
+      - 'report-branding-v1.js'
+      - 'index.html'
+      - 'tests/report-branding-v1.test.cjs'
+      - '.github/workflows/validate-report-branding.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check report-branding-v1.js
+          node --check tests/report-branding-v1.test.cjs
+      - name: Run branding regression
+        run: node tests/report-branding-v1.test.cjs
