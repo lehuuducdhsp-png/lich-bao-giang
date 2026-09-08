@@ -46,7 +46,8 @@
       await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
       await add('tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script');
       await add('tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script');
-      await add('conflict-check-v7.js?v=20260906.2','lbgConflictCheckV7Script');
+      await add('teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script');
+      await add('conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script');
 
       const modules=[
         ['sheets-sync-security-v1.js?v=20260907.2','lbgSheetsSyncSecurityV1Script'],
@@ -102,7 +103,7 @@
         ['admin-list-ux-v1.js?v=20260812.1','lbgAdminListUxV1'],
         ['checkin-monitor-compact-ux-v1.js?v=20260904.1','lbgCheckinMonitorCompactUxV1'],
         ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script'],
-        ['kns-lesson-detail-v2.js?v=20260908.1','lbgKnsLessonDetailV2Script']
+        ['kns-lesson-detail-v2.js?v=20260909.1','lbgKnsLessonDetailV2Script']
       ];
       for(const [src,id]of modules)await add(src,id);
     }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
