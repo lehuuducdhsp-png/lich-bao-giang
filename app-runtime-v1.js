@@ -48,6 +48,7 @@
       await add('tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script');
       await add('teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script');
       await add('conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script');
+      await add('ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script');
 
       const modules=[
         ['sheets-sync-security-v1.js?v=20260907.2','lbgSheetsSyncSecurityV1Script'],
@@ -85,7 +86,7 @@
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],
         ['monthly-teacher-search-v1.js?v=20260808.16','lbgMonthlyTeacherSearchV1Script'],
         ['role-privacy-polish-v1.js?v=20260814.2','lbgRolePrivacyPolishV1Script'],
-        ['production-mode-v1.js?v=20260808.17','lbgProductionModeV1Script'],
+        ['production-mode-v1.js?v=20260909.2','lbgProductionModeV1Script'],
         ['sidebar-compact-readable-v1.js?v=20260811.3','lbgSidebarCompactReadableV1'],
         ['readability-targeted-v2.js?v=20260811.1','lbgReadabilityTargetedV2'],
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
