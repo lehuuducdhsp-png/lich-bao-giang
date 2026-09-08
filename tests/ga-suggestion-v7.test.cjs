@@ -18,8 +18,8 @@ const ws2={name:'14T9',entries:[
 ]};
 const book={worksheets:[ws1,ws2]};
 const parser={scanAssignments(ws){return ws.entries}};
-const roles={ĐỨC:'KNS',CTV1:'CTV',STEM1:'STEM'};
-const starts={7T9:new Date(2026,8,7,12),14T9:new Date(2026,8,14,12)};
+const roles={'ĐỨC':'KNS','CTV1':'CTV','STEM1':'STEM'};
+const starts={'7T9':new Date(2026,8,7,12),'14T9':new Date(2026,8,14,12)};
 const history=V.buildHistory(book,'14T9',{parser,roleResolver(_ws,code){return roles[code]||'KNS'},startDateFor(ws){return starts[ws.name]},weekLike(){return true}});
 
 const first=history.byAddress.get('7T9!E176');
