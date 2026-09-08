@@ -22,8 +22,11 @@
     sundayCache.set(ws,found);return found
   }
   const daysForWorksheet=ws=>weekHasSunday(ws)?[2,3,4,5,6,7,8]:[2,3,4,5,6,7],daysForReport=a=>daysForWorksheet(worksheet(a?.sheet)||currentWorksheet()),dayLabel=d=>Number(d)===8?'Chủ nhật':`Thứ ${Number(d)}`,endDate=(start,sun)=>start instanceof Date&&!Number.isNaN(start.getTime())?new Date(start.getTime()+(sun?6:5)*864e5):null;
-  const slotEntries=(a,d,s,p)=>(a?.entries||[]).filter(e=>Number(e.day)===Number(d)&&e.session===s&&Number(e.period)===Number(p));
+  const reportRules=()=>window.LBGReportPayRulesV1;
+  const slotEntries=(a,d,s,p)=>reportRules()?.displayEntries(a?.entries||[],d,s,p)||(a?.entries||[]).filter(e=>Number(e.day)===Number(d)&&e.session===s&&Number(e.teachingPeriod??e.period)===Number(p));
   const classReportText=e=>{const base=txt(e?.className),note=txt(e?.groupNote);return note?`${base} - ${note}`:base};
+  function reportTotals(a){const main=Number(a?.total)||0,plus=reportRules()?.scanPlus(worksheet(a?.sheet)||currentWorksheet(),a?.code)||0;return reportRules()?.totals(main,plus)||{main,plus,total:main+plus}}
+  function reportTotalText(a){const t=reportTotals(a);return reportRules()?.totalText(t.main,t.plus)||(t.plus?`TỔNG: ${t.main} tiết + ${t.plus} tiết = ${t.total} tiết`:`TỔNG: ${t.main} tiết`)}
 
   function locOf(e){
     const schoolName=txt(e?.schoolName||e?.school),siteDisplay=txt(e?.siteDisplay||e?.siteName),label=txt(e?.locationLabel)||(siteDisplay?`${schoolName}\n${siteDisplay}`:schoolName);
@@ -94,7 +97,7 @@
   }
   function renderPreviewV4(a){
     if(!a)return;style();ensureGa(a);
-    const ds=daysForReport(a),sun=ds.includes(8),end=endDate(a.start,sun);let rows='';
+    const totals=reportTotals(a),ds=daysForReport(a),sun=ds.includes(8),end=endDate(a.start,sun);let rows='';
     for(const session of ['Sáng','Chiều']){
       rows+=`<tr><td class="session" rowspan="6">${session}</td><td class="session">Tiết</td>${ds.map(d=>`<td class="school">${locationEditor(a,d,session)}</td>`).join('')}</tr>`;
       for(let p=1;p<=5;p++)rows+=`<tr><td>Tiết ${p}</td>${ds.map(d=>{
@@ -102,9 +105,9 @@
         return`<td>${slotEntries(a,d,session,p).map(e=>{const loc=locOf(e);return`<span class="${first&&loc.key!==first?'red':''}">${escHtml(classReportText(e))}</span>`}).join(' & ')}</td>`
       }).join('')}</tr>`
     }
-    const cap=q('caption');if(cap)cap.innerHTML=`${escHtml(a.teacherName)} • ${Number(a.total)||0} tiết${sun?'<span class="lbg-r4-sunday">Tuần có Chủ nhật</span>':''}`;
+    const cap=q('caption');if(cap)cap.innerHTML=`${escHtml(a.teacherName)} • ${totals.total} tiết${totals.plus?` (${totals.main} + ${totals.plus} cộng)`:''}${sun?'<span class="lbg-r4-sunday">Tuần có Chủ nhật</span>':''}`;
     const preview=q('preview');
-    if(preview)preview.innerHTML=`<div class="lbg-r4-help"><b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp gộp giữ nguyên phần “TIẾT …” của nhãn nguồn; hàng Tiết 1–5 bên trái vẫn là tiết thực tế trong thời khóa biểu. Số GA có thể chỉnh trực tiếp.</div><div class="sheet ${sun?'lbg-r4-seven':'lbg-r4-six'}"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${escHtml(q('year')?.value)} - ${Number(q('year')?.value)+1}</h2><h3>Tuần ${escHtml(a.week||'...')}</h3><p>${a.start&&end?'(Từ ngày '+a.start.toLocaleDateString('vi-VN')+' đến ngày '+end.toLocaleDateString('vi-VN')+')':'(Chưa xác định ngày từ tên sheet)'}</p></div><table class="report"><tr>${['Buổi','Tiết',...ds.map(dayLabel)].map(x=>`<th style="height:62px;vertical-align:middle">${escHtml(x)}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>TỔNG: ${Number(a.total)||0} tiết</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div></div>`;
+    if(preview)preview.innerHTML=`<div class="lbg-r4-help"><b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp/nhóm có nhãn “- TIẾT N” được đặt đúng vào hàng Tiết N và các ô nguồn của cùng một lớp ghép chỉ hiển thị một lần. Số GA có thể chỉnh trực tiếp.</div><div class="sheet ${sun?'lbg-r4-seven':'lbg-r4-six'}"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${escHtml(q('year')?.value)} - ${Number(q('year')?.value)+1}</h2><h3>Tuần ${escHtml(a.week||'...')}</h3><p>${a.start&&end?'(Từ ngày '+a.start.toLocaleDateString('vi-VN')+' đến ngày '+end.toLocaleDateString('vi-VN')+')':'(Chưa xác định ngày từ tên sheet)'}</p></div><table class="report"><tr>${['Buổi','Tiết',...ds.map(dayLabel)].map(x=>`<th style="height:62px;vertical-align:middle">${escHtml(x)}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>${escHtml(reportTotalText(a))}</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div></div>`;
     bindGa(a);if(q('previewCard'))q('previewCard').hidden=false
   }
 
@@ -119,7 +122,7 @@
   }
   function addReportSheet(bookOut,a,name){
     ensureGa(a);
-    const ws=bookOut.addWorksheet(uniqueSheetName(bookOut,name)),ds=daysForReport(a),sun=ds.includes(8),last=2+ds.length,endCol=colLetter(last),year=Number(q('year')?.value)||new Date().getFullYear();
+    const totals=reportTotals(a),ws=bookOut.addWorksheet(uniqueSheetName(bookOut,name)),ds=daysForReport(a),sun=ds.includes(8),last=2+ds.length,endCol=colLetter(last),year=Number(q('year')?.value)||new Date().getFullYear();
     ws.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:.2,right:.2,top:.3,bottom:.3,header:.1,footer:.1}};
     [`A1:${endCol}1`,`A2:${endCol}2`,`A3:${endCol}3`,'A5:A10','A11:A16','A17:D17',`E17:${endCol}17`].forEach(r=>ws.mergeCells(r));
     ws.getCell('A1').value=`LỊCH BÁO GIẢNG NĂM HỌC ${year} - ${year+1}`;ws.getCell('A2').value='Tuần '+(a.week||'');
@@ -135,7 +138,7 @@
         }
       })
     }
-    ws.getCell('A17').value='TỔNG: '+(Number(a.total)||0)+' tiết';ws.getCell('E17').value='Giáo viên: '+txt(a.teacherName);
+    ws.getCell('A17').value=reportTotalText(a);ws.getCell('E17').value='Giáo viên: '+txt(a.teacherName);
     ws.columns=[{width:9},{width:10},...ds.map(()=>({width:sun?19:21}))];
     for(let r=1;r<=17;r++){
       ws.getRow(r).height=r<=3?26:r===4?42:(r===5||r===11?86:34);
@@ -155,7 +158,7 @@
   function reportsForExport(){
     const ws=currentWorksheet();if(!ws)throw new Error('Hãy chọn tuần trước khi xuất.');
     const list=selectedTeachers();if(!list.length)throw new Error('Hãy chọn ít nhất một giáo viên.');
-    return list.map(t=>{const a=analyzeNow(ws,t.code,t.name);ensureGa(a);return a}).filter(a=>a.total>0)
+    return list.map(t=>{const a=analyzeNow(ws,t.code,t.name);ensureGa(a);return a}).filter(a=>reportTotals(a).total>0)
   }
   function loadScript(url,name){return new Promise((ok,no)=>{if(window[name])return ok(window[name]);const s=document.createElement('script');s.src=url;s.onload=()=>ok(window[name]);s.onerror=()=>no(new Error('Không tải được thư viện ZIP.'));document.head.appendChild(s)})}
   async function exportUnified(){
@@ -184,7 +187,7 @@
   function trackButtons(event){const b=event.target?.closest?.('button');if(!b)return;if(b.id==='multiClearAll')setTimeout(()=>selection.clear(),0);if(b.id==='multiSelectAll')setTimeout(()=>{selection.clear();readTeachers(currentWorksheet(),false).forEach(x=>selection.set(txt(x.code),{code:txt(x.code),name:txt(x.name||x.teacherName||x.code)}))},0)}
   function compareLabel(){const b=q('compare');if(!b)return;const label='⇄ So sánh phiên bản TKB',title='So sánh lịch của cùng một giáo viên giữa phiên bản TKB đang dùng và một phiên bản TKB khác.';if(b.textContent!==label)b.textContent=label;if(b.title!==title)b.title=title;if(b.dataset.lbgR4!=='1')b.dataset.lbgR4='1'}
   function weeklyDays(){const select=q('weeklyOffDay');if(!select)return;const weekName=q('weeklyStatsWeek')?.value||q('week')?.value,ws=worksheet(weekName);if(!ws)return;const ds=daysForWorksheet(ws),start=typeof startDate==='function'?startDate(ws.name):null,old=Number(select.value),sig=ds.join(',')+'|'+ws.name;if(select.dataset.lbgR4Days===sig)return;select.dataset.lbgR4Days=sig;select.innerHTML=ds.map(d=>{let label=dayLabel(d);if(start instanceof Date&&!Number.isNaN(start.getTime())){const date=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);date.setDate(date.getDate()+(d===8?6:d-2));label+=` – ${date.toLocaleDateString('vi-VN')}`}return`<option value="${d}">${escHtml(label)}</option>`}).join('');if(ds.includes(old))select.value=String(old);select.disabled=false}
-  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText};compareLabel();weeklyDays()}
+  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText,slotEntries,reportTotals,reportTotalText};compareLabel();weeklyDays()}
   function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})}
 
   document.addEventListener('change',event=>{trackSelection(event);if(event.target?.id==='week'){selection.clear();sundayCache.delete(currentWorksheet());setTimeout(queue,40)}if(event.target?.id==='weeklyStatsWeek')setTimeout(()=>{const s=q('weeklyOffDay');if(s)s.dataset.lbgR4Days='';weeklyDays()},20)},true);
