@@ -50,7 +50,7 @@
   if(!document.getElementById('lbgSheetsAtomicPayloadV2Script')){
     const s=document.createElement('script');
     s.id='lbgSheetsAtomicPayloadV2Script';
-    s.src='sheets-atomic-payload-v2.js?v=20260909.1';
+    s.src='sheets-atomic-payload-v2.js?v=20260909.2';
     s.async=false;
     s.onerror=()=>console.error('Không tải được bộ dữ liệu nguyên tử cho Google Sheets.');
     document.body.appendChild(s);
