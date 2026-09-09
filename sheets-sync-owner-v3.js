@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260909.1';
+  const VERSION='20260909.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const pad2=v=>String(Number(v)||v||'').padStart(2,'0');
@@ -71,7 +71,7 @@
     const cfg=typeof window.getSchoolYearConfig==='function'?window.getSchoolYearConfig():{};
     return{yearStart,startDate:txt(cfg?.startDate),endDate:txt(cfg?.endDate)};
   }
-  function tabName(a,cfg){
+  function tabName(a){
     const d=a?.start instanceof Date&&!Number.isNaN(a.start.getTime())?a.start:null;
     return d?`TUẦN ${pad2(a.week)}_${d.getDate()}T${d.getMonth()+1}`:`TUẦN ${pad2(a?.week)}`;
   }
@@ -81,7 +81,7 @@
   }
   function buildReport(mode){
     const a=current();if(!a?.entries?.length)throw new Error('Hãy nhấn Kiểm tra trước khi lưu Google Sheets.');
-    const entries=atomicEntries(a),base=txt(a.code).toUpperCase(),main=entries.filter(e=>txt(e.sourceCode).toUpperCase()===base).length,plus=entries.filter(e=>txt(e.sourceCode).toUpperCase()===`${base}+`).length,total=main+plus,cfg=yearConfig(),start=a.start instanceof Date?new Date(a.start):null,end=start?new Date(start.getTime()+5*864e5):null,destinationSheet=tabName(a,cfg),ga=gaValues(a);
+    const entries=atomicEntries(a),base=txt(a.code).toUpperCase(),main=entries.filter(e=>txt(e.sourceCode).toUpperCase()===base).length,plus=entries.filter(e=>txt(e.sourceCode).toUpperCase()===`${base}+`).length,total=main+plus,cfg=yearConfig(),start=a.start instanceof Date?new Date(a.start):null,end=start?new Date(start.getTime()+5*864e5):null,destinationSheet=tabName(a),ga=gaValues(a);
     return{
       requestId:`lbg-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       week:a.week,weekNo:a.week,weekNumber:a.week,weekText:pad2(a.week),weekLabel:txt(a.sheet),sourceSheet:txt(a.sheet),sheetName:destinationSheet,destinationSheet,tabName:destinationSheet,
@@ -91,6 +91,17 @@
       gaValues:ga,lessonPlanCounts:ga,entries,schedule:entries.map(e=>({...e})),
       reportSemanticsVersion:VERSION,entriesAreAtomicAssignments:true,entriesAreTeachingEvents:false,periodSemantics:'teachingPeriod',sourceCountSemantics:'atomicTeacherCodeCells'
     };
+  }
+  async function invokeOwner(report){
+    const cfg=window.LBG_SUPABASE_CONFIG,token=txt(auth?.session?.access_token);
+    if(!cfg?.url||!cfg?.publishableKey)throw new Error('Thiếu cấu hình kết nối Google Sheets.');
+    if(!token)throw new Error('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.');
+    const res=await fetch(`${String(cfg.url).replace(/\/$/,'')}/functions/v1/google-sheets-owner`,{
+      method:'POST',headers:{Authorization:`Bearer ${token}`,apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(report)
+    });
+    let data={};try{data=await res.json()}catch{throw new Error(`Máy chủ Google Sheets phản hồi không hợp lệ (HTTP ${res.status}).`)}
+    if(!res.ok||data?.error)throw new Error(data?.error||`Google Sheets phản hồi HTTP ${res.status}.`);
+    return data;
   }
   function closeChoice(){const o=q('sheetSaveOverlayV3');if(o)o.style.display='none'}
   function ensureChoice(){
@@ -106,8 +117,7 @@
     if(pending)return;closeChoice();let report;try{report=buildReport(mode)}catch(e){alert(e.message||String(e));return}
     const b=q('saveSheets');pending=true;if(b){b.disabled=true;b.textContent=`Đang lưu ${report.total} tiết…`}
     try{
-      const res=await auth.client.functions.invoke('google-sheets-owner',{body:report});if(res?.error)throw res.error;
-      const data=res?.data||{};if(data?.error)throw new Error(data.error);
+      const data=await invokeOwner(report);
       if(typeof toast==='function')toast(`Đã gửi ${report.mainPeriods} chính${report.plusPeriods?` + ${report.plusPeriods} cộng`:''} = ${report.total} tiết vào Google Sheets.`);
       if(data?.url&&confirm('Đã lưu Google Sheets. Mở file ngay?'))window.open(data.url,'_blank','noopener');
     }catch(e){console.error(e);alert('Không lưu được Google Sheets: '+(e?.message||String(e)))}finally{pending=false;if(b){b.disabled=false;b.textContent='☁ Lưu vào Google Sheets'}}
@@ -119,6 +129,6 @@
   }
   function install(a){auth=a||window.LBGAuth;if(!auth)return false;if(installed)return true;installed=true;ensureButton();document.addEventListener('click',e=>{if(e.target?.closest?.('#analyze'))setTimeout(ensureButton,150)},true);document.addEventListener('change',e=>{if(['week','teacher'].includes(e.target?.id))setTimeout(ensureButton,80)},true);return true}
   function boot(){const a=window.LBGAuth;if(!a){setTimeout(boot,80);return}a.onReady?.(x=>install(x));if(a.profile&&!a.profile.must_change_password)install(a)}
-  window.LBGSheetsOwnerV3={version:VERSION,explicitPeriod,atomicEntries,buildReport,install};
+  window.LBGSheetsOwnerV3={version:VERSION,explicitPeriod,atomicEntries,buildReport,invokeOwner,install};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
