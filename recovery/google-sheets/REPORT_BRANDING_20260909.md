@@ -4,9 +4,9 @@
 Bổ sung phần nhận diện Hoàn Năng vào đầu mỗi tab LỊCH BÁO GIẢNG mà không thay đổi cách đếm tiết, dấu ` & `, GA, BẢN 2, MỤC LỤC hoặc kích thước phần bảng hiện có.
 
 ## Nguồn đã đối chiếu
-Bản `Mã.gs` đang dùng đã được người vận hành cung cấp trực tiếp ngày 09/09/2026. Bản hoàn chỉnh sau khi vá có SHA-256:
+Bản `Mã.gs` đang dùng đã được người vận hành cung cấp trực tiếp ngày 09/09/2026. Bản hoàn chỉnh sau khi sửa lỗi logo xám có SHA-256:
 
-`2b75686456ab577bb219582d9ebce911a9851dd48ce7645f38946b0fb0f4a070`
+`73f497b313c44ed6aff7813c5d85eb0c164a31fd2fba7a2a955bbb47cf6682c9`
 
 Không đưa toàn bộ `Mã.gs` vào repo công khai để tránh công khai các định danh cấu hình Google Sheets không cần thiết.
 
@@ -33,14 +33,21 @@ Phần bảng cũ chỉ dịch xuống 3 hàng; độ rộng cột vẫn giữ `
 - Không thay `resolveSheetName_()`, nên Ghi đè / BẢN 2 vẫn giữ nguyên.
 - Không thay `updateIndex_()`, `doPost()`, xác thực access key hoặc quản lý file năm học.
 - Khi ghi đè một tab, ảnh branding cũ neo ở 3 hàng đầu được xóa trước khi chèn ảnh mới để không nhân đôi logo.
-- Nếu Google Sheets không tải được ảnh từ URL, việc lưu báo giảng vẫn tiếp tục và khu logo hiển thị chữ `HOÀN NĂNG` dự phòng thay vì làm hỏng toàn bộ lần lưu.
+- Nếu chèn ảnh thất bại, việc lưu báo giảng vẫn tiếp tục và khu logo hiển thị chữ `HOÀN NĂNG` dự phòng thay vì làm hỏng toàn bộ lần lưu.
 
-## Logo
-Apps Script dùng ảnh public tại:
+## Logo — sửa lỗi 09/09/2026
+Bản thử đầu tiên dùng URL public `assets/hoan-nang-report-logo.jpg`. Ảnh đó là asset cũ không hợp lệ cho branding hiện tại và khi Apps Script chèn vào Google Sheets đã hiển thị thành khối xám.
 
-`https://raw.githubusercontent.com/lehuuducdhsp-png/lich-bao-giang/main/assets/hoan-nang-report-logo.jpg`
+Bản sửa cuối **không tải logo qua URL nữa**. JPEG logo Hoàn Năng đã kiểm tra được nhúng trực tiếp dưới dạng Base64 trong `Mã.gs`, sau đó tạo Blob bằng `Utilities.base64Decode()` + `Utilities.newBlob()` và chèn bằng `sheet.insertImage(blob, ...)`.
 
-Kích thước chèn: khoảng `116 × 88 px`, vừa trong vùng `A1:B3`.
+Logo nhúng có:
+
+- kích thước nguồn: `280 × 212 px`;
+- dung lượng: `9116 bytes`;
+- SHA-256: `2b2f0cf50ea07a0246b44d524333b7b44890492c5340b9667507d8a6e2fae90e`;
+- kích thước hiển thị: khoảng `116 × 88 px`, vừa trong vùng `A1:B3`.
+
+Cách này loại bỏ phụ thuộc vào URL/HTTP cache và tránh lặp lại lỗi khối xám.
 
 ## Triển khai Apps Script
 Đây là thay đổi ở `Mã.gs` của Web App Apps Script, nên sau khi thay mã phải tạo **New version** cho deployment hiện tại để `doPost` của website dùng bản mới. Không cần đổi ACCESS_KEY, không cần đổi Edge Function và không cần sửa frontend chỉ để áp dụng branding Google Sheets.
