@@ -51,7 +51,7 @@
       await add('ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script');
 
       const modules=[
-        ['sheets-sync-security-v1.js?v=20260907.2','lbgSheetsSyncSecurityV1Script'],
+        ['sheets-sync-security-v1.js?v=20260909.2','lbgSheetsSyncSecurityV1Script'],
         ['sheets-classraw-hotfix-v1.js?v=20260907.1','lbgSheetsClassRawHotfixV1Script'],
         ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
         ['access-control-v1.js?v=20260806.2','lbgAccessControlV1'],
@@ -86,7 +86,7 @@
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],
         ['monthly-teacher-search-v1.js?v=20260808.16','lbgMonthlyTeacherSearchV1Script'],
         ['role-privacy-polish-v1.js?v=20260814.2','lbgRolePrivacyPolishV1Script'],
-        ['production-mode-v1.js?v=20260909.2','lbgProductionModeV1Script'],
+        ['production-mode-v1.js?v=20260909.3','lbgProductionModeV1Script'],
         ['sidebar-compact-readable-v1.js?v=20260811.3','lbgSidebarCompactReadableV1'],
         ['readability-targeted-v2.js?v=20260811.1','lbgReadabilityTargetedV2'],
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],
