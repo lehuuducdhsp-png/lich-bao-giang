@@ -1,11 +1,10 @@
 'use strict';
 (function(){
-  const VERSION='20260909.5';
+  const VERSION='20260909.6';
   const ORG='Trung tâm giáo dục kỹ năng sống Hoàn Năng';
-  const LOGO_URL='assets/hoan-nang-report-logo.jpg?v=20260909.1';
   const REPORT_RE=/^LICH_BAO_GIANG_/i;
   const txt=v=>String(v??'').trim();
-  let installed=false,logoImagePromise=null;
+  let installed=false;
 
   function colLetter(n){let s='';while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s||'A'}
   function shiftRange(range,rows=3){
@@ -16,24 +15,10 @@
     const value=txt(ws?.getCell?.('A1')?.value?.richText?.map?.(x=>x.text).join('')||ws?.getCell?.('A1')?.value);
     return /LỊCH\s+BÁO\s+GIẢNG/i.test(value)||/LICH\s+BAO\s+GIANG/i.test(value);
   }
-  function blobToDataUri(blob){
-    return new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=()=>resolve(String(reader.result||''));
-      reader.onerror=()=>reject(new Error('Không đọc được dữ liệu logo Hoàn Năng.'));
-      reader.readAsDataURL(blob);
-    });
-  }
-  async function getLogoImage(){
-    if(logoImagePromise)return logoImagePromise;
-    logoImagePromise=(async()=>{
-      const res=await fetch(LOGO_URL,{cache:'no-store'});if(!res.ok)throw new Error('Không tải được logo Hoàn Năng.');
-      const blob=await res.blob();
-      const base64=await blobToDataUri(blob);
-      if(!/^data:image\/(?:jpeg|jpg);base64,/i.test(base64))throw new Error('Logo Hoàn Năng không phải ảnh JPEG hợp lệ.');
-      return{base64,extension:'jpeg'};
-    })().catch(error=>{logoImagePromise=null;throw error});
-    return logoImagePromise;
+  function getLogoImage(){
+    const base64=txt(window.LBG_HOAN_NANG_LOGO_JPEG);
+    if(!/^data:image\/jpeg;base64,/i.test(base64))throw new Error('Dữ liệu logo Hoàn Năng chưa sẵn sàng.');
+    return{base64,extension:'jpeg'};
   }
   function applyBorder(cell){cell.border={...(cell.border||{}),bottom:{style:'medium',color:{argb:'FF000000'}}}}
   async function brandWorksheet(book,ws,logo){
@@ -49,14 +34,12 @@
     ws.getRow(1).height=32;ws.getRow(2).height=32;ws.getRow(3).height=32;
     const brand=ws.getCell('C1');brand.value=ORG;brand.alignment={horizontal:'center',vertical:'bottom',wrapText:true};brand.font={name:'Times New Roman',size:19,bold:true,italic:true,color:{argb:'FF111111'}};
     for(let c=1;c<=last;c++)applyBorder(ws.getCell(3,c));
-    if(logo?.base64){
-      const imageId=book.addImage({base64:logo.base64,extension:logo.extension||'jpeg'});
-      ws.addImage(imageId,{tl:{col:.14,row:.12},ext:{width:116,height:88},editAs:'oneCell'});
-    }
+    const imageId=book.addImage({base64:logo.base64,extension:'jpeg'});
+    ws.addImage(imageId,{tl:{col:.14,row:.12},ext:{width:116,height:88},editAs:'oneCell'});
     ws.pageSetup={...(ws.pageSetup||{}),orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:.2,right:.2,top:.25,bottom:.25,header:.08,footer:.08}};
   }
   async function fixWorkbookBlob(blob){
-    const logo=await getLogoImage(),array=await blob.arrayBuffer(),book=new ExcelJS.Workbook();await book.xlsx.load(array);
+    const logo=getLogoImage(),array=await blob.arrayBuffer(),book=new ExcelJS.Workbook();await book.xlsx.load(array);
     for(const ws of book.worksheets)await brandWorksheet(book,ws,logo);
     return new Blob([await book.xlsx.writeBuffer()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   }
