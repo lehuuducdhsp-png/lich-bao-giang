@@ -3,6 +3,7 @@ name: Validate export and Sheets hotfix
 on:
   pull_request:
     paths:
+      - 'report-logo-data-v1.js'
       - 'report-export-hotfix-v2.js'
       - 'sheets-sync-owner-v3.js'
       - 'sheets-sync-security-v1.js'
@@ -20,6 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Syntax check
         run: |
+          node --check report-logo-data-v1.js
           node --check report-export-hotfix-v2.js
           node --check sheets-sync-owner-v3.js
           node --check sheets-sync-security-v1.js
@@ -33,7 +35,8 @@ jobs:
           node tests/sheets-owner-v3.test.cjs
       - name: Runtime loader contract
         run: |
-          grep -F "report-export-hotfix-v2.js?v=20260909.5" production-mode-v1.js
+          grep -F "report-logo-data-v1.js?v=20260909.1" production-mode-v1.js
+          grep -F "report-export-hotfix-v2.js?v=20260909.6" production-mode-v1.js
           grep -F "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
           grep -F "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
           grep -F "production-mode-v1.js?v=20260909.3" app-runtime-v1.js
@@ -41,6 +44,4 @@ jobs:
           grep -F "functions/v1/google-sheets-owner" sheets-sync-owner-v3.js
           ! grep -F "sheets-atomic-payload-v2.js" production-mode-v1.js
           ! grep -F "sheets-modern-sync-v1.js" production-mode-v1.js
-          grep -F "readAsDataURL(blob)" report-export-hotfix-v2.js
-          grep -F "extension:'jpeg'" report-export-hotfix-v2.js
-          ! grep -F "canvas.toDataURL" report-export-hotfix-v2.js
+          ! grep -F "assets/hoan-nang-report-logo.jpg" report-export-hotfix-v2.js
