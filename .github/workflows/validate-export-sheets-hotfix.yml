@@ -42,9 +42,11 @@ jobs:
       - name: Runtime loader contract
         run: |
           grep -F "report-logo-data-v1.js?v=20260909.1" production-mode-v1.js
-          grep -F "report-export-hotfix-v2.js?v=20260909.7" production-mode-v1.js
-          grep -F "report-atomic-display-v1.js?v=20260909.2" production-mode-v1.js
-          ! grep -F "MutationObserver" report-atomic-display-v1.js
+          grep -F "report-export-hotfix-v2.js?v=20260909.8" production-mode-v1.js
+          grep -F "report-atomic-display-v1.js?v=20260909.3" production-mode-v1.js
+          grep -F "white-space:normal!important" report-atomic-display-v1.js
+          grep -F "overflow-wrap:break-word" report-atomic-display-v1.js
+          ! grep -F "new MutationObserver" report-atomic-display-v1.js
           grep -F "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
           grep -F "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
           grep -F "production-mode-v1.js?v=20260909.3" app-runtime-v1.js
