@@ -7,6 +7,7 @@
   if(!document.getElementById('lbgProductionModeCss')){
     const s=document.createElement('style');
     s.id='lbgProductionModeCss';
+    // Badge thử nghiệm được ẩn hoàn toàn bằng CSS, không cần quét lại DOM mỗi khi giao diện thay đổi.
     s.textContent='.lbg-finish-test-badge{display:none!important}';
     document.head.appendChild(s);
   }
@@ -71,16 +72,21 @@
     setTimeout(()=>clearInterval(t),5000);
   }
 
-  function clean(){
-    document.querySelectorAll('.lbg-finish-test-badge').forEach(el=>{el.hidden=true;el.setAttribute('aria-hidden','true')});
+  function applyProductionFooter(){
     const footer=document.querySelector('footer');
-    if(footer&&!footer.dataset.productionText){
-      footer.dataset.productionText='1';
-      footer.textContent='Hệ thống Lịch Báo giảng • Dữ liệu được xử lý và lưu theo cấu hình của hệ thống';
-    }
+    if(!footer||footer.dataset.productionText)return Boolean(footer);
+    footer.dataset.productionText='1';
+    footer.textContent='Hệ thống Lịch Báo giảng • Dữ liệu được xử lý và lưu theo cấu hình của hệ thống';
+    return true;
   }
-  clean();
-  const observer=new MutationObserver(clean);
-  observer.observe(document.body,{childList:true,subtree:true});
-  window.addEventListener('beforeunload',()=>observer.disconnect(),{once:true});
+
+  // Footer là nội dung tĩnh. Chỉ xử lý hữu hạn khi khởi động thay vì theo dõi toàn bộ document.body.
+  applyProductionFooter();
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',applyProductionFooter,{once:true});
+  }else if(typeof window.requestIdleCallback==='function'){
+    window.requestIdleCallback(applyProductionFooter,{timeout:500});
+  }else{
+    setTimeout(applyProductionFooter,0);
+  }
 })();
