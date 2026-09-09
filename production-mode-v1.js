@@ -41,7 +41,7 @@
   if(!document.getElementById('lbgReportAtomicDisplayV1Script')){
     const s=document.createElement('script');
     s.id='lbgReportAtomicDisplayV1Script';
-    s.src='report-atomic-display-v1.js?v=20260909.2';
+    s.src='report-atomic-display-v1.js?v=20260909.3';
     s.async=false;
     s.onerror=()=>console.error('Không tải được cách hiển thị tiết theo từng ô mã nguồn.');
     document.body.appendChild(s);
@@ -51,7 +51,7 @@
     if(document.getElementById('lbgReportExportHotfixV2Script'))return;
     const s=document.createElement('script');
     s.id='lbgReportExportHotfixV2Script';
-    s.src='report-export-hotfix-v2.js?v=20260909.7';
+    s.src='report-export-hotfix-v2.js?v=20260909.8';
     s.async=false;
     s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng.');
     document.body.appendChild(s);
