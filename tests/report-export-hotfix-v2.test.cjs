@@ -9,9 +9,15 @@ assert.equal(logoBytes[0],0xFF);assert.equal(logoBytes[1],0xD8);assert.equal(log
 const code=fs.readFileSync('report-export-hotfix-v2.js','utf8');
 const context={console,setTimeout,clearTimeout,setInterval,clearInterval,window:{saveAs:()=>{},ExcelJS:{},LBG_HOAN_NANG_LOGO_JPEG:`data:image/jpeg;base64,${match[1]}`},document:{readyState:'loading',addEventListener:()=>{}},navigator:{},URL:{}};context.global=context;vm.createContext(context);vm.runInContext(code,context);
 const api=context.window.LBGReportExportHotfixV2;assert(api,'missing API');
+assert.equal(api.version,'20260909.7');
 assert.equal(api.shiftRange('A1:H1',3),'A4:H4');
 assert.equal(api.shiftRange('A5:A10',3),'A8:A13');
 assert.equal(api.shiftRange('E17:H17',3),'E20:H20');
 const logo=api.getLogoImage();assert.equal(logo.extension,'jpeg');assert.ok(logo.base64.startsWith('data:image/jpeg;base64,/9j/'));
+assert.equal(typeof api.fitReportLayout,'function','missing Excel fit helper');
+assert.match(code,/Math\.max\(Number\(ws\.getColumn\(c\)\.width\)\|\|0,22\)/,'teaching columns should be widened');
+assert.match(code,/fitRow\(ws,8,last,94,138\)/,'morning school row should auto-fit');
+assert.match(code,/fitRow\(ws,14,last,94,138\)/,'afternoon school row should auto-fit');
+assert.match(code,/wrapText:true/,'report cells must wrap text');
 assert.doesNotMatch(code,/fetch\(LOGO_URL/,'export must not fetch the previously corrupted logo asset');
-console.log('OK report export hotfix helpers + verified embedded JPEG logo');
+console.log('OK report export: verified logo + adaptive no-clipping cell layout');
