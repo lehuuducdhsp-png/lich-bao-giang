@@ -1,7 +1,29 @@
 'use strict';
 (function(){
-  const VERSION='20260909.2';
+  const VERSION='20260909.3';
+  const STYLE_ID='lbgReportAtomicDisplayV1Css';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
+
+  function ensureStyle(){
+    if(document.getElementById?.(STYLE_ID))return;
+    const s=document.createElement?.('style');if(!s)return;
+    s.id=STYLE_ID;
+    s.textContent=`
+      #preview .sheet .report td:not(.school){
+        white-space:normal!important;
+        overflow-wrap:break-word;
+        word-break:normal;
+        line-height:1.25;
+        vertical-align:middle;
+      }
+      #preview .sheet .report td:not(.school) span{
+        white-space:normal!important;
+        overflow-wrap:break-word;
+        word-break:normal;
+      }
+    `;
+    document.head?.appendChild?.(s);
+  }
 
   function periodOf(entry){
     const rules=window.LBGReportPayRulesV1;
@@ -24,6 +46,7 @@
   }
 
   function install(){
+    ensureStyle();
     const rules=window.LBGReportPayRulesV1;
     if(!rules)return false;
     if(!rules.displayTeachingEvents&&typeof rules.displayEntries==='function')rules.displayTeachingEvents=rules.displayEntries.bind(rules);
@@ -39,6 +62,6 @@
     const timer=setInterval(()=>{tries++;if(install()||tries>100)clearInterval(timer)},100);
   }
 
-  window.LBGReportAtomicDisplayV1={version:VERSION,periodOf,atomicDisplayEntries,install};
+  window.LBGReportAtomicDisplayV1={version:VERSION,periodOf,atomicDisplayEntries,ensureStyle,install};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
