@@ -32,6 +32,6 @@ jobs:
         run: |
           grep -Fq "app-runtime-v1.js?v=20260909.2" index.html
           grep -Fq "sheets-sync-security-v1.js?v=20260907.2" app-runtime-v1.js
-          grep -Fq "sheets-sync-owner-v2.js?v=20260907.2" sheets-sync-security-v1.js
+          grep -Fq "sheets-sync-owner-v2.js?v=20260909.3" sheets-sync-security-v1.js
       - name: Run Sheets label regression
         run: node tests/sheets-class-label-preserve.test.cjs
