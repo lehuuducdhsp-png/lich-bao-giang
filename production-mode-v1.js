@@ -41,9 +41,18 @@
   if(!document.getElementById('lbgReportExportHotfixV2Script')){
     const s=document.createElement('script');
     s.id='lbgReportExportHotfixV2Script';
-    s.src='report-export-hotfix-v2.js?v=20260909.3';
+    s.src='report-export-hotfix-v2.js?v=20260909.4';
     s.async=false;
     s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng.');
+    document.body.appendChild(s);
+  }
+
+  if(!document.getElementById('lbgSheetsAtomicPayloadV2Script')){
+    const s=document.createElement('script');
+    s.id='lbgSheetsAtomicPayloadV2Script';
+    s.src='sheets-atomic-payload-v2.js?v=20260909.1';
+    s.async=false;
+    s.onerror=()=>console.error('Không tải được bộ dữ liệu nguyên tử cho Google Sheets.');
     document.body.appendChild(s);
   }
 
