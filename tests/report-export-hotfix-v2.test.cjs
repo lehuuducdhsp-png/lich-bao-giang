@@ -5,4 +5,7 @@ const api=context.window.LBGReportExportHotfixV2;assert(api,'missing API');
 assert.equal(api.shiftRange('A1:H1',3),'A4:H4');
 assert.equal(api.shiftRange('A5:A10',3),'A8:A13');
 assert.equal(api.shiftRange('E17:H17',3),'E20:H20');
-console.log('OK report export hotfix helpers');
+assert.match(code,/readAsDataURL\(blob\)/,'logo must be read directly as data URI');
+assert.match(code,/extension:'jpeg'/,'Excel image must use original JPEG extension');
+assert.doesNotMatch(code,/canvas\.toDataURL/,'do not canvas-convert the logo before Excel export');
+console.log('OK report export hotfix helpers + direct JPEG logo path');
