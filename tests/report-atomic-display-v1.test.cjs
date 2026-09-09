@@ -5,7 +5,7 @@ const originalDisplay=entries=>entries.slice(0,1);
 class FakeMutationObserver{constructor(fn){this.fn=fn}observe(){}disconnect(){}}
 const context={
   console,setTimeout,clearTimeout,setInterval,clearInterval,MutationObserver:FakeMutationObserver,
-  window:{LBGReportPayRulesV1:{reportPeriod:e=>e.teachingPeriod,displayEntries:originalDisplay}},
+  window:{addEventListener:()=>{},LBGReportPayRulesV1:{reportPeriod:e=>e.teachingPeriod,displayEntries:originalDisplay}},
   document:{readyState:'loading',addEventListener:()=>{},querySelector:()=>null,body:{}},
 };
 context.global=context;vm.createContext(context);vm.runInContext(code,context);
