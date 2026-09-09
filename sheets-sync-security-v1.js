@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const OWNER_SRC='sheets-sync-owner-v3.js?v=20260909.1';
+  const OWNER_SRC='sheets-sync-owner-v3.js?v=20260909.2';
   const OWNER_SCRIPT_ID='lbgSheetsSyncOwnerV3Secure';
 
   function clearLegacyUi(){
