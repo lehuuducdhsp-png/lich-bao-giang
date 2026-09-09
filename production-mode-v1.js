@@ -41,7 +41,7 @@
   if(!document.getElementById('lbgReportExportHotfixV2Script')){
     const s=document.createElement('script');
     s.id='lbgReportExportHotfixV2Script';
-    s.src='report-export-hotfix-v2.js?v=20260909.4';
+    s.src='report-export-hotfix-v2.js?v=20260909.5';
     s.async=false;
     s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng.');
     document.body.appendChild(s);
