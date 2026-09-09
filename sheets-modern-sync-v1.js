@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260909.1';
+  const VERSION='20260909.2';
   const txt=v=>String(v??'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const current=()=>{try{return typeof result!=='undefined'?result:null}catch{return null}};
@@ -14,8 +14,8 @@
   function locationId(entry){return txt(entry?.locationKey)||[fold(entry?.schoolName||entry?.school),fold(entry?.siteDisplay||entry?.siteName)].join('|')}
   function fullClass(entry){return txt(entry?.classRaw||entry?.className)}
   function normalizeOne(entry){
-    const sourcePeriod=Number(entry?.slotPeriod??entry?.sourcePeriod??entry?.period)||null,teachingPeriod=actualPeriod(entry)||sourcePeriod||null,raw=fullClass(entry);
-    return{...entry,period:teachingPeriod,teachingPeriod,slotPeriod:sourcePeriod,sourcePeriod,className:raw||txt(entry?.className),classRaw:raw||txt(entry?.classRaw),classBase:txt(entry?.classBase||entry?.className),sourceCells:[...new Set([...(Array.isArray(entry?.sourceCells)?entry.sourceCells:[]),txt(entry?.sourceCell||entry?.address)].filter(Boolean))]}
+    const sourcePeriod=Number(entry?.slotPeriod??entry?.sourcePeriod??entry?.period)||null,teachingPeriod=actualPeriod(entry)||sourcePeriod||null,raw=fullClass(entry),sourceCells=[...new Set([...(Array.isArray(entry?.sourceCells)?entry.sourceCells:[]),txt(entry?.sourceCell||entry?.address)].filter(Boolean))],explicit=explicitPeriod(entry);
+    return{...entry,period:teachingPeriod,teachingPeriod,slotPeriod:sourcePeriod,sourcePeriod,className:raw||txt(entry?.className),classRaw:raw||txt(entry?.classRaw),classBase:txt(entry?.classBase||entry?.className),sourceCells,sourceCell:explicit?'':txt(entry?.sourceCell||entry?.address),address:explicit?'':txt(entry?.address||entry?.sourceCell)}
   }
   function normalizeEntries(list){
     const out=[],grouped=new Map();
@@ -24,7 +24,7 @@
       if(!explicit){out.push(entry);continue}
       const key=[Number(entry.day),txt(entry.session),locationId(entry),fold(entry.classRaw||entry.className),Number(entry.teachingPeriod)].join('|');
       const old=grouped.get(key);if(!old){grouped.set(key,entry);out.push(entry);continue}
-      old.sourceCells=[...new Set([...(old.sourceCells||[]),...(entry.sourceCells||[])])];old.sourceCell=old.sourceCells[0]||old.sourceCell;old.address=old.sourceCell||old.address;
+      old.sourceCells=[...new Set([...(old.sourceCells||[]),...(entry.sourceCells||[])])];
     }
     return out.map((e,i)=>({...e,index:i+1}));
   }
@@ -35,7 +35,7 @@
   function normalizeBody(body){
     if(!body||typeof body!=='object')return body;
     const next={...body},entries=normalizeEntries(body.entries||body.schedule||[]),totals=totalsFromCurrent(body);
-    next.entries=entries;next.schedule=entries.map(e=>({...e}));next.reportSemanticsVersion=VERSION;next.entriesAreTeachingEvents=true;next.periodSemantics='teachingPeriod';
+    next.entries=entries;next.schedule=entries.map(e=>({...e}));next.reportSemanticsVersion=VERSION;next.entriesAreTeachingEvents=true;next.periodSemantics='teachingPeriod';next.clearScheduleBeforeWrite=true;next.replaceSchedule=true;
     if(totals){next.mainPeriods=Number(totals.main)||0;next.plusPeriods=Number(totals.plus)||0;next.total=Number(totals.total)||0;next.totalPeriods=Number(totals.total)||0;next.totalText=window.LBGReportEngineV4?.reportTotalText?.(current())||''}
     const a=current();if(a&&txt(body?.teacherCode).toUpperCase()===txt(a?.code).toUpperCase()){
       try{window.LBGSheetsGaSyncCompatV1?.hydrate?.(a)}catch{}
@@ -44,8 +44,8 @@
     return next;
   }
   function patchClient(client){
-    const fn=client?.functions;if(!fn||typeof fn.invoke!=='function'||fn.__lbgModernSheetsPatched)return false;
-    const original=fn.invoke.bind(fn);fn.invoke=function(name,options){if(name==='google-sheets-owner'&&options&&typeof options==='object')return original(name,{...options,body:normalizeBody(options.body)});return original(name,options)};fn.__lbgModernSheetsPatched=true;return true;
+    const fn=client?.functions;if(!fn||typeof fn.invoke!=='function'||fn.__lbgModernSheetsPatchedV2)return false;
+    const original=fn.invoke.bind(fn);fn.invoke=function(name,options){if(name==='google-sheets-owner'&&options&&typeof options==='object')return original(name,{...options,body:normalizeBody(options.body)});return original(name,options)};fn.__lbgModernSheetsPatchedV2=true;return true;
   }
   function syncPrompt(){
     const p=document.getElementById('sheetSavePrompt'),a=current();if(!p||!a)return;let totals=null;try{totals=window.LBGReportEngineV4?.reportTotals?.(a)}catch{}if(!totals)return;
