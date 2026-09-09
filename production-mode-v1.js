@@ -41,7 +41,7 @@
   if(!document.getElementById('lbgReportExportHotfixV2Script')){
     const s=document.createElement('script');
     s.id='lbgReportExportHotfixV2Script';
-    s.src='report-export-hotfix-v2.js?v=20260909.2';
+    s.src='report-export-hotfix-v2.js?v=20260909.3';
     s.async=false;
     s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng.');
     document.body.appendChild(s);
@@ -50,7 +50,7 @@
   if(!document.getElementById('lbgSheetsModernSyncV1Script')){
     const s=document.createElement('script');
     s.id='lbgSheetsModernSyncV1Script';
-    s.src='sheets-modern-sync-v1.js?v=20260909.1';
+    s.src='sheets-modern-sync-v1.js?v=20260909.2';
     s.async=false;
     s.onerror=()=>console.error('Không tải được bản đồng bộ Google Sheets theo tiết thực dạy.');
     document.body.appendChild(s);
