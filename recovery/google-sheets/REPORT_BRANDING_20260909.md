@@ -45,4 +45,6 @@ Kích thước chèn: khoảng `116 × 88 px`, vừa trong vùng `A1:B3`.
 ## Triển khai Apps Script
 Đây là thay đổi ở `Mã.gs` của Web App Apps Script, nên sau khi thay mã phải tạo **New version** cho deployment hiện tại để `doPost` của website dùng bản mới. Không cần đổi ACCESS_KEY, không cần đổi Edge Function và không cần sửa frontend chỉ để áp dụng branding Google Sheets.
 
+GitHub không trực tiếp triển khai project Apps Script này. Vì vậy PR #29 chỉ lưu hợp đồng/recovery của thay đổi; bản `Mã.gs` hoàn chỉnh được giữ ngoài repo công khai và phải được dán vào project Apps Script rồi cập nhật deployment bằng tài khoản chủ sở hữu.
+
 Trước khi deploy thật nên lưu một bản sao mã cũ hoặc giữ file gốc để rollback ngay nếu cần.
