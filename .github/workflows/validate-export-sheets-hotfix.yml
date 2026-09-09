@@ -14,6 +14,7 @@ on:
       - 'tests/report-export-hotfix-v2.test.cjs'
       - 'tests/report-atomic-display-v1.test.cjs'
       - 'tests/sheets-owner-v3.test.cjs'
+      - 'tests/production-runtime-performance.test.cjs'
       - 'recovery/google-sheets/REPORT_BRANDING_20260909.md'
       - '.github/workflows/validate-export-sheets-hotfix.yml'
 
@@ -34,11 +35,13 @@ jobs:
           node --check tests/report-export-hotfix-v2.test.cjs
           node --check tests/report-atomic-display-v1.test.cjs
           node --check tests/sheets-owner-v3.test.cjs
+          node --check tests/production-runtime-performance.test.cjs
       - name: Unit checks
         run: |
           node tests/report-export-hotfix-v2.test.cjs
           node tests/report-atomic-display-v1.test.cjs
           node tests/sheets-owner-v3.test.cjs
+          node tests/production-runtime-performance.test.cjs
       - name: Runtime loader contract
         run: |
           grep -F "report-logo-data-v1.js?v=20260909.1" production-mode-v1.js
@@ -47,10 +50,12 @@ jobs:
           grep -F "white-space:normal!important" report-atomic-display-v1.js
           grep -F "overflow-wrap:break-word" report-atomic-display-v1.js
           ! grep -F "new MutationObserver" report-atomic-display-v1.js
+          ! grep -F "new MutationObserver" production-mode-v1.js
+          ! grep -F "observer.observe(document.body" production-mode-v1.js
           grep -F "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
           grep -F "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
-          grep -F "production-mode-v1.js?v=20260909.3" app-runtime-v1.js
-          grep -F "app-runtime-v1.js?v=20260909.3" index.html
+          grep -F "production-mode-v1.js?v=20260909.4" app-runtime-v1.js
+          grep -F "app-runtime-v1.js?v=20260909.4" index.html
           grep -F "functions/v1/google-sheets-owner" sheets-sync-owner-v3.js
           ! grep -F "sheets-atomic-payload-v2.js" production-mode-v1.js
           ! grep -F "sheets-modern-sync-v1.js" production-mode-v1.js
