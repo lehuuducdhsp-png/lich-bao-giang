@@ -2,8 +2,8 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert'),crypto=require(
 const logoCode=fs.readFileSync('report-logo-data-v1.js','utf8');
 const match=logoCode.match(/data:image\/jpeg;base64,([^']+)/);assert(match,'missing embedded JPEG logo');
 const logoBytes=Buffer.from(match[1],'base64');
-assert.equal(logoBytes.length,8377,'unexpected embedded logo byte length');
-assert.equal(crypto.createHash('sha256').update(logoBytes).digest('hex'),'d3b24dafad4068c9b659021925bea2d52beca2577bc7b1f976f3909dec22f2e1','embedded logo hash changed unexpectedly');
+assert.equal(logoBytes.length,4573,'unexpected embedded logo byte length');
+assert.equal(crypto.createHash('sha256').update(logoBytes).digest('hex'),'eb235d665473f620e35ee219f8e45810bfbab5a9780192f525fe491fab020753','embedded logo hash changed unexpectedly');
 assert.equal(logoBytes[0],0xFF);assert.equal(logoBytes[1],0xD8);assert.equal(logoBytes.at(-2),0xFF);assert.equal(logoBytes.at(-1),0xD9);
 
 const code=fs.readFileSync('report-export-hotfix-v2.js','utf8');
