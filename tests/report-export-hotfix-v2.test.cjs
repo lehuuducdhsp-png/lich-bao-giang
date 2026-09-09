@@ -1,0 +1,8 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const code=fs.readFileSync('report-export-hotfix-v2.js','utf8');
+const context={console,setTimeout,clearTimeout,setInterval,clearInterval,window:{saveAs:()=>{},ExcelJS:{}},document:{readyState:'loading',addEventListener:()=>{}},navigator:{},URL:{},fetch:()=>{},FileReader:function(){}};context.global=context;vm.createContext(context);vm.runInContext(code,context);
+const api=context.window.LBGReportExportHotfixV2;assert(api,'missing API');
+assert.equal(api.shiftRange('A1:H1',3),'A4:H4');
+assert.equal(api.shiftRange('A5:A10',3),'A8:A13');
+assert.equal(api.shiftRange('E17:H17',3),'E20:H20');
+console.log('OK report export hotfix helpers');
