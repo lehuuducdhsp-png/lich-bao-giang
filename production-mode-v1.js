@@ -41,7 +41,7 @@
   if(!document.getElementById('lbgReportAtomicDisplayV1Script')){
     const s=document.createElement('script');
     s.id='lbgReportAtomicDisplayV1Script';
-    s.src='report-atomic-display-v1.js?v=20260909.1';
+    s.src='report-atomic-display-v1.js?v=20260909.2';
     s.async=false;
     s.onerror=()=>console.error('Không tải được cách hiển thị tiết theo từng ô mã nguồn.');
     document.body.appendChild(s);
