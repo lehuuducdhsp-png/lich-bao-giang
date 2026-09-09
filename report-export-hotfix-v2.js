@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260909.7';
+  const VERSION='20260909.8';
   const ORG='Trung tâm giáo dục kỹ năng sống Hoàn Năng';
   const REPORT_RE=/^LICH_BAO_GIANG_/i;
   const txt=v=>String(v??'').trim();
@@ -34,24 +34,24 @@
   }
   function estimatedLines(value,width){
     const text=txt(value);if(!text)return 1;
-    const usable=Math.max(10,Math.floor((Number(width)||20)*1.25));
+    const usable=Math.max(8,Math.floor((Number(width)||20)*.9));
     return text.split(/\n/).reduce((sum,line)=>sum+Math.max(1,Math.ceil(Math.max(1,line.length)/usable)),0);
   }
   function fitRow(ws,row,last,minHeight,maxHeight){
     let lines=1;
     for(let c=3;c<=last;c++)lines=Math.max(lines,estimatedLines(cellText(ws.getCell(row,c)),ws.getColumn(c).width));
-    ws.getRow(row).height=Math.min(maxHeight,Math.max(minHeight,10+lines*16));
+    ws.getRow(row).height=Math.min(maxHeight,Math.max(minHeight,12+lines*18));
   }
   function fitReportLayout(ws,last){
-    for(let c=3;c<=last;c++)ws.getColumn(c).width=Math.max(Number(ws.getColumn(c).width)||0,22);
+    for(let c=3;c<=last;c++)ws.getColumn(c).width=Math.max(Number(ws.getColumn(c).width)||0,23);
     ws.getColumn(1).width=Math.max(Number(ws.getColumn(1).width)||0,9);
     ws.getColumn(2).width=Math.max(Number(ws.getColumn(2).width)||0,10);
-    fitRow(ws,8,last,94,138);
-    fitRow(ws,14,last,94,138);
-    for(const row of[9,10,11,12,13,15,16,17,18,19])fitRow(ws,row,last,40,82);
+    fitRow(ws,8,last,96,180);
+    fitRow(ws,14,last,96,180);
+    for(const row of[9,10,11,12,13,15,16,17,18,19])fitRow(ws,row,last,44,130);
     ws.getRow(7).height=Math.max(Number(ws.getRow(7).height)||0,44);
     ws.getRow(20).height=Math.max(Number(ws.getRow(20).height)||0,30);
-    for(let r=8;r<=19;r++)for(let c=1;c<=last;c++)ws.getCell(r,c).alignment={...(ws.getCell(r,c).alignment||{}),vertical:'middle',horizontal:'center',wrapText:true};
+    for(let r=8;r<=19;r++)for(let c=1;c<=last;c++)ws.getCell(r,c).alignment={...(ws.getCell(r,c).alignment||{}),vertical:'middle',horizontal:'center',wrapText:true,shrinkToFit:false};
   }
   async function brandWorksheet(book,ws,logo){
     if(!looksLikeReport(ws)||ws.__lbgExportFixedV2)return;ws.__lbgExportFixedV2=true;
@@ -101,6 +101,6 @@
     window.__lbgReportExportHotfixV2Installed=true;return true;
   }
   function boot(){if(install())return;let tries=0;const t=setInterval(()=>{tries++;if(install()||tries>200)clearInterval(t)},50)}
-  window.LBGReportExportHotfixV2={version:VERSION,shiftRange,looksLikeReport,getLogoImage,fitReportLayout,fixWorkbookBlob,install};
+  window.LBGReportExportHotfixV2={version:VERSION,shiftRange,looksLikeReport,getLogoImage,estimatedLines,fitRow,fitReportLayout,fixWorkbookBlob,install};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
