@@ -3,7 +3,7 @@ name: Validate Sheets class label
 on:
   pull_request:
     paths:
-      - 'sheets-sync-owner-v2.js'
+      - 'sheets-sync-owner-v3.js'
       - 'sheets-sync-security-v1.js'
       - 'app-runtime-v1.js'
       - 'index.html'
@@ -24,14 +24,14 @@ jobs:
           node-version: '22'
       - name: Check JavaScript syntax
         run: |
-          node --check sheets-sync-owner-v2.js
+          node --check sheets-sync-owner-v3.js
           node --check sheets-sync-security-v1.js
           node --check app-runtime-v1.js
           node --check tests/sheets-class-label-preserve.test.cjs
       - name: Check localhost cache-bust chain
         run: |
-          grep -Fq "app-runtime-v1.js?v=20260909.2" index.html
-          grep -Fq "sheets-sync-security-v1.js?v=20260907.2" app-runtime-v1.js
-          grep -Fq "sheets-sync-owner-v2.js?v=20260907.2" sheets-sync-security-v1.js
+          grep -Fq "app-runtime-v1.js?v=20260909.3" index.html
+          grep -Fq "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
+          grep -Fq "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
       - name: Run Sheets label regression
         run: node tests/sheets-class-label-preserve.test.cjs

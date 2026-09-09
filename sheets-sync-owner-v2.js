@@ -5,6 +5,7 @@
 
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').trim();
+  const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   let auth=null,pending=false,eventsBound=false,exportObserver=null;
 
   const current=()=>{try{return result||null;}catch{return null;}};
@@ -71,6 +72,59 @@
     const school=txt(e?.schoolName||e?.school),site=txt(e?.siteDisplay||e?.siteName);
     return site?[school,site].filter(Boolean).join('\n'):school;
   }
+  function explicitPeriod(e){
+    for(const value of [e?.groupNote,e?.classRaw,e?.className]){
+      const m=txt(value).match(/(?:^|[-–—\s])TI[ẾE]T\s*([1-9]\d*)\s*$/i);
+      if(m)return Number(m[1]);
+    }
+    return null;
+  }
+  function actualPeriod(e){
+    const explicit=explicitPeriod(e);if(explicit)return explicit;
+    const n=Number(e?.teachingPeriod??e?.period);return Number.isFinite(n)&&n>0?n:null;
+  }
+  function locationId(e){return txt(e?.locationKey)||[fold(e?.schoolName||e?.school),fold(e?.siteDisplay||e?.siteName)].join('|')}
+  function normalizeEntry(e){
+    const fullClassName=txt(e?.classRaw||e?.className),sourcePeriod=Number(e?.slotPeriod??e?.sourcePeriod??e?.period)||null,teachingPeriod=actualPeriod(e)||sourcePeriod||null,explicit=explicitPeriod(e),sourceCells=[...new Set([...(Array.isArray(e?.sourceCells)?e.sourceCells:[]),txt(e?.sourceCell||e?.address)].filter(Boolean))];
+    return {
+      day:Number(e?.day),
+      session:txt(e?.session),
+      period:teachingPeriod,
+      teachingPeriod,
+      slotPeriod:sourcePeriod,
+      sourcePeriod,
+      school:fullLocation(e),
+      schoolName:txt(e?.schoolName||e?.school),
+      siteName:txt(e?.siteName),
+      siteDisplay:txt(e?.siteDisplay||e?.siteName),
+      locationKey:txt(e?.locationKey),
+      className:fullClassName,
+      classBase:txt(e?.className),
+      classRaw:fullClassName,
+      classType:txt(e?.classType),
+      classCount:Number(e?.classCount)||1,
+      groupNote:txt(e?.groupNote),
+      sourceCode:txt(e?.sourceCode||e?.code),
+      sourceCells,
+      sourceCell:explicit?'':txt(e?.sourceCell||e?.address),
+      address:explicit?'':txt(e?.address||e?.sourceCell)
+    };
+  }
+  function teachingEvents(list){
+    const out=[],grouped=new Map();
+    for(const source of Array.isArray(list)?list:[]){
+      const entry=normalizeEntry(source),explicit=explicitPeriod(source);
+      if(!explicit){out.push(entry);continue;}
+      const key=[entry.day,entry.session,locationId(entry),fold(entry.classRaw||entry.className),entry.teachingPeriod].join('|');
+      const old=grouped.get(key);
+      if(!old){grouped.set(key,entry);out.push(entry);continue;}
+      old.sourceCells=[...new Set([...(old.sourceCells||[]),...(entry.sourceCells||[])])];
+    }
+    return out.map((e,i)=>({...e,index:i+1}));
+  }
+  function currentTotals(a){
+    try{return window.LBGReportEngineV4?.reportTotals?.(a)||null}catch{return null}
+  }
 
   function buildReport(mode){
     const a=current();
@@ -82,32 +136,7 @@
     const end=start?new Date(start.getTime()+(hasSunday?6:5)*864e5):null;
     const weekText=pad2(a.week);
     const destinationSheet=tabName(weekText,start,a.week,c.yearStart,c);
-    const entries=a.entries.map((e,i)=>{
-      const fullClassName=txt(e.classRaw||e.className);
-      return {
-        index:i+1,
-        day:Number(e.day),
-        session:txt(e.session),
-        period:Number(e.period),
-        school:fullLocation(e),
-        schoolName:txt(e.schoolName||e.school),
-        siteName:txt(e.siteName),
-        siteDisplay:txt(e.siteDisplay||e.siteName),
-        locationKey:txt(e.locationKey),
-        // Google Sheets cũ đọc className. Với lớp gộp, className đã được chuẩn hóa
-        // và làm mất hậu tố “- TIẾT N”, nên gửi nhãn gốc đầy đủ ở trường này.
-        className:fullClassName,
-        classBase:txt(e.className),
-        classRaw:fullClassName,
-        classType:txt(e.classType),
-        classCount:Number(e.classCount)||1,
-        groupNote:txt(e.groupNote),
-        sourceCode:txt(e.sourceCode||e.code),
-        sourceCell:txt(e.address),
-        address:txt(e.address)
-      };
-    });
-    const gaValues=gaValuesOf(a);
+    const entries=teachingEvents(a.entries),totals=currentTotals(a),gaValues=gaValuesOf(a),mainPeriods=Number(totals?.main??a.total)||0,plusPeriods=Number(totals?.plus)||0,totalPeriods=Number(totals?.total??a.total)||entries.length;
     return {
       requestId:`lbg-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       week:a.week,weekNo:a.week,weekNumber:a.week,weekText,
@@ -116,9 +145,11 @@
       schoolYearStart:c.yearStart,schoolYearStartDate:c.startDate,schoolYearEndDate:c.endDate,
       yearStart:c.yearStart,yearEnd:c.yearStart+1,
       teacherName:txt(a.teacherName),teacherCode:txt(a.code),
-      total:Number(a.total)||entries.length,totalPeriods:Number(a.total)||entries.length,
+      total:totalPeriods,totalPeriods,mainPeriods,plusPeriods,
+      totalText:window.LBGReportEngineV4?.reportTotalText?.(a)||'',
       startDate:iso(start),endDate:iso(end),hasSunday,mode,saveMode:mode,existingAction:mode,
-      gaValues,lessonPlanCounts:gaValues,entries,schedule:entries
+      reportSemanticsVersion:'20260909.3',entriesAreTeachingEvents:true,periodSemantics:'teachingPeriod',clearScheduleBeforeWrite:true,replaceSchedule:true,
+      gaValues,lessonPlanCounts:gaValues,entries,schedule:entries.map(e=>({...e}))
     };
   }
 
@@ -206,7 +237,7 @@
       const r=buildReport('overwrite');
       const overlay=ensureChoice();
       const p=q('sheetSavePrompt');
-      if(p)p.textContent=`${r.schoolYear} • ${r.sheetName} • ${r.teacherName} • ${r.total} tiết • ${Object.keys(r.gaValues).length} ô GA`;
+      if(p)p.textContent=`${r.schoolYear} • ${r.sheetName} • ${r.teacherName} • ${r.total} tiết • ${Object.keys(r.gaValues).length} ô GA${r.plusPeriods?` • ${r.mainPeriods} chính + ${r.plusPeriods} cộng`:''}`;
       overlay.style.display='grid';
       requestAnimationFrame(()=>q('sheetSaveCancelV2')?.focus());
     }catch(e){alert(e?.message||String(e));}
@@ -272,5 +303,6 @@
     auth=null;
   });
 
-  window.LBG_SHEETS_OWNER_BRIDGE_VERSION='20260907.1';
+  window.LBGSHeetsOwnerTest={explicitPeriod,actualPeriod,normalizeEntry,teachingEvents,buildReport};
+  window.LBG_SHEETS_OWNER_BRIDGE_VERSION='20260909.3';
 })();

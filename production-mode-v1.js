@@ -38,6 +38,30 @@
     document.body.appendChild(s);
   }
 
+  function loadReportExport(){
+    if(document.getElementById('lbgReportExportHotfixV2Script'))return;
+    const s=document.createElement('script');
+    s.id='lbgReportExportHotfixV2Script';
+    s.src='report-export-hotfix-v2.js?v=20260909.6';
+    s.async=false;
+    s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng.');
+    document.body.appendChild(s);
+  }
+  if(window.LBG_HOAN_NANG_LOGO_JPEG){
+    loadReportExport();
+  }else if(!document.getElementById('lbgReportLogoDataV1Script')){
+    const s=document.createElement('script');
+    s.id='lbgReportLogoDataV1Script';
+    s.src='report-logo-data-v1.js?v=20260909.1';
+    s.async=false;
+    s.onload=loadReportExport;
+    s.onerror=()=>console.error('Không tải được dữ liệu logo Hoàn Năng cho Excel.');
+    document.body.appendChild(s);
+  }else{
+    const t=setInterval(()=>{if(window.LBG_HOAN_NANG_LOGO_JPEG){clearInterval(t);loadReportExport()}},50);
+    setTimeout(()=>clearInterval(t),5000);
+  }
+
   function clean(){
     document.querySelectorAll('.lbg-finish-test-badge').forEach(el=>{el.hidden=true;el.setAttribute('aria-hidden','true')});
     const footer=document.querySelector('footer');
