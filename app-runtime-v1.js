@@ -31,11 +31,21 @@
       },100);
     });
   }
+  function signalRuntimeReady(error){
+    window.LBG_RUNTIME_READY=true;
+    document.documentElement.dataset.lbgRuntimeReady=error?'degraded':'1';
+    try{
+      document.dispatchEvent(new CustomEvent('lbg-runtime-ready',{detail:{degraded:Boolean(error)}}));
+    }catch{
+      try{document.dispatchEvent(new Event('lbg-runtime-ready'))}catch{}
+    }
+  }
 
   window.LBG_PRODUCTION=true;
   add('light-orange-theme-v2.js?v=20260808.7','lbgLightOrangeThemeV2').catch(console.error);
 
   (async()=>{
+    let runtimeError=null;
     try{
       await add('school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script');
       await add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
@@ -107,6 +117,11 @@
         ['kns-lesson-detail-v2.js?v=20260909.1','lbgKnsLessonDetailV2Script']
       ];
       for(const [src,id]of modules)await add(src,id);
-    }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
+    }catch(error){
+      runtimeError=error;
+      console.error('Không tải được đầy đủ mô-đun hệ thống:',error);
+    }finally{
+      signalRuntimeReady(runtimeError);
+    }
   })();
 })();
