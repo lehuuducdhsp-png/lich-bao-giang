@@ -9,6 +9,7 @@ on:
       - 'sheets-sync-owner-v3.js'
       - 'sheets-sync-security-v1.js'
       - 'production-mode-v1.js'
+      - 'runtime-preload-v1.js'
       - 'app-runtime-v1.js'
       - 'index.html'
       - 'tests/report-export-hotfix-v2.test.cjs'
@@ -32,6 +33,7 @@ jobs:
           node --check sheets-sync-owner-v3.js
           node --check sheets-sync-security-v1.js
           node --check production-mode-v1.js
+          node --check runtime-preload-v1.js
           node --check app-runtime-v1.js
           node --check tests/report-export-hotfix-v2.test.cjs
           node --check tests/report-atomic-display-v1.test.cjs
@@ -55,6 +57,9 @@ jobs:
           ! grep -F "new MutationObserver" report-atomic-display-v1.js
           ! grep -F "new MutationObserver" production-mode-v1.js
           ! grep -F "observer.observe(document.body" production-mode-v1.js
+          grep -F "runtime-preload-v1.js?v=20260910.1" index.html
+          grep -F "{cache:'default'}" index.html
+          ! grep -F "cache:'no-store'" index.html
           grep -F "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
           grep -F "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
           grep -F "production-mode-v1.js?v=20260909.4" app-runtime-v1.js
