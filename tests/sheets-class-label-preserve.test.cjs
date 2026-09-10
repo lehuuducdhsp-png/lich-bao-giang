@@ -8,7 +8,7 @@ assert.match(sync,/className:raw,classRaw:raw,classBase:txt\(e\?\.className\)/,'
 assert.match(sync,/period:teachingPeriod,teachingPeriod/,'Google Sheets phải nhận period là tiết thực dạy.');
 assert.match(sync,/entriesAreAtomicAssignments:true/,'Payload phải giữ từng ô mã giáo viên nguyên tử.');
 assert.match(sync,/sourceCountSemantics:'atomicTeacherCodeCells'/,'Tổng tiết phải theo số ô mã nguồn.');
-assert.match(index,/app-runtime-v1\.js\?v=20260909\.4/,'Runtime tổng hợp phải dùng cache key mới.');
+assert.match(index,/app-runtime-v1\.js\?v=20260910\.1/,'Runtime tổng hợp phải dùng cache key mới.');
 const sample={className:'KHỐI 3 (4 LỚP)',classRaw:'KHỐI 3 (4 LỚP) - TIẾT 4'};
 const fullClassName=String(sample.classRaw||sample.className).trim();
 assert.strictEqual(fullClassName,'KHỐI 3 (4 LỚP) - TIẾT 4');
