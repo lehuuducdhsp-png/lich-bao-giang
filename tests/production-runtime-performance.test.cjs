@@ -13,6 +13,6 @@ assert.match(production,/\.lbg-finish-test-badge\{display:none!important\}/,'pro
 assert.match(production,/function\s+applyProductionFooter\s*\(/,'footer polish should remain finite and targeted');
 assert.match(production,/requestIdleCallback/,'secondary footer polish should run at idle time when available');
 assert.match(runtime,/production-mode-v1\.js\?v=20260909\.4/,'runtime must load the observer-free production mode cache key');
-assert.match(index,/app-runtime-v1\.js\?v=20260909\.4/,'index must bust app-runtime cache');
+assert.match(index,/app-runtime-v1\.js\?v=20260910\.1/,'index must bust app-runtime cache');
 
 console.log('OK runtime performance: no whole-page MutationObserver; cache chain updated');

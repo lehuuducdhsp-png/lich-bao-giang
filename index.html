@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F4A261">
 <title>Lập Lịch Báo giảng</title>
+<link rel="preconnect" href="https://gmkibmybqfomypytmjxw.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script src="runtime-preload-v1.js?v=20260910.1"></script>
 <style>
 html{background:#fff9f5}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 18% 12%,rgba(248,199,148,.62),transparent 30%),linear-gradient(145deg,#fff4ea,#f8c794 58%,#f4a261);color:#5b3828;font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.box{width:min(460px,calc(100% - 36px));padding:24px;text-align:center}.spin{width:40px;height:40px;border:4px solid #ffffffaa;border-top-color:#8f5636;border-radius:50%;margin:0 auto 14px;animation:s .8s linear infinite}.box b{display:block;font-size:16px}.box small{display:block;margin-top:6px;color:#755647}@keyframes s{to{transform:rotate(360deg)}}
 </style>
@@ -16,7 +19,7 @@ window.LBG_PRODUCTION=true;
 window.LBG_CHECKIN_ENABLED=true;
 (async()=>{
   try{
-    const response=await fetch('./index-core.html?v=20260808.17',{cache:'no-store'});
+    const response=await fetch('./index-core.html?v=20260808.17',{cache:'default'});
     if(!response.ok)throw new Error('Không đọc được lõi hệ thống: HTTP '+response.status);
     let html=await response.text();
     html=html.replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i,'');
@@ -24,14 +27,52 @@ window.LBG_CHECKIN_ENABLED=true;
     html=html.replace(/teacher-fix\.js\?v=[^"']+/g,'teacher-fix-v2.js?v=20260810.1');
     html=html.replace(/sheets-sync-owner-v2\.js\?v=[^"']+/g,'sheets-sync-owner-v3.js?v=20260909.2');
     html=html.replace(/<script\s+src=["']monthly-calendar-fix\.js\?v=[^"']+["']><\/script>/i,'');
-    const early=`<script>window.LBG_PRODUCTION=true;window.LBG_CHECKIN_ENABLED=true;document.documentElement.dataset.lbgProduction='1';document.documentElement.dataset.lbgCheckin='1';<\/script><style id="lbgProductionEarlyTheme">
+    const early=`<script>
+      window.LBG_PRODUCTION=true;
+      window.LBG_CHECKIN_ENABLED=true;
+      document.documentElement.dataset.lbgProduction='1';
+      document.documentElement.dataset.lbgCheckin='1';
+      document.documentElement.dataset.lbgBooting='1';
+      (function(){
+        let revealed=false;
+        let fallbackTimer=null;
+        function revealApp(reason){
+          if(revealed)return;
+          revealed=true;
+          if(fallbackTimer)clearTimeout(fallbackTimer);
+          const finish=()=>{
+            const cover=document.getElementById('lbgBootCover');
+            document.documentElement.dataset.lbgBooting='0';
+            document.documentElement.dataset.lbgBootReason=reason||'ready';
+            if(!cover)return;
+            cover.classList.add('lbg-boot-hide');
+            setTimeout(()=>cover.remove(),240);
+          };
+          if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>requestAnimationFrame(finish));
+          else setTimeout(finish,0);
+        }
+        window.LBGRevealApp=revealApp;
+        document.addEventListener('lbg-runtime-ready',()=>revealApp('runtime-ready'),{once:true});
+        fallbackTimer=setTimeout(()=>revealApp('timeout'),12000);
+      })();
+    <\/script><style id="lbgProductionEarlyTheme">
       :root{--n:#9a5b36!important;--t:#f4a261!important;--i:#4b342b!important;--m:#806b61!important;--l:#f2ddd0!important;--b:#fff9f5!important;--ui-navy:#8f5636!important;--ui-teal:#f4a261!important;--ui-teal-2:#f8c794!important;--ui-surface:#fff!important;--ui-bg:#fff9f5!important;--ui-border:#f2ddd0!important;--ui-muted:#806b61!important;color-scheme:light}
       html{background:#fff9f5!important}body{background:linear-gradient(180deg,#fffdfb 0%,#fff9f5 45%,#fff6f0 100%)!important;color:#4b342b!important}
+      html[data-lbg-booting='1'],html[data-lbg-booting='1'] body{overflow:hidden!important}
+      #lbgBootCover{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:radial-gradient(circle at 18% 12%,rgba(248,199,148,.64),transparent 31%),linear-gradient(145deg,#fff4ea,#f8c794 58%,#f4a261);color:#5b3828;opacity:1;transition:opacity .2s ease;pointer-events:auto;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+      #lbgBootCover.lbg-boot-hide{opacity:0;pointer-events:none}
+      #lbgBootCover .lbg-boot-box{width:min(460px,calc(100% - 36px));padding:26px;text-align:center}
+      #lbgBootCover .lbg-boot-spin{width:42px;height:42px;border:4px solid #ffffffaa;border-top-color:#8f5636;border-radius:50%;margin:0 auto 14px;animation:lbgBootSpin .8s linear infinite}
+      #lbgBootCover b{display:block;font-size:16px}#lbgBootCover small{display:block;margin-top:6px;color:#755647}
+      @keyframes lbgBootSpin{to{transform:rotate(360deg)}}
+      @media(prefers-reduced-motion:reduce){#lbgBootCover{transition:none}#lbgBootCover .lbg-boot-spin{animation-duration:1.6s}}
       header.top{background:rgba(255,253,251,.98)!important;border-bottom-color:#eadfd8!important}.lbg-finish-test-badge{display:none!important}
       .primary{background:#f4a261!important;color:#4c3429!important;border-color:#f4a261!important}
     </style>`;
     html=html.replace('</head>',early+'</head>');
-    const runtime=`<script src="app-runtime-v1.js?v=20260909.4"><\/script><script src="report-branding-v1.js?v=20260909.1"><\/script><script>(function(){let loaded=false,tries=0;function appendProfessionalLabels(){const p=document.createElement('script');p.src='checkin-professional-labels-v1.js?v=20260814.1';p.async=false;document.body.appendChild(p);}function appendDateLabel(){const d=document.createElement('script');d.src='checkin-date-label-v1.js?v=20260810.1';d.async=false;d.onload=appendProfessionalLabels;d.onerror=appendProfessionalLabels;document.body.appendChild(d);}function appendCheckin(){const s=document.createElement('script');s.src='checkin-v2.js?v=20260810.1';s.async=false;s.onload=appendDateLabel;s.onerror=appendDateLabel;document.body.appendChild(s);}function loadCheckin(){if(loaded)return;if(window.LBGAuth&&window.LBGAccess&&window.LBGAccess.context){loaded=true;const y=document.createElement('script');y.src='checkin-shared-scan-context-v1.js?v=20260810.2';y.async=false;y.onload=appendCheckin;y.onerror=appendCheckin;document.body.appendChild(y);}}document.addEventListener('lbg-access-ready',loadCheckin);const timer=setInterval(()=>{tries++;loadCheckin();if(loaded||tries>300){clearInterval(timer);if(!loaded)console.error('Check-in: access context chưa sẵn sàng sau 30 giây.');}},100);})();<\/script>`;
+    const bootCover='<div id="lbgBootCover" role="status" aria-live="polite"><div class="lbg-boot-box"><div class="lbg-boot-spin" aria-hidden="true"></div><b>Đang mở hệ thống Lịch Báo giảng…</b><small>Đang hoàn tất giao diện và các chức năng chính thức.</small></div></div>';
+    html=html.replace(/<body([^>]*)>/i,(match,attrs)=>`<body${attrs}>${bootCover}`);
+    const runtime=`<script src="app-runtime-v1.js?v=20260910.1"><\/script><script src="report-branding-v1.js?v=20260909.1"><\/script><script>(function(){let loaded=false,tries=0;function appendProfessionalLabels(){const p=document.createElement('script');p.src='checkin-professional-labels-v1.js?v=20260814.1';p.async=false;document.body.appendChild(p);}function appendDateLabel(){const d=document.createElement('script');d.src='checkin-date-label-v1.js?v=20260810.1';d.async=false;d.onload=appendProfessionalLabels;d.onerror=appendProfessionalLabels;document.body.appendChild(d);}function appendCheckin(){const s=document.createElement('script');s.src='checkin-v2.js?v=20260810.1';s.async=false;s.onload=appendDateLabel;s.onerror=appendDateLabel;document.body.appendChild(s);}function loadCheckin(){if(loaded)return;if(window.LBGAuth&&window.LBGAccess&&window.LBGAccess.context){loaded=true;const y=document.createElement('script');y.src='checkin-shared-scan-context-v1.js?v=20260810.2';y.async=false;y.onload=appendCheckin;y.onerror=appendCheckin;document.body.appendChild(y);}}document.addEventListener('lbg-access-ready',loadCheckin);const timer=setInterval(()=>{tries++;loadCheckin();if(loaded||tries>300){clearInterval(timer);if(!loaded)console.error('Check-in: access context chưa sẵn sàng sau 30 giây.');}},100);})();<\/script>`;
     html=html.replace('</body>',runtime+'</body>');
     document.open();document.write(html);document.close();
   }catch(error){
