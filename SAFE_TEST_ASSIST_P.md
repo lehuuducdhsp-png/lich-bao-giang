@@ -30,6 +30,7 @@
 - Bảng kê tháng tự đọc mã hậu tố P và điền ô `Trợ (P)` ở trang thử.
 - Excel tuần chỉ bị chặn trong trang thử khi giáo viên thực sự có P; file được dựng từ report engine ổn định và thêm P vào bản sao dữ liệu.
 - Google Sheets ở trang thử tạo payload riêng có `assistPeriods`, `isAssist=true`, `payEligible=false`; `total` vẫn chỉ là chính + cộng.
+- Trạng thái: **sandbox-only**. `main` không bị thay đổi bởi PR #36.
 
 ## Gate kiểm thử trước merge
 - [ ] Web: đúng giáo viên.
