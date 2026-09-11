@@ -17,7 +17,7 @@
         if(poll){clearInterval(poll);poll=null}
         if(typeof api.onLogout==='function'&&!api.__lbgRuntimeReloadBound){
           api.__lbgRuntimeReloadBound=true;
-          api.onLogout(()=>{try{window.location.reload()}catch{}});
+          api.onLogout(()=>{try{window.location.reload()}catch{} });
         }
         if(api.profile&&!api.profile.must_change_password&&api.readyNotified){finish(api);return true}
         if(typeof api.onReady==='function')api.onReady(()=>finish(api));
@@ -81,6 +81,7 @@
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
         ['checkin-history-order-v1.js?v=20260810.1','lbgCheckinHistoryOrderV1'],
         ['monthly-calendar-v3.js?v=20260908.1','lbgMonthlyCalendarV3Script'],
+        ['assist-p-official-v1.js?v=20260911.2','lbgAssistPOfficialV1Script'],
         ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script'],
         ['section-order-fix-v1.js?v=20260808.13','lbgSectionOrderFixV1Script'],
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],
