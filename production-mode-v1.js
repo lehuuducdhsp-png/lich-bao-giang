@@ -7,7 +7,6 @@
   if(!document.getElementById('lbgProductionModeCss')){
     const s=document.createElement('style');
     s.id='lbgProductionModeCss';
-    // Badge thử nghiệm được ẩn hoàn toàn bằng CSS, không cần quét lại DOM mỗi khi giao diện thay đổi.
     s.textContent='.lbg-finish-test-badge{display:none!important}';
     document.head.appendChild(s);
   }
@@ -49,12 +48,13 @@
   }
 
   function loadReportExport(){
-    if(document.getElementById('lbgReportExportHotfixV2Script'))return;
+    if(document.getElementById('lbgReportExportHotfixV3Script'))return;
+    document.getElementById('lbgReportExportHotfixV2Script')?.remove();
     const s=document.createElement('script');
-    s.id='lbgReportExportHotfixV2Script';
-    s.src='report-export-hotfix-v2.js?v=20260909.8';
+    s.id='lbgReportExportHotfixV3Script';
+    s.src='report-export-hotfix-v3.js?v=20260911.3';
     s.async=false;
-    s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng.');
+    s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng V3.');
     document.body.appendChild(s);
   }
   if(window.LBG_HOAN_NANG_LOGO_JPEG){
@@ -80,7 +80,6 @@
     return true;
   }
 
-  // Footer là nội dung tĩnh. Chỉ xử lý hữu hạn khi khởi động thay vì theo dõi toàn bộ document.body.
   applyProductionFooter();
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',applyProductionFooter,{once:true});
