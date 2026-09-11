@@ -62,8 +62,14 @@ Mục tiêu là giảm phạm vi lỗi: Web đúng trước, sau đó mới mở
 - [ ] Google Sheets không cộng P vào tổng chính.
 - [ ] Kiểm tra ghi đè / tạo bản 2 không làm hỏng dữ liệu cũ.
 
+## Trạng thái hiện tại
+- Trang thử đang nạp `assist-p-safe-v2.js`.
+- PR #36 vẫn Draft và không nhắm vào `main`.
+- Trang chính không nhận các thay đổi safe2.
+- File `.bat` một-click đã cung cấp sẽ tải lại branch sandbox mới nhất mỗi lần chạy.
+
 ## Chạy localhost
-Dùng file `.bat` một-click đã cung cấp. File đó tải lại branch sandbox mới nhất mỗi lần chạy.
+Dùng file `.bat` một-click đã cung cấp.
 
 Hoặc chạy thủ công:
 ```bat
