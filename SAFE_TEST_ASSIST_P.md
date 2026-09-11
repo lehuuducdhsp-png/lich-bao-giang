@@ -13,59 +13,65 @@
 5. Không merge nếu chưa kiểm tra Excel và Google Sheets thật.
 6. Trước khi merge production phải có nhánh backup/rollback riêng.
 
+## Sự cố đã phát hiện ở safe1
+Bản `assist-p-safe-v1.js` đã can thiệp bằng cách bọc lại `window.analyzeNow`. Trong hệ thống hiện có nhiều mô-đun runtime cũng có thể gán lại hàm này, nên xuất hiện vòng gọi lồng nhau và lỗi:
+
+`Maximum call stack size exceeded`
+
+Bản safe1 vì vậy **không đạt gate** và không được đưa vào production.
+
+## Thiết kế safe2
+`assist-p-safe-v2.js` không thay, không bọc và không ghi đè `analyzeNow`.
+
+Giai đoạn 1 chỉ kiểm tra Web:
+- đọc mã hậu tố `P` bằng bộ parser hiện có;
+- ghép P vào **bản sao dữ liệu chỉ để render preview**;
+- không sửa `result.entries` gốc;
+- không tăng `result.total`;
+- Google Sheets bị khóa trong sandbox;
+- Excel có P bị khóa trong sandbox cho tới khi Web được xác nhận đúng.
+
+Mục tiêu là giảm phạm vi lỗi: Web đúng trước, sau đó mới mở Excel, cuối cùng mới mở Google Sheets.
+
 ## Quy ước P cần đạt
 - Mã giáo viên bình thường = tiết chính (T).
 - Mã giáo viên có hậu tố `P` = tiết Trợ giảng (P).
 - Lịch Báo giảng vẫn hiển thị lớp đúng ngày / buổi / tiết và thêm `(P)`.
 - P không cộng vào tiết chính hoặc tiết tính lương.
 - Bảng kê tháng hiển thị riêng `Trợ (P)`.
-- Excel và Google Sheets phải cùng một kết quả với Web.
-
-## Bản thử hiện tại
-- File giao diện riêng: `thu-nghiem-tro-giang-p-safe.html`
-- Module riêng: `assist-p-safe-v1.js`
-- Không sửa `index.html`, `app-runtime-v1.js`, parser, report engine, monthly calendar hay bridge Google Sheets của production.
-- `analyzeNow` chỉ được bọc trong trang thử; `entries` tiết chính giữ nguyên, P được giữ riêng trong `assistEntries`.
-- Web preview dùng bản sao dữ liệu để hiển thị P nên không làm tăng `total` chính.
-- Bảng kê tháng tự đọc mã hậu tố P và điền ô `Trợ (P)` ở trang thử.
-- Excel tuần chỉ bị chặn trong trang thử khi giáo viên thực sự có P; file được dựng từ report engine ổn định và thêm P vào bản sao dữ liệu.
-- Google Sheets ở trang thử tạo payload riêng có `assistPeriods`, `isAssist=true`, `payEligible=false`; `total` vẫn chỉ là chính + cộng.
-- Trạng thái: **sandbox-only**. `main` không bị thay đổi bởi PR #36.
+- Excel và Google Sheets phải cùng một kết quả với Web trước khi được merge.
 
 ## Gate kiểm thử trước merge
+### Giai đoạn 1 — Web
+- [ ] Web: không còn lỗi `Maximum call stack size exceeded`.
 - [ ] Web: đúng giáo viên.
 - [ ] Web: đúng Thứ/ngày.
 - [ ] Web: đúng buổi và tiết.
 - [ ] Web: lớp trợ có `(P)`.
 - [ ] Tổng chính không tăng vì P.
+- [ ] Test lại ít nhất một giáo viên không có P.
+- [ ] F5 / mở lại trang không làm kết quả thay đổi.
+
+### Giai đoạn 2 — Bảng kê / Excel
 - [ ] Bảng kê tháng tách Chính / Trợ.
 - [ ] Excel không mất chữ, không phát sinh giá trị lạ ở ô trống.
 - [ ] Excel có `(P)` đúng vị trí.
+
+### Giai đoạn 3 — Google Sheets
 - [ ] Google Sheets có `(P)` đúng vị trí.
 - [ ] Google Sheets không cộng P vào tổng chính.
-- [ ] Test lại ít nhất một giáo viên không có P để bảo đảm không bị ảnh hưởng.
-- [ ] F5 / mở lại trang không làm kết quả thay đổi.
+- [ ] Kiểm tra ghi đè / tạo bản 2 không làm hỏng dữ liệu cũ.
 
 ## Chạy localhost
-Sau khi checkout nhánh `sandbox/assist-p-safe-v1`, chạy:
+Dùng file `.bat` một-click đã cung cấp. File đó tải lại branch sandbox mới nhất mỗi lần chạy.
+
+Hoặc chạy thủ công:
 ```bat
 python -m http.server 8765
 ```
-Mở đúng trang thử:
+Mở:
 ```text
 http://localhost:8765/thu-nghiem-tro-giang-p-safe.html
 ```
-Không dùng `/` để tránh nhầm với giao diện production.
-
-## Trình tự test đề nghị
-1. Tải đúng file TKB có mã `...P`.
-2. Chọn giáo viên và nhấn `Kiểm tra`.
-3. Đối chiếu từng P theo đúng Thứ / buổi / tiết.
-4. Kiểm tra tổng chính không đổi.
-5. Mở `Bảng kê tháng`, tổng hợp đúng tháng và kiểm tra từng dòng `Trợ (P)`.
-6. Xuất Excel tuần và Excel tháng, mở file thật để kiểm tra cột/hàng/chữ.
-7. Lưu Google Sheets bằng bản thử và mở file thật để kiểm tra.
-8. Test một giáo viên không có P.
-9. F5 rồi lặp lại bước 2–8.
 
 Chỉ sau khi toàn bộ checklist đạt và người dùng xác nhận mới được đưa thay đổi sang `main`.
