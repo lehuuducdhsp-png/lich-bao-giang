@@ -1,25 +1,22 @@
 'use strict';
 (function(){
-  const OWNER_SRC='sheets-sync-owner-v3.js?v=20260909.2';
-  const OWNER_SCRIPT_ID='lbgSheetsSyncOwnerV3Secure';
-
+  const OWNER_SRC='sheets-sync-owner-v4.js?v=20260911.verified1';
+  const OWNER_SCRIPT_ID='lbgSheetsSyncOwnerV4Secure';
+  let loading=false;
   function clearLegacyUi(){
     clearInterval(window.__lbgSheetsOwnerTimer);window.__lbgSheetsOwnerTimer=null;
-    document.getElementById('saveSheets')?.remove();
-    document.getElementById('sheetSaveDialog')?.remove();
-    document.getElementById('sheetSaveOverlayV2')?.remove();
-    document.getElementById('sheetSaveOverlayV3')?.remove();
+    for(const id of ['saveSheets','sheetSaveDialog','sheetSaveOverlayV2','sheetSaveOverlayV3','sheetSaveOverlayV4'])document.getElementById(id)?.remove();
   }
   function loadOwnerBridge(){
-    clearLegacyUi();
-    document.querySelectorAll('script[src*="sheets-sync-owner-v2.js"],script[src*="sheets-sync-owner-v3.js"]').forEach(x=>x.remove());
-    document.getElementById(OWNER_SCRIPT_ID)?.remove();
+    if(window.LBGSheetsOwnerV4){window.LBGSheetsOwnerV4.install(window.LBGAuth);return}
+    if(loading)return;loading=true;clearLegacyUi();
     const s=document.createElement('script');s.id=OWNER_SCRIPT_ID;s.src=OWNER_SRC;s.async=false;
-    s.onerror=()=>console.error('LBG: không tải được cầu nối Google Sheets V3.');document.body.appendChild(s);
+    s.onerror=()=>{loading=false;console.error('LBG: không tải được cầu nối Google Sheets V4.')};
+    document.body.appendChild(s);
   }
   function attach(){
     if(!window.LBGAuth){setTimeout(attach,100);return}
-    window.LBGAuth.onReady(()=>loadOwnerBridge());window.LBGAuth.onLogout(()=>clearLegacyUi());
+    window.LBGAuth.onReady(loadOwnerBridge);window.LBGAuth.onLogout(clearLegacyUi);
     if(window.LBGAuth.profile&&!window.LBGAuth.profile.must_change_password)loadOwnerBridge();
   }
   attach();

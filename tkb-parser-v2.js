@@ -132,6 +132,7 @@
       const raw=txt(cellText(ws.getCell(r,c))).toUpperCase();if(!raw)continue;
       const resolved=resolveTeacherCode(ws,raw);
       if(resolved){counts.set(resolved.code,(counts.get(resolved.code)||0)+1);continue}
+      if(hasSummary&&raw.endsWith('P')&&summary.byCode.has(raw.slice(0,-1))){if(!ws.getCell(r,c).isMerged||ws.getCell(r,c).master?.address===ws.getCell(r,c).address)counts.set(raw,(counts.get(raw)||0)+1);continue}
       if(!hasSummary&&codeLooksSafe(raw))counts.set(raw,(counts.get(raw)||0)+1)
     }
     return counts
@@ -140,7 +141,8 @@
     const summary=teacherSummary(ws),counts=codeCounts(ws),out=[];
     for(const item of summary.ordered){
       const n=counts.get(item.code)||0;
-      if(n>0)out.push({name:item.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),code:item.code,expected:n,mapping:'summary-countif'})
+      const assist=summary.byCode.has(item.code+'P')?0:(counts.get(item.code+'P')||0);
+      if(n>0||assist>0)out.push({name:item.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim(),code:item.code,expected:n,mapping:'summary-countif'})
     }
     if(!summary.byCode.size)for(const[code,n]of counts)out.push({name:'Mã '+code,code,expected:n,mapping:'unmapped'});
     return out.sort((a,b)=>a.name.localeCompare(b.name,'vi'))

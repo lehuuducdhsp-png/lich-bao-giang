@@ -49,10 +49,10 @@
   }
 
   function loadReportExport(){
-    if(document.getElementById('lbgReportExportHotfixV2Script'))return;
+    if(document.getElementById('lbgReportExportHotfixV3Script'))return;
     const s=document.createElement('script');
-    s.id='lbgReportExportHotfixV2Script';
-    s.src='report-export-hotfix-v2.js?v=20260909.8';
+    s.id='lbgReportExportHotfixV3Script';
+    s.src='report-export-hotfix-v3.js?v=20260911.verified1';
     s.async=false;
     s.onerror=()=>console.error('Không tải được bản sửa xuất Excel báo giảng.');
     document.body.appendChild(s);

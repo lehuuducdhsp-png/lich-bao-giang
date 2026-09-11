@@ -1,0 +1,27 @@
+name: Validate assist P integration
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install isolated test dependencies
+        run: npm install --prefix "$RUNNER_TEMP/lbg-test-deps" --ignore-scripts --no-audit --no-fund exceljs@4.4.0 jsdom@26.1.0
+      - name: JavaScript syntax and regression suite
+        env:
+          NODE_PATH: ${{ runner.temp }}/lbg-test-deps/node_modules
+          LBG_TEST_ARTIFACT_DIR: ${{ runner.temp }}/lbg-p-fixtures
+        run: |
+          for file in assist-p-data-v1.js tkb-parser-v2.js report-engine-v4.js monthly-calendar-v3.js report-export-hotfix-v3.js sheets-sync-owner-v4.js sheets-sync-security-v1.js app-runtime-v1.js analysis-fix-v2.js teacher-fix-v2.js; do node --check "$file"; done
+          node --test tests/*.test.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assist-p-synthetic-validation
+          path: ${{ runner.temp }}/lbg-p-fixtures

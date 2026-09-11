@@ -21,7 +21,7 @@
     }catch{}
     sundayCache.set(ws,found);return found
   }
-  const daysForWorksheet=ws=>weekHasSunday(ws)?[2,3,4,5,6,7,8]:[2,3,4,5,6,7],daysForReport=a=>daysForWorksheet(worksheet(a?.sheet)||currentWorksheet()),dayLabel=d=>Number(d)===8?'Chủ nhật':`Thứ ${Number(d)}`,endDate=(start,sun)=>start instanceof Date&&!Number.isNaN(start.getTime())?new Date(start.getTime()+(sun?6:5)*864e5):null;
+  const daysForWorksheet=ws=>weekHasSunday(ws)?[2,3,4,5,6,7,8]:[2,3,4,5,6,7],daysForReport=a=>(a?.entries||[]).some(e=>Number(e.day)===8)?[2,3,4,5,6,7,8]:daysForWorksheet(worksheet(a?.sheet)||currentWorksheet()),dayLabel=d=>Number(d)===8?'Chủ nhật':`Thứ ${Number(d)}`,endDate=(start,sun)=>start instanceof Date&&!Number.isNaN(start.getTime())?new Date(start.getTime()+(sun?6:5)*864e5):null;
   const reportRules=()=>window.LBGReportPayRulesV1;
   const slotEntries=(a,d,s,p)=>reportRules()?.displayEntries(a?.entries||[],d,s,p)||(a?.entries||[]).filter(e=>Number(e.day)===Number(d)&&e.session===s&&Number(e.teachingPeriod??e.period)===Number(p));
   const classReportText=e=>{const base=txt(e?.className),note=txt(e?.groupNote);return note?`${base} - ${note}`:base};
@@ -95,8 +95,9 @@
       #compare[data-lbg-r4="1"]{white-space:nowrap}`;
     document.head.appendChild(s)
   }
+  function reportView(a){ensureGa(a);return window.LBGAssistP?.reportView(a,worksheet(a?.sheet)||currentWorksheet())||a}
   function renderPreviewV4(a){
-    if(!a)return;style();ensureGa(a);
+    if(!a)return;style();a=reportView(a);
     const totals=reportTotals(a),ds=daysForReport(a),sun=ds.includes(8),end=endDate(a.start,sun);let rows='';
     for(const session of ['Sáng','Chiều']){
       rows+=`<tr><td class="session" rowspan="6">${session}</td><td class="session">Tiết</td>${ds.map(d=>`<td class="school">${locationEditor(a,d,session)}</td>`).join('')}</tr>`;
@@ -105,9 +106,9 @@
         return`<td>${slotEntries(a,d,session,p).map(e=>{const loc=locOf(e);return`<span class="${first&&loc.key!==first?'red':''}">${escHtml(classReportText(e))}</span>`}).join(' & ')}</td>`
       }).join('')}</tr>`
     }
-    const cap=q('caption');if(cap)cap.innerHTML=`${escHtml(a.teacherName)} • ${totals.total} tiết${totals.plus?` (${totals.main} + ${totals.plus} cộng)`:''}${sun?'<span class="lbg-r4-sunday">Tuần có Chủ nhật</span>':''}`;
+    const cap=q('caption');if(cap)cap.innerHTML=`${escHtml(a.teacherName)} • ${totals.total} tiết${totals.plus?` (${totals.main} + ${totals.plus} cộng)`:''}${a.assistCount?` • ${a.assistCount} Trợ (P)`:''}${sun?'<span class="lbg-r4-sunday">Tuần có Chủ nhật</span>':''}`;
     const preview=q('preview');
-    if(preview)preview.innerHTML=`<div class="lbg-r4-help"><b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp/nhóm có nhãn “- TIẾT N” được đặt đúng vào hàng Tiết N và các ô nguồn của cùng một lớp ghép chỉ hiển thị một lần. Số GA có thể chỉnh trực tiếp.</div><div class="sheet ${sun?'lbg-r4-seven':'lbg-r4-six'}"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${escHtml(q('year')?.value)} - ${Number(q('year')?.value)+1}</h2><h3>Tuần ${escHtml(a.week||'...')}</h3><p>${a.start&&end?'(Từ ngày '+a.start.toLocaleDateString('vi-VN')+' đến ngày '+end.toLocaleDateString('vi-VN')+')':'(Chưa xác định ngày từ tên sheet)'}</p></div><table class="report"><tr>${['Buổi','Tiết',...ds.map(dayLabel)].map(x=>`<th style="height:62px;vertical-align:middle">${escHtml(x)}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>${escHtml(reportTotalText(a))}</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div></div>`;
+    if(preview)preview.innerHTML=`<div class="lbg-r4-help"><b>Trường và điểm dạy được tách riêng theo TKB.</b> Lớp/nhóm có nhãn “- TIẾT N” được đặt đúng vào hàng Tiết N và các ô nguồn của cùng một lớp ghép chỉ hiển thị một lần. Số GA có thể chỉnh trực tiếp.</div><div class="sheet ${sun?'lbg-r4-seven':'lbg-r4-six'}"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${escHtml(q('year')?.value)} - ${Number(q('year')?.value)+1}</h2><h3>Tuần ${escHtml(a.week||'...')}</h3><p>${a.start&&end?'(Từ ngày '+a.start.toLocaleDateString('vi-VN')+' đến ngày '+end.toLocaleDateString('vi-VN')+')':'(Chưa xác định ngày từ tên sheet)'}</p></div><table class="report"><tr>${['Buổi','Tiết',...ds.map(dayLabel)].map(x=>`<th style="height:62px;vertical-align:middle">${escHtml(x)}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>${escHtml(reportTotalText(a))}${a.assistCount?` • Trợ (P): ${a.assistCount}`:''}</span><span>Giáo viên: ${escHtml(a.teacherName)}</span></div></div>`;
     bindGa(a);if(q('previewCard'))q('previewCard').hidden=false
   }
 
@@ -121,7 +122,7 @@
     }).join('\n/\n')
   }
   function addReportSheet(bookOut,a,name){
-    ensureGa(a);
+    a=reportView(a);
     const totals=reportTotals(a),ws=bookOut.addWorksheet(uniqueSheetName(bookOut,name)),ds=daysForReport(a),sun=ds.includes(8),last=2+ds.length,endCol=colLetter(last),year=Number(q('year')?.value)||new Date().getFullYear();
     ws.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:.2,right:.2,top:.3,bottom:.3,header:.1,footer:.1}};
     [`A1:${endCol}1`,`A2:${endCol}2`,`A3:${endCol}3`,'A5:A10','A11:A16','A17:D17',`E17:${endCol}17`].forEach(r=>ws.mergeCells(r));
@@ -138,7 +139,7 @@
         }
       })
     }
-    ws.getCell('A17').value=reportTotalText(a);ws.getCell('E17').value='Giáo viên: '+txt(a.teacherName);
+    ws.getCell('A17').value=reportTotalText(a)+(a.assistCount?` • Trợ (P): ${a.assistCount}`:'');ws.getCell('E17').value='Giáo viên: '+txt(a.teacherName);
     ws.columns=[{width:9},{width:10},...ds.map(()=>({width:sun?19:21}))];
     for(let r=1;r<=17;r++){
       ws.getRow(r).height=r<=3?26:r===4?42:(r===5||r===11?86:34);
@@ -158,7 +159,7 @@
   function reportsForExport(){
     const ws=currentWorksheet();if(!ws)throw new Error('Hãy chọn tuần trước khi xuất.');
     const list=selectedTeachers();if(!list.length)throw new Error('Hãy chọn ít nhất một giáo viên.');
-    return list.map(t=>{const a=analyzeNow(ws,t.code,t.name);ensureGa(a);return a}).filter(a=>reportTotals(a).total>0)
+    return list.map(t=>{const a=analyzeNow(ws,t.code,t.name);ensureGa(a);return a}).filter(a=>reportTotals(a).total>0||window.LBGAssistP?.scanAssist(ws,a.code).length>0)
   }
   function loadScript(url,name){return new Promise((ok,no)=>{if(window[name])return ok(window[name]);const s=document.createElement('script');s.src=url;s.onload=()=>ok(window[name]);s.onerror=()=>no(new Error('Không tải được thư viện ZIP.'));document.head.appendChild(s)})}
   async function exportUnified(){

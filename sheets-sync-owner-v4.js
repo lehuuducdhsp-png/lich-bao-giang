@@ -3,6 +3,7 @@
   const VERSION='20260911.1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
+  const html=v=>txt(v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const pad2=v=>String(Number(v)||v||'').padStart(2,'0');
   const iso=d=>d instanceof Date&&!Number.isNaN(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
   let auth=null,pending=false,installed=false;
@@ -68,7 +69,7 @@
         const cell=ws.getCell(row,col);if(cellText(cell).toUpperCase()!==target)continue;
         const sameRow=(allAssignments||[]).filter(e=>Number(e.row)===row);
         const candidate=[...sameRow].sort((a,b)=>Math.abs(Number(a.col)-col)-Math.abs(Number(b.col)-col))[0]||null;
-        if(candidate){out.push(normalizeEntry(candidate,target,cell.address,info.period,'plus'));continue}
+        if(candidate){out.push(normalizeEntry({...candidate,...info},target,cell.address,info.period,'plus'));continue}
         const loc=parser?.locationAt?.(ws,row)||{},cm=classAt(ws,row,col,base);
         out.push(normalizeEntry({...info,...loc,...cm,row,col},target,cell.address,info.period,'plus'));
       }
@@ -76,26 +77,14 @@
     return out;
   }
   function assistAssignments(ws,base){
-    const api=window.LBGAssistP;
-    if(typeof api?.scanAssist==='function'){
-      try{return(api.scanAssist(ws,base)||[]).map(e=>normalizeEntry(e,`${base}P`,e.address,e.period,'assist'))}catch(error){console.warn('Google Sheets: scanAssist P thất bại, dùng bộ quét dự phòng.',error)}
-    }
-    const parser=window.LBGTkbParserV2,cols=parser?.timetableColumns?.(ws)||[],start=Math.max(1,Number(parser?.buildHeader?.(ws)?.headerRow||4)+1),target=`${base}P`,out=[];
-    for(const col of cols){
-      const info=parser?.colInfoFor?.(ws,col);if(!info)continue;
-      for(let row=start;row<=Number(ws.rowCount||0);row++){
-        const cell=ws.getCell(row,col);if(cellText(cell).toUpperCase()!==target)continue;
-        const loc=parser?.locationAt?.(ws,row)||{},cm=classAt(ws,row,col,base);
-        out.push(normalizeEntry({...info,...loc,...cm,row,col},target,cell.address,info.period,'assist'));
-      }
-    }
-    return out;
+    if(!window.LBGAssistP?.scanAssist)throw new Error('Bộ đọc Trợ (P) chưa sẵn sàng. Hãy tải lại trang.');
+    return window.LBGAssistP.scanAssist(ws,base).map(e=>normalizeEntry(e,`${base}P`,e.address,e.slotPeriod??e.period,'assist'));
   }
   function atomicEntries(a){
     const ws=worksheet(),parser=window.LBGTkbParserV2,base=txt(a?.code).toUpperCase();
-    if(!ws||!parser?.scanAssignments||!base)return(a?.entries||[]).map((e,i)=>({...normalizeEntry(e,e?.sourceCode||base,e?.address,undefined,'main'),index:i+1}));
+    if(!ws||!parser?.scanAssignments||!base)throw new Error('Chưa đọc được TKB để lập dữ liệu Google Sheets.');
     const all=parser.scanAssignments(ws)||[];
-    const main=all.filter(e=>txt(e?.code).toUpperCase()===base).map(e=>normalizeEntry(e,base,e.address,undefined,'main'));
+    const main=all.filter(e=>txt(e?.code).toUpperCase()===base&&!e.isAssist).map(e=>normalizeEntry(e,base,e.address,undefined,'main'));
     const plus=plusAssignments(ws,base,all),assist=assistAssignments(ws,base);
     const entries=[...main,...plus,...assist];
     entries.sort((x,y)=>Number(x.day)-Number(y.day)||((txt(x.session)==='Sáng'?0:1)-(txt(y.session)==='Sáng'?0:1))||Number(x.teachingPeriod)-Number(y.teachingPeriod)||txt(x.sourceCell).localeCompare(txt(y.sourceCell)));
@@ -116,12 +105,13 @@
   }
   function payText(main,plus,total){return plus?`${main} chính + ${plus} cộng = ${total} tiết`:`${main} chính = ${total} tiết`}
   function buildReport(mode){
-    const a=current();if(!a?.entries?.length)throw new Error('Hãy nhấn Kiểm tra trước khi lưu Google Sheets.');
+    const a=current();if(!a||txt(q('week')?.value)!==txt(a.sheet)||txt(q('teacher')?.value).toUpperCase()!==txt(a.code).toUpperCase())throw new Error('Hãy nhấn Kiểm tra trước khi lưu Google Sheets.');
     const entries=atomicEntries(a),base=txt(a.code).toUpperCase();
+    if(!entries.length)throw new Error('Không có tiết dạy hoặc Trợ (P) để lưu.');
     const main=entries.filter(e=>txt(e.sourceCode).toUpperCase()===base).length;
     const plus=entries.filter(e=>txt(e.sourceCode).toUpperCase()===`${base}+`).length;
     const assist=entries.filter(e=>e.isAssist||txt(e.sourceCode).toUpperCase()===`${base}P`).length;
-    const total=main+plus,cfg=yearConfig(),start=a.start instanceof Date?new Date(a.start):null,end=start?new Date(start.getTime()+5*864e5):null,destinationSheet=tabName(a),ga=gaValues(a);
+    const total=main+plus,cfg=yearConfig(),start=a.start instanceof Date?new Date(a.start):null,end=start?new Date(start.getTime()+(entries.some(e=>e.day===8)?6:5)*864e5):null,destinationSheet=tabName(a),ga=gaValues(a);
     const totalText=(plus?`TỔNG: ${main} tiết + ${plus} tiết = ${total} tiết`:`TỔNG: ${main} tiết`)+(assist?` • ${assist} Trợ (P)`:``);
     return{
       requestId:`lbg-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -152,7 +142,7 @@
     document.body.appendChild(o);q('sheetSaveCancelV4').onclick=closeChoice;q('sheetSaveOverwriteV4').onclick=()=>save('overwrite');q('sheetSaveCopyV4').onclick=()=>save('copy');o.addEventListener('click',e=>{if(e.target===o)closeChoice()});return o;
   }
   function choose(){
-    try{const r=buildReport('overwrite'),o=ensureChoice(),p=q('sheetSavePromptV4');if(p)p.innerHTML=`${r.schoolYear} • ${r.sheetName} • ${r.teacherName}<br><b>${payText(r.mainPeriods,r.plusPeriods,r.total)}</b>${r.assistPeriods?`<br><b style="color:#9a5b36">${r.assistPeriods} Trợ (P)</b>`:''}<br>${r.atomicCount} ô mã nguồn sẽ được gửi`;o.style.display='grid'}catch(e){alert(e.message||String(e))}
+    try{const r=buildReport('overwrite'),o=ensureChoice(),p=q('sheetSavePromptV4');if(p)p.innerHTML=`${html(r.schoolYear)} • ${html(r.sheetName)} • ${html(r.teacherName)}<br><b>${payText(r.mainPeriods,r.plusPeriods,r.total)}</b>${r.assistPeriods?`<br><b style="color:#9a5b36">${r.assistPeriods} Trợ (P)</b>`:''}<br>${r.atomicCount} ô mã nguồn sẽ được gửi`;o.style.display='grid'}catch(e){alert(e.message||String(e))}
   }
   async function save(mode){
     if(pending)return;closeChoice();let report;try{report=buildReport(mode)}catch(e){alert(e.message||String(e));return}
@@ -166,7 +156,7 @@
   function ensureButton(){
     if(!auth?.isOwner?.()){q('saveSheets')?.remove();return}
     const ex=q('export');if(!ex)return;let b=q('saveSheets');if(!b){b=document.createElement('button');b.id='saveSheets';b.type='button';b.className='btn';b.style.cssText='background:#2563eb;color:#fff;white-space:nowrap';b.textContent='☁ Lưu vào Google Sheets';ex.insertAdjacentElement('afterend',b);b.onclick=choose}
-    const a=current();b.disabled=pending||!a?.entries?.length||Boolean(ex.disabled)
+    const a=current();b.disabled=pending||!a||Boolean(ex.disabled)
   }
   function install(a){auth=a||window.LBGAuth;if(!auth)return false;if(installed)return true;installed=true;q('sheetSaveOverlayV3')?.remove();ensureButton();const b=q('saveSheets');if(b)b.onclick=choose;document.addEventListener('click',e=>{if(e.target?.closest?.('#analyze'))setTimeout(ensureButton,150)},true);document.addEventListener('change',e=>{if(['week','teacher'].includes(e.target?.id))setTimeout(ensureButton,80)},true);return true}
   function boot(){const a=window.LBGAuth;if(!a){setTimeout(boot,80);return}a.onReady?.(x=>install(x));if(a.profile&&!a.profile.must_change_password)install(a)}
