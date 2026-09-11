@@ -43,8 +43,8 @@ jobs:
           grep -Fq "conflict-check-v8.js?v=20260909.1" app-runtime-v1.js
           grep -Fq "kns-lesson-detail-v2.js?v=20260909.1" app-runtime-v1.js
           grep -Fq "ga-suggestion-v7.js?v=20260909.2" app-runtime-v1.js
-          grep -Fq "production-mode-v1.js?v=20260909.4" app-runtime-v1.js
-          grep -Fq "app-runtime-v1.js?v=20260909.4" index.html
+          grep -Fq "production-mode-v1.js?v=20260911.verified1" app-runtime-v1.js
+          grep -Fq "app-runtime-v1.js?v=20260911.verified1" index.html
           ! grep -Fq "conflict-check-v7.js?v=" app-runtime-v1.js
       - name: Run teaching progress regression
         run: node tests/teaching-plan-progress-v1.test.cjs

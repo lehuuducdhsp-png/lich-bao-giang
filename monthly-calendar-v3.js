@@ -109,7 +109,7 @@
     if(month<1||month>12)throw new Error('Tháng không hợp lệ.');
     if(!teacher.code)throw new Error('Chưa chọn giáo viên.');
     const year=yearOfMonth(month),segments=monthSegments(year,month),groups=sourceWeekGroups();
-    const counts=new Map(),schools=[],seen=new Set(),warnings=[],usableSheets=[],plusByWeek=new Map();
+    const counts=new Map(),schools=[],seen=new Set(),warnings=[],usableSheets=[],plusByWeek=new Map(),assistByWeek=new Map();
     let sourceEntryTotal=0;
     const add=(school,date)=>{
       let name=raw(school);if(!name)name=UNKNOWN_SCHOOL;
@@ -127,6 +127,9 @@
       try{a=analyzeNow(item.ws,teacher.code,teacher.name)}catch(error){warnings.push(`${item.ws.name}: không đọc được dữ liệu (${error?.message||error}).`);continue}
       seg.usable=true;usableSheets.push(item.ws.name);
       const allowedDays=seg.dates.map(d=>d.getDay()===0?8:d.getDay()+1);
+      const assist=window.LBGAssistP?.scanAssist(item.ws,teacher.code,{allowedDays})||[];
+      assistByWeek.set(seg.key,assist.length);
+      for(const e of assist){const name=raw(e.school);if(name&&!seen.has(name)){seen.add(name);schools.push(name)}}
       plusByWeek.set(seg.key,reportRules()?.scanPlus(item.ws,teacher.code,{allowedDays})||0);
       for(const w of a.warnings||[])warnings.push(`${item.ws.name}: ${w}`);
       for(const e of a.entries||[]){
@@ -143,7 +146,7 @@
     if(dates.length!==daysInMonth)warnings.push(`Lỗi lịch tháng: tạo được ${dates.length}/${daysInMonth} ngày.`);
     let autoTotal=0;for(const m of counts.values())for(const v of m.values())autoTotal+=v;
     if(autoTotal!==sourceEntryTotal)warnings.push(`Đối chiếu nội bộ lệch: đọc ${sourceEntryTotal} tiết nhưng bảng tự động có ${autoTotal} tiết.`);
-    const built={version:VERSION,contextKey:currentContextKey(),year,month,teacherCode:teacher.code,teacherName:teacher.name,segments,dates,counts,schools,warnings:dedupe(warnings),sourceSheets:usableSheets,sourceEntryTotal,autoTotal,plusByWeek};
+    const built={version:VERSION,contextKey:currentContextKey(),year,month,teacherCode:teacher.code,teacherName:teacher.name,segments,dates,counts,schools,warnings:dedupe(warnings),sourceSheets:usableSheets,sourceEntryTotal,autoTotal,plusByWeek,assistByWeek};
     built.manual=loadManual(built);
     for(const s of built.manual.addedSchools){const name=raw(s);if(name&&!built.schools.includes(name))built.schools.push(name)}
     S.built=built;return built;
@@ -157,7 +160,8 @@
   function monthBaseTotal(b){let t=0;for(const school of b.schools)for(const d of b.dates)t+=val(b,school,d);return t}
   const plusTotal=b=>b.segments.reduce((t,s)=>t+weekPlus(b,s),0);
   const monthTotal=b=>monthBaseTotal(b)+plusTotal(b);
-  const assistTotal=b=>b.segments.reduce((t,s)=>t+n0(b.manual.weeklyAssist[s.key]||0),0);
+  const weekAssist=(b,s)=>Object.prototype.hasOwnProperty.call(b.manual.weeklyAssist,s.key)?n0(b.manual.weeklyAssist[s.key]):n0(b.assistByWeek?.get(s.key)||0);
+  const assistTotal=b=>b.segments.reduce((t,s)=>t+weekAssist(b,s),0);
 
   function refreshTotals(){
     const b=S.built;if(!b)return;
@@ -181,10 +185,10 @@
     const wh=b.segments.map(s=>`<th class="mt-week" colspan="${s.dates.length}">${h(s.label)}<small>${s.usable?h(s.sheet):s.sheet?`Lỗi đọc: ${h(s.sheet)}`:'Thiếu tab TKB'}</small></th>`).join('');
     const dh=b.dates.map(d=>`<th class="mt-date"><b>${d.getDate()}</b><small>${h(viDay(d))}</small></th>`).join('');
     const rows=b.schools.map((school,i)=>`<tr><td class="mt-teacher">${i===0?h(b.teacherName):''}</td><td class="mt-school">${h(school)}</td>${b.dates.map(d=>{const a=autoVal(b,school,d),v=val(b,school,d);return`<td class="mt-cell"><input class="mt-count ${v!==a?'changed':''}" type="number" min="0" step="1" value="${v||''}" data-school="${encodeURIComponent(school)}" data-date="${dateKey(d)}" data-auto="${a}"></td>`}).join('')}</tr>`).join('');
-    const totals=b.segments.map(s=>`<td class="mt-week-total" colspan="${s.dates.length}"><b>${weekLabel(b,s)}</b><label>Trợ (P) <input class="mt-assist" type="number" min="0" step="1" value="${n0(b.manual.weeklyAssist[s.key]||0)||''}" data-week="${s.key}"></label></td>`).join('');
+    const totals=b.segments.map(s=>`<td class="mt-week-total" colspan="${s.dates.length}"><b>${weekLabel(b,s)}</b><label>Trợ (P) <input class="mt-assist" type="number" min="0" step="1" value="${weekAssist(b,s)||''}" data-week="${s.key}" title="TKB: ${b.assistByWeek?.get(s.key)||0} Trợ (P); để trống để dùng lại số tự động"></label></td>`).join('');
     p.innerHTML=b.schools.length?`<div class="mt-sheet"><div class="mt-title"><h2>BẢNG KÊ KHAI TIẾT DẠY THÁNG ${pad(b.month)}</h2><h3>NĂM HỌC ${yearStart()}-${yearStart()+1}</h3></div><div class="mt-scroll"><table class="mt-table"><thead><tr><th class="mt-fixed-a" rowspan="2">HỌ & TÊN<br>GIÁO VIÊN</th><th class="mt-fixed-b" rowspan="2">GIẢNG DẠY<br>TRƯỜNG</th>${wh}</tr><tr>${dh}</tr></thead><tbody>${rows}<tr class="mt-total-row"><td class="mt-fixed-a" colspan="2"><b>CỘNG TUẦN</b></td>${totals}</tr></tbody></table></div></div>`:'<div class="empty">Không tìm thấy tiết dạy trong tháng này. Có thể dùng “+ Thêm trường” để nhập ngoại lệ thủ công.</div>';
     p.querySelectorAll('.mt-count').forEach(input=>input.addEventListener('input',()=>{const school=decodeURIComponent(input.dataset.school||''),key=`${school}|||${input.dataset.date}`,v=n0(input.value||0),a=n0(input.dataset.auto);if(v===a)delete b.manual.overrides[key];else b.manual.overrides[key]=v;input.classList.toggle('changed',v!==a);saveManual();refreshTotals()}));
-    p.querySelectorAll('.mt-assist').forEach(input=>input.addEventListener('input',()=>{b.manual.weeklyAssist[input.dataset.week]=n0(input.value||0);saveManual();refreshTotals()}));
+    p.querySelectorAll('.mt-assist').forEach(input=>input.addEventListener('input',()=>{if(input.value==='')delete b.manual.weeklyAssist[input.dataset.week];else b.manual.weeklyAssist[input.dataset.week]=n0(input.value);saveManual();refreshTotals()}));
     renderExtras();
     setButton('month2AddSchool',true);setButton('month2Reset',true);setButton('month2Export',b.schools.length>0||total>0);
     q('month2Status').textContent=`${pad(b.month)}/${b.year} • ${total} tiết`;
@@ -215,7 +219,7 @@
       const row0=6;
       b.schools.forEach((school,i)=>{const r=row0+i;ws.getCell(r,1).value=i===0?b.teacherName:'';ws.getCell(r,2).value=school;styleCell(ws.getCell(r,1),{bold:i===0});styleCell(ws.getCell(r,2),{bold:true});b.dates.forEach((d,j)=>{const v=val(b,school,d);ws.getCell(r,firstCol+j).value=v||'';styleCell(ws.getCell(r,firstCol+j))});styleCell(ws.getCell(r,mainCol),{border:true});styleCell(ws.getCell(r,assistCol),{border:true})});
       const tr=row0+b.schools.length;ws.mergeCells(tr,1,tr,2);ws.getCell(tr,1).value='CỘNG TUẦN';styleCell(ws.getCell(tr,1),{bold:true,fill:'FFFAFAFA'});col=firstCol;
-      for(const seg of b.segments){const z=col+seg.dates.length-1;ws.mergeCells(tr,col,tr,z);ws.getCell(tr,col).value=`${weekLabel(b,seg)}\n${n0(b.manual.weeklyAssist[seg.key]||0)||'..........'} Trợ (P)`;styleCell(ws.getCell(tr,col),{bold:true,fill:'FFFAFAFA'});col=z+1}
+      for(const seg of b.segments){const z=col+seg.dates.length-1;ws.mergeCells(tr,col,tr,z);ws.getCell(tr,col).value=`${weekLabel(b,seg)}\n${weekAssist(b,seg)||'..........'} Trợ (P)`;styleCell(ws.getCell(tr,col),{bold:true,fill:'FFFAFAFA'});col=z+1}
       ws.getCell(tr,mainCol).value=monthTotal(b);styleCell(ws.getCell(tr,mainCol),{bold:true,fill:'FFEAF7EE'});ws.getCell(tr,assistCol).value=assistTotal(b);styleCell(ws.getCell(tr,assistCol),{bold:true,fill:'FFEAF7EE'});
       const gr=tr+2;ws.mergeCells(gr,1,gr,lastCol);ws.getCell(gr,1).value=`TỔNG CỘNG SỐ TIẾT THÁNG ${pad(b.month)}/${b.year}: ${monthTotal(b)} TIẾT${plusTotal(b)?` (${monthBaseTotal(b)}+${plusTotal(b)})`:''} CHÍNH • ${assistTotal(b)} TIẾT TRỢ GIẢNG`;styleCell(ws.getCell(gr,1),{bold:true,size:14,fill:'FFEAF7EE'});ws.getRow(gr).height=25;
       const e=b.manual.extras;let r=gr+2;

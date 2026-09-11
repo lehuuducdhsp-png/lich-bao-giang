@@ -57,7 +57,7 @@
   window.fillWeeks=function(){const found=wb.worksheets.filter(weekLike),list=found.length?found:wb.worksheets,week=$('week');week.disabled=false;week.innerHTML='<option value="">Chọn tuần…</option>'+list.map(s=>`<option>${esc(s.name)}</option>`).join('');$('teacher').disabled=true;$('analyze').disabled=true;$('compare').disabled=true;$('export').disabled=true;clearResults();if(list.length){week.value=list[0].name;populateTeachers()}};
   $('week').onchange=populateTeachers;if(typeof wb!=='undefined'&&wb)window.fillWeeks()
 })();
-(function(){const script=document.createElement('script');script.src='analysis-fix-v2.js?v=20260810.1';script.defer=true;document.body.appendChild(script)})();
+(function(){const script=document.createElement('script');script.src='analysis-fix-v2.js?v=20260911.verified1';script.defer=true;document.body.appendChild(script)})();
 
 (function(){
   window.renderPreview=function(a){

@@ -39,63 +39,6 @@
     if(!/^data:image\/jpeg;base64,/i.test(base64))throw new Error('Dữ liệu logo Hoàn Năng chưa sẵn sàng.');
     return{base64,extension:'jpeg'};
   }
-  function sourceWorkbook(){try{return typeof wb!=='undefined'?wb:null}catch{return null}}
-  function sourceWorksheet(){const book=sourceWorkbook(),name=txt(q('week')?.value);return book&&name?book.getWorksheet(name):null}
-  function assistApi(){return window.LBGAssistP||window.LBGAssistPTrial||null}
-  function reportPeriod(entry){
-    const byRule=Number(window.LBGReportPayRulesV1?.reportPeriod?.(entry));
-    if(Number.isFinite(byRule)&&byRule>=1&&byRule<=5)return byRule;
-    const n=Number(entry?.teachingPeriod??entry?.period);return Number.isFinite(n)&&n>=1&&n<=5?n:null;
-  }
-  function assistText(entry){
-    const base=txt(entry?.className)||txt(entry?.classRaw)||'Lớp chưa xác định',note=txt(entry?.groupNote);
-    const core=note&&!base.toUpperCase().includes(note.toUpperCase())?`${base} - ${note}`:base;
-    return/\(P\)\s*$/i.test(core)?core:`${core} (P)`;
-  }
-  function appendRich(cell,text,color='FF9A5B36'){
-    if(!cell||!text||cellText(cell).includes(text))return;
-    const old=cell.value,rich=[];
-    if(old&&typeof old==='object'&&Array.isArray(old.richText))rich.push(...cloneData(old.richText));
-    else if(txt(cellText(cell)))rich.push({text:cellText(cell),font:{name:'Times New Roman',size:12}});
-    rich.push({text:(rich.length?' & ':'')+text,font:{name:'Times New Roman',size:12,bold:true,color:{argb:color}}});
-    cell.value={richText:rich};
-  }
-  function teacherList(ws){
-    for(const fn of[window.LBGAllTeachers,window.teachers])if(typeof fn==='function'){try{const a=fn(ws)||[];if(a.length)return a}catch{}}
-    return[];
-  }
-  function normalizedName(v){return txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim()}
-  function codeForOutputSheet(outWs,sourceWs,totalSheets){
-    const selected=txt(q('teacher')?.value).toUpperCase();if(totalSheets===1&&selected)return selected;
-    const sheetName=normalizedName(outWs?.name),teachers=teacherList(sourceWs);
-    const found=teachers.find(t=>{const n=normalizedName(t?.name);return n&&(sheetName===n||n.startsWith(sheetName)||sheetName.startsWith(n))});
-    return txt(found?.code).toUpperCase()||selected;
-  }
-  function locationText(entry){return[txt(entry?.schoolName||entry?.school),txt(entry?.siteDisplay||entry?.siteName)].filter(Boolean).join('\n')}
-  function patchAssistWorksheet(outWs,sourceWs,code){
-    const api=assistApi();if(!outWs||!sourceWs||!code||typeof api?.scanAssist!=='function')return 0;
-    let assist=[];try{assist=api.scanAssist(sourceWs,code)||[]}catch(error){console.warn('Xuất Excel: không quét được Trợ giảng (P).',error);return 0}
-    if(!assist.length)return 0;
-    const days=window.LBGReportEngineV4?.daysForWorksheet?.(sourceWs)||[2,3,4,5,6,7];
-    for(const entry of assist){
-      const di=days.indexOf(Number(entry?.day)),period=reportPeriod(entry);if(di<0||!period)continue;
-      const morning=txt(entry?.session)==='Sáng',row=(morning?5:11)+period,col=3+di,headRow=morning?5:11;
-      appendRich(outWs.getCell(row,col),assistText(entry));
-      outWs.getRow(row).height=Math.max(Number(outWs.getRow(row).height)||0,36);
-      const head=outWs.getCell(headRow,col),loc=locationText(entry),existing=cellText(head);
-      if(loc&&!existing.toUpperCase().includes(txt(entry?.schoolName||entry?.school).toUpperCase())){
-        head.value=(existing?existing+'\n/\n':'')+loc+'\n(GA )';
-      }
-    }
-    const footer=outWs.getCell('A17'),existing=cellText(footer);
-    if(!/TRỢ\s*\(P\)/i.test(existing))footer.value=(existing?existing+' • ':'')+`Trợ (P): ${assist.length}`;
-    return assist.length;
-  }
-  function patchAssistBook(book){
-    const source=sourceWorksheet(),api=assistApi();if(!source||typeof api?.scanAssist!=='function')return;
-    const sheets=[...book.worksheets];for(const outWs of sheets){if(!looksLikeReport(outWs))continue;const code=codeForOutputSheet(outWs,source,sheets.length);if(code)patchAssistWorksheet(outWs,source,code)}
-  }
-
   function estimatedLines(value,width){
     const text=txt(value);if(!text)return 1;const usable=Math.max(8,Math.floor((Number(width)||20)*.9));
     return text.split(/\n/).reduce((sum,line)=>sum+Math.max(1,Math.ceil(Math.max(1,line.length)/usable)),0);
@@ -139,7 +82,7 @@
   }
   async function fixWorkbookBlob(blob){
     const logo=getLogoImage(),array=await blob.arrayBuffer(),book=new ExcelJS.Workbook();await book.xlsx.load(array);
-    patchAssistBook(book);
+    // P is already placed by report-engine-v4 using this report's teacher code.
     for(const ws of[...book.worksheets])if(looksLikeReport(ws))copyWorksheetWithHeader(book,ws,logo);
     return new Blob([await book.xlsx.writeBuffer()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   }
@@ -163,6 +106,6 @@
     window.__lbgReportExportHotfixV3Installed=true;return true;
   }
   function boot(){if(install())return;let tries=0;const t=setInterval(()=>{tries++;if(install()||tries>200)clearInterval(t)},50)}
-  window.LBGReportExportHotfixV3={version:VERSION,shiftRange,looksLikeReport,patchAssistWorksheet,copyWorksheetWithHeader,fixWorkbookBlob,install};
+  window.LBGReportExportHotfixV3={version:VERSION,shiftRange,looksLikeReport,copyWorksheetWithHeader,fixWorkbookBlob,install};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

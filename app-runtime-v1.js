@@ -42,7 +42,8 @@
       await add('password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1');
       await waitForAuth();
 
-      await add('tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script');
+      await add('assist-p-data-v1.js?v=20260911.verified1','lbgAssistPDataV1Script');
+      await add('tkb-parser-v2.js?v=20260911.verified1','lbgTkbParserV2Script');
       await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
       await add('tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script');
       await add('tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script');
@@ -51,7 +52,7 @@
       await add('ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script');
 
       const modules=[
-        ['sheets-sync-security-v1.js?v=20260909.2','lbgSheetsSyncSecurityV1Script'],
+        ['sheets-sync-security-v1.js?v=20260911.verified1','lbgSheetsSyncSecurityV1Script'],
         ['sheets-classraw-hotfix-v1.js?v=20260907.1','lbgSheetsClassRawHotfixV1Script'],
         ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
         ['access-control-v1.js?v=20260806.2','lbgAccessControlV1'],
@@ -73,20 +74,20 @@
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
         ['report-pay-rules-v1.js?v=20260908.1','lbgReportPayRulesV1Script'],
-        ['report-engine-v4.js?v=20260908.1','lbgReportEngineV4Script'],
+        ['report-engine-v4.js?v=20260911.verified1','lbgReportEngineV4Script'],
         ['sheets-ga-sync-compat-v1.js?v=20260906.1','lbgSheetsGaSyncCompatV1Script'],
         ['week-number-guard-v2.js?v=20260903.2','lbgWeekNumberGuardV2Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
         ['checkin-history-order-v1.js?v=20260810.1','lbgCheckinHistoryOrderV1'],
-        ['monthly-calendar-v3.js?v=20260908.1','lbgMonthlyCalendarV3Script'],
+        ['monthly-calendar-v3.js?v=20260911.verified1','lbgMonthlyCalendarV3Script'],
         ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script'],
         ['section-order-fix-v1.js?v=20260808.13','lbgSectionOrderFixV1Script'],
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],
         ['monthly-teacher-search-v1.js?v=20260808.16','lbgMonthlyTeacherSearchV1Script'],
         ['role-privacy-polish-v1.js?v=20260814.2','lbgRolePrivacyPolishV1Script'],
-        ['production-mode-v1.js?v=20260909.4','lbgProductionModeV1Script'],
+        ['production-mode-v1.js?v=20260911.verified1','lbgProductionModeV1Script'],
         ['sidebar-compact-readable-v1.js?v=20260811.3','lbgSidebarCompactReadableV1'],
         ['readability-targeted-v2.js?v=20260811.1','lbgReadabilityTargetedV2'],
         ['checkin-daily-monitor-v1.js?v=20260812.1','lbgCheckinDailyMonitorV1'],

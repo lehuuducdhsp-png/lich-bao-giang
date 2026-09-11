@@ -67,7 +67,7 @@
   function loadDependentScripts(){
     const startMode=()=>{
       if(window.LBG_SUPABASE_CONFIG?.enabled){
-        appendScript('auth-core-v2.js?v=20260810.1',()=>{appendScript('cloud-sync-v1.js?v=20260803.4');appendScript('owner-admin-v2.js?v=20260803.1');appendScript('sheets-sync-owner-v2.js?v=20260803.2')});loadCommonModules();
+        appendScript('auth-core-v2.js?v=20260810.1',()=>{appendScript('cloud-sync-v1.js?v=20260803.4');appendScript('owner-admin-v2.js?v=20260803.1');if(!window.LBG_PRODUCTION)appendScript('sheets-sync-owner-v2.js?v=20260803.2')});loadCommonModules();
       }else{appendScript('sheets-sync.js?v=20260801.8');loadCommonModules()}
     };
     const supabaseConfig=document.createElement('script');supabaseConfig.src='supabase-config.js?v=20260803.4';supabaseConfig.async=false;supabaseConfig.onload=startMode;supabaseConfig.onerror=()=>{appendScript('sheets-sync.js?v=20260801.8');loadCommonModules()};document.body.appendChild(supabaseConfig)

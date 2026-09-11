@@ -30,8 +30,8 @@ jobs:
           node --check tests/sheets-class-label-preserve.test.cjs
       - name: Check localhost cache-bust chain
         run: |
-          grep -Fq "app-runtime-v1.js?v=20260909.4" index.html
+          grep -Fq "app-runtime-v1.js?v=20260911.verified1" index.html
           grep -Fq "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
-          grep -Fq "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
+          grep -Fq "sheets-sync-owner-v4.js?v=20260911.verified1" sheets-sync-security-v1.js
       - name: Run Sheets label regression
         run: node tests/sheets-class-label-preserve.test.cjs
