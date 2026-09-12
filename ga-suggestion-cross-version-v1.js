@@ -5,8 +5,9 @@
   if(root)root.LBGGaSuggestionCrossVersionV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260912.1';
+  const VERSION='20260912.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
+  const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
   const dateKey=d=>d instanceof Date&&!Number.isNaN(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
   const dayRank=s=>txt(s).toLowerCase().startsWith('sáng')?0:1;
@@ -59,16 +60,50 @@
       usedFallback:false
     };
   }
+
+  function isOperationalNoteSite(e){
+    const type=fold(e?.siteType),raw=fold(e?.siteRaw||e?.siteName||e?.siteDisplay);
+    if(!raw)return false;
+    const looksGeneric=!type||type==='DIA DIEM';
+    const hasSession=/\bBUOI\s+(SANG|CHIEU)\b/.test(raw);
+    const hasOperation=/(CO\s+MAT\s+O\s+TRUONG|VAO\s+TIET|QUAN\s+LY\s+HS|THE\s+DUC\s+DAU\s+GIO|7H\d*|13H\d*)/.test(raw);
+    return looksGeneric&&hasSession&&hasOperation;
+  }
+  function normalizeHistoryEntry(e){
+    if(!e||!isOperationalNoteSite(e))return e;
+    const schoolName=txt(e.schoolName||e.school)||txt(e.locationLabel).split(/\n/)[0];
+    const schoolKey=txt(e.schoolKey)||fold(schoolName);
+    return{
+      ...e,
+      siteRaw:'',siteType:'',siteName:'',siteDisplay:'',siteKey:'',
+      locationLabel:schoolName||txt(e.locationLabel),
+      locationKey:`${schoolKey}|`,
+      historyLocationNormalized:true
+    };
+  }
+  function historyParser(baseParser){
+    if(!baseParser?.scanAssignments)return baseParser;
+    return new Proxy(baseParser,{
+      get(target,prop,receiver){
+        if(prop!=='scanAssignments')return Reflect.get(target,prop,receiver);
+        return function(ws,...args){
+          const rows=target.scanAssignments(ws,...args)||[];
+          return rows.map(normalizeHistoryEntry);
+        };
+      }
+    });
+  }
   function buildHistoryAcrossSources(v7,sources,currentBook,selectedSheet,opts={}){
     if(!v7?.buildHistory)throw new Error('Bộ phân tích GA V7 chưa sẵn sàng.');
     const picked=selectWeekSheets(sources,currentBook,selectedSheet,opts);
-    const history=v7.buildHistory({worksheets:picked.worksheets},selectedSheet,opts);
+    const safeOpts={...opts,parser:historyParser(opts.parser)};
+    const history=v7.buildHistory({worksheets:picked.worksheets},selectedSheet,safeOpts);
     history.crossVersion={version:VERSION,...picked};
     return history;
   }
 
   if(typeof module!=='undefined'&&module.exports){
-    return{VERSION,dateKey,selectWeekSheets,buildHistoryAcrossSources};
+    return{VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources};
   }
 
   const bookNow=()=>{try{return typeof wb!=='undefined'?wb:null}catch{return null}};
@@ -130,7 +165,7 @@
     const unique=new Map();
     for(const entry of a.entries||[]){const ev=history.byAddress.get(`${a.sheet}!${entry.address}`);if(ev&&!unique.has(ev.id))unique.set(ev.id,ev)}
     const rows=[...unique.values()].sort((x,y)=>x.date-y.date||dayRank(x.session)-dayRank(y.session)||x.period-y.period),meta=history.crossVersion||{};
-    panel.innerHTML=`<div class="alert info"><b>GA gợi ý — đã sửa lịch sử nhiều phiên bản:</b> đang dò <b>${meta.weekCount||1} tuần</b> từ <b>${meta.sourceCount||1} phiên bản TKB</b> đã lưu đến tuần hiện tại. Mỗi tuần chỉ dùng bản mới nhất; tuần đang chọn luôn dùng đúng bản hiện tại. Lớp gộp/phối hợp cùng tiết vẫn chỉ dùng <b>1 GA</b>.</div>${rows.length?`<div class="wrap"><table><thead><tr><th>STT</th><th>Ngày – buổi – tiết thực dạy</th><th>Trường</th><th>Lớp / nhóm lớp</th><th>Giáo viên / phối hợp</th><th>Luồng</th><th>GA gợi ý & tên bài</th><th>Căn cứ</th></tr></thead><tbody>${rows.map((ev,i)=>{const lesson=titleFor(ev),collab=(ev.participants||[]).length>1,src=(ev.addresses||[]).join(', ');return`<tr><td>${i+1}</td><td>${esc(fmtDate(ev.date))}<br>${esc(ev.session)} – <b>Tiết ${esc(ev.period)}</b></td><td>${esc(ev.school)}</td><td>${esc(ev.classDisplay)}<br><small>Ô nguồn: ${esc(src)}${ev.atoms?.length>1?` • ${ev.atoms.length} ô cùng sự kiện (không tăng GA)`:''}</small></td><td>${collab?'<b style="color:#0f766e">🤝 Phối hợp</b><br>':''}${esc(participantText(ev))}</td><td><b style="color:${ev.track==='stem'?'#b91c1c':'#1d4ed8'}">${esc(trackText(ev))}</b></td><td><div class="lbg-ga-main">${ev.ga==null?'Chưa xác định':`GA ${esc(ev.ga)} – ${esc(trackText(ev))}`}</div><div style="margin-top:4px;font-weight:700;color:#4b342b">${esc(lesson.title)}</div>${lesson.overridden?`<small>Quy ước vận hành: GA ${esc(ev.ga)} lấy tên bài gốc tiết ${esc(lesson.sourcePeriod)}.</small>`:''}</td><td>${esc(basisText(ev,meta))}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="alert warn">Không ghép được các ô nguồn hiện tại với lịch sử TKB.</div>'}`;
+    panel.innerHTML=`<div class="alert info"><b>GA gợi ý — đã sửa lịch sử nhiều phiên bản:</b> đang dò <b>${meta.weekCount||1} tuần</b> từ <b>${meta.sourceCount||1} phiên bản TKB</b> đã lưu đến tuần hiện tại. Mỗi tuần chỉ dùng bản mới nhất; tuần đang chọn luôn dùng đúng bản hiện tại. Ghi chú giờ vào học/quản lý HS ở cột địa điểm được bỏ khỏi khóa đối chiếu để không tách nhầm cùng một trường thành hai điểm dạy.</div>${rows.length?`<div class="wrap"><table><thead><tr><th>STT</th><th>Ngày – buổi – tiết thực dạy</th><th>Trường</th><th>Lớp / nhóm lớp</th><th>Giáo viên / phối hợp</th><th>Luồng</th><th>GA gợi ý & tên bài</th><th>Căn cứ</th></tr></thead><tbody>${rows.map((ev,i)=>{const lesson=titleFor(ev),collab=(ev.participants||[]).length>1,src=(ev.addresses||[]).join(', ');return`<tr><td>${i+1}</td><td>${esc(fmtDate(ev.date))}<br>${esc(ev.session)} – <b>Tiết ${esc(ev.period)}</b></td><td>${esc(ev.school)}</td><td>${esc(ev.classDisplay)}<br><small>Ô nguồn: ${esc(src)}${ev.atoms?.length>1?` • ${ev.atoms.length} ô cùng sự kiện (không tăng GA)`:''}</small></td><td>${collab?'<b style="color:#0f766e">🤝 Phối hợp</b><br>':''}${esc(participantText(ev))}</td><td><b style="color:${ev.track==='stem'?'#b91c1c':'#1d4ed8'}">${esc(trackText(ev))}</b></td><td><div class="lbg-ga-main">${ev.ga==null?'Chưa xác định':`GA ${esc(ev.ga)} – ${esc(trackText(ev))}`}</div><div style="margin-top:4px;font-weight:700;color:#4b342b">${esc(lesson.title)}</div>${lesson.overridden?`<small>Quy ước vận hành: GA ${esc(ev.ga)} lấy tên bài gốc tiết ${esc(lesson.sourcePeriod)}.</small>`:''}</td><td>${esc(basisText(ev,meta))}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="alert warn">Không ghép được các ô nguồn hiện tại với lịch sử TKB.</div>'}`;
   }
   async function run(){
     const b=root.document?.getElementById('gaSuggestV6'),panel=root.document?.getElementById('gaSuggestionV6Panel'),a=resultNow(),currentBook=bookNow();
@@ -154,5 +189,5 @@
     b.dataset.gaCrossVersion='1';b.onclick=run;b.textContent='💡 Phân tích giáo án gợi ý';return true;
   }
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>300)clearInterval(timer)},100);bind();return true}
-  return{version:VERSION,dateKey,selectWeekSheets,buildHistoryAcrossSources,install};
+  return{version:VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,install};
 });
