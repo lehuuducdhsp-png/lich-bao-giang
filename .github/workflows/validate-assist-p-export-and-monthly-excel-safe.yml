@@ -1,0 +1,50 @@
+name: Validate assist P export and monthly Excel
+
+on:
+  pull_request:
+    paths:
+      - 'assist-p-export-safe-v1.js'
+      - 'monthly-excel-polish-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'assist-p-summary-monthly-safe-v1.js'
+      - 'index.html'
+      - 'tests/assist-p-export-safe-v1.test.cjs'
+      - 'tests/monthly-excel-polish-safe-v1.test.cjs'
+      - '.github/workflows/validate-assist-p-export-and-monthly-excel-safe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check assist-p-export-safe-v1.js
+          node --check monthly-excel-polish-safe-v1.js
+          node --check tests/assist-p-export-safe-v1.test.cjs
+          node --check tests/monthly-excel-polish-safe-v1.test.cjs
+      - name: Check sandbox wiring
+        run: |
+          grep -Fq 'assist-p-export-safe-v1.js?v=20260912.1' index.html
+          grep -Fq 'monthly-excel-polish-safe-v1.js?v=20260912.1' index.html
+          grep -Fq 'payEligible:false' assist-p-export-safe-v1.js
+          grep -Fq 'fitToHeight:0' monthly-excel-polish-safe-v1.js
+      - name: Run P export tests
+        run: |
+          node tests/assist-p-export-safe-v1.test.cjs
+          node tests/monthly-excel-polish-safe-v1.test.cjs
+      - name: Run regressions
+        run: |
+          node tests/assist-p-preview-safe-v1.test.cjs
+          node tests/assist-p-summary-monthly-safe-v1.test.cjs
+          node tests/atomic-teaching-v1.test.cjs
+          node tests/report-pay-rules-v1.test.cjs
+          node tests/sheets-atomic-payload-v2.test.cjs
+          node tests/report-export-hotfix-v2.test.cjs
+          node tests/production-runtime-performance.test.cjs
