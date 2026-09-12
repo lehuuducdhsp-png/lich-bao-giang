@@ -1,0 +1,19 @@
+name: Validate Apps Script assist P total
+
+on:
+  pull_request:
+    paths:
+      - 'recovery/google-sheets/ASSIST_P_TOTAL_EXCLUDE_PATCH_20260912.gs'
+      - 'tests/apps-script-assist-p-total-formula.test.cjs'
+      - '.github/workflows/validate-apps-script-assist-p-total.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/apps-script-assist-p-total-formula.test.cjs
