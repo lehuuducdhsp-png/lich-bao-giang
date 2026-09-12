@@ -5,9 +5,11 @@ on:
     paths:
       - 'assist-p-preview-safe-v1.js'
       - 'assist-p-summary-monthly-safe-v1.js'
+      - 'assist-p-web-footer-safe-v1.js'
       - 'index.html'
       - 'tests/assist-p-preview-safe-v1.test.cjs'
       - 'tests/assist-p-summary-monthly-safe-v1.test.cjs'
+      - 'tests/assist-p-web-footer-safe-v1.test.cjs'
       - '.github/workflows/validate-assist-p-summary-monthly-safe.yml'
 
 permissions:
@@ -25,12 +27,15 @@ jobs:
         run: |
           node --check assist-p-preview-safe-v1.js
           node --check assist-p-summary-monthly-safe-v1.js
+          node --check assist-p-web-footer-safe-v1.js
           node --check tests/assist-p-preview-safe-v1.test.cjs
           node --check tests/assist-p-summary-monthly-safe-v1.test.cjs
+          node --check tests/assist-p-web-footer-safe-v1.test.cjs
       - name: Run assist P tests
         run: |
           node tests/assist-p-preview-safe-v1.test.cjs
           node tests/assist-p-summary-monthly-safe-v1.test.cjs
+          node tests/assist-p-web-footer-safe-v1.test.cjs
       - name: Run regression suite
         run: |
           node tests/atomic-teaching-v1.test.cjs
@@ -45,4 +50,6 @@ jobs:
         run: |
           grep -Fq 'assist-p-preview-safe-v1.js?v=20260911.1' index.html
           grep -Fq 'assist-p-summary-monthly-safe-v1.js?v=20260912.1' index.html
+          grep -Fq 'assist-p-web-footer-safe-v1.js?v=20260912.1' index.html
           ! grep -Fq 'assist-p-summary-monthly-safe-v1.js' app-runtime-v1.js
+          ! grep -Fq 'assist-p-web-footer-safe-v1.js' app-runtime-v1.js
