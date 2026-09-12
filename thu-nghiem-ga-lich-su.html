@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TEST GA qua nhiều phiên bản TKB</title>
+<style>
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#fff7ed}body{display:flex;flex-direction:column}.bar{flex:0 0 auto;padding:9px 14px;background:#7c2d12;color:#fff;font-size:13px;font-weight:800;text-align:center;box-shadow:0 2px 8px #0002;z-index:2}.bar small{font-weight:600;opacity:.9}.frame{border:0;width:100%;flex:1;min-height:0;background:#fff}.err{background:#fee2e2;color:#991b1b;padding:8px 12px;font-weight:700;display:none}
+</style>
+</head>
+<body>
+<div class="bar">🧪 BẢN THỬ AN TOÀN — SỬA PHÂN TÍCH GIÁO ÁN QUA NHIỀU PHIÊN BẢN TKB<br><small>Không phải trang chính • không sửa dữ liệu • chỉ thay cách dò lịch sử GA</small></div>
+<div id="err" class="err"></div>
+<iframe id="app" class="frame" src="./index.html"></iframe>
+<script>
+(function(){
+  const frame=document.getElementById('app'),err=document.getElementById('err');
+  function fail(msg){err.textContent=msg;err.style.display='block'}
+  frame.addEventListener('load',()=>{
+    let tries=0;
+    const timer=setInterval(()=>{
+      tries++;
+      try{
+        const w=frame.contentWindow,d=frame.contentDocument;
+        if(!w||!d)return;
+        if(d.getElementById('lbgGaCrossVersionTestScript')){clearInterval(timer);return}
+        if(w.LBGGaSuggestionV7&&w.LBGTkbParserV2&&d.getElementById('gaSuggestV6')){
+          const s=d.createElement('script');
+          s.id='lbgGaCrossVersionTestScript';
+          s.src='./ga-suggestion-cross-version-v1.js?v=20260912.1';
+          s.onload=()=>{clearInterval(timer)};
+          s.onerror=()=>{clearInterval(timer);fail('Không tải được mô-đun sửa lịch sử GA.')};
+          d.body.appendChild(s);
+        }
+        if(tries>400){clearInterval(timer);fail('Trang chính chưa tải xong mô-đun GA sau 40 giây.')}
+      }catch(e){clearInterval(timer);fail('Không khởi tạo được bản test: '+(e?.message||String(e)))}
+    },100);
+  });
+})();
+</script>
+</body>
+</html>
