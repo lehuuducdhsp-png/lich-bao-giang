@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionCrossVersionV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260912.2';
+  const VERSION='20260912.4';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -102,8 +102,89 @@
     return history;
   }
 
+  function gaTargetKey(day,session,location){
+    return `${Number(day)}|${txt(session)}|${txt(location)}`;
+  }
+  function normalizedGa(value){
+    if(value===null||value===undefined||txt(value)==='')return null;
+    const n=Number(value);
+    if(!Number.isFinite(n)||n<0)return null;
+    return Math.round(n);
+  }
+  function entryApplyTarget(entry,ev){
+    const day=Number(entry?.day),session=txt(entry?.session);
+    const school=txt(entry?.schoolName||entry?.school||ev?.school);
+    const siteDisplay=txt(entry?.siteDisplay||entry?.siteName);
+    const locationLabel=txt(entry?.locationLabel)||(siteDisplay?`${school}\n${siteDisplay}`:school);
+    const locationKey=txt(entry?.locationKey)||(school?`${fold(school)}|${fold(siteDisplay)}`:'');
+    if(!Number.isFinite(day)||!session||!school||!locationKey)return null;
+    const key=gaTargetKey(day,session,locationKey);
+    const legacyKey=gaTargetKey(day,session,txt(entry?.school||school));
+    return{key,legacyKey,day,session,school,siteDisplay,locationLabel,locationKey};
+  }
+  function resolveApplyTarget(ev,entries=[]){
+    const addresses=new Set((ev?.addresses||[]).map(txt).filter(Boolean));
+    if(!addresses.size)return{ok:false,reason:'missing-address'};
+    const targets=new Map();
+    for(const entry of Array.isArray(entries)?entries:[]){
+      if(!addresses.has(txt(entry?.address)))continue;
+      const target=entryApplyTarget(entry,ev);if(!target)continue;
+      if(!targets.has(target.key))targets.set(target.key,target);
+    }
+    if(targets.size!==1)return{ok:false,reason:targets.size?'ambiguous-target':'target-not-found',targets:[...targets.values()]};
+    return{ok:true,target:[...targets.values()][0]};
+  }
+  function currentGaRaw(currentValues,target){
+    if(!currentValues||typeof currentValues!=='object')return undefined;
+    const keys=[target?.key,target?.legacyKey].filter(Boolean);
+    for(const key of keys){
+      if(!Object.prototype.hasOwnProperty.call(currentValues,key))continue;
+      const raw=currentValues[key];
+      if(raw!==undefined&&raw!==null&&txt(raw)!=='')return raw;
+    }
+    return undefined;
+  }
+  function planGaApplications(rows,entries=[],currentValues={}){
+    const groups=new Map(),skipped=[];
+    (Array.isArray(rows)?rows:[]).forEach((ev,index)=>{
+      const ga=normalizedGa(ev?.ga);
+      if(ev?.gaSource==='conflict'||ga===null){
+        skipped.push({index,ev,reason:ev?.gaSource==='conflict'?'suggestion-conflict':'missing-ga'});
+        return;
+      }
+      const resolved=resolveApplyTarget(ev,entries);
+      if(!resolved.ok){
+        skipped.push({index,ev,reason:resolved.reason});
+        return;
+      }
+      const key=resolved.target.key;
+      if(!groups.has(key))groups.set(key,{target:resolved.target,items:[]});
+      groups.get(key).items.push({index,ev,ga});
+    });
+    const apply=[],same=[],conflicts=[];
+    for(const group of groups.values()){
+      const suggestions=[...new Set(group.items.map(x=>x.ga))];
+      if(suggestions.length!==1){
+        conflicts.push({target:group.target,items:group.items,reason:'different-suggestions'});
+        continue;
+      }
+      const ga=suggestions[0],raw=currentGaRaw(currentValues,group.target);
+      if(raw===undefined||raw===null||txt(raw)===''){
+        apply.push({target:group.target,ga,items:group.items});
+        continue;
+      }
+      const currentGa=normalizedGa(raw);
+      if(currentGa===ga)same.push({target:group.target,ga,items:group.items});
+      else conflicts.push({target:group.target,ga,current:raw,items:group.items,reason:'existing-manual-ga'});
+    }
+    return{apply,same,conflicts,skipped};
+  }
+
   if(typeof module!=='undefined'&&module.exports){
-    return{VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources};
+    return{
+      VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
+      gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications
+    };
   }
 
   const bookNow=()=>{try{return typeof wb!=='undefined'?wb:null}catch{return null}};
@@ -161,11 +242,114 @@
     if(ev?.gaSource==='first')return`Không tìm thấy lần dạy ${trackText(ev)} trước đó của đúng lớp/nhóm lớp tại điểm dạy này trong ${meta?.weekCount||1} tuần TKB đã lưu đến tuần hiện tại; dùng GA đầu chuỗi.`;
     return v7()?.basisText?.(ev)||'Dò theo lịch sử các phiên bản TKB đã lưu.';
   }
+
+  function decodeData(value){try{return decodeURIComponent(value||'')}catch{return value||''}}
+  function matchingGaInputs(target){
+    const all=[...(root.document?.querySelectorAll?.('#preview .lbg-r4-ga,#preview .lbg-r3-ga,#preview .ga-input')||[])];
+    return all.filter(input=>{
+      if(Number(input?.dataset?.day)!==Number(target?.day))return false;
+      if(decodeData(input?.dataset?.session)!==txt(target?.session))return false;
+      const location=decodeData(input?.dataset?.location),school=decodeData(input?.dataset?.school),legacy=decodeData(input?.dataset?.legacy);
+      if(location)return location===txt(target?.locationKey);
+      if(school)return school===txt(target?.school);
+      if(legacy)return legacy===txt(target?.school);
+      return false;
+    });
+  }
+  function applySuggestions(rows,a){
+    const plan=planGaApplications(rows,a?.entries||[],a?.gaValues||{});
+    let applied=0,inputConflicts=0;
+    for(const item of plan.apply){
+      const inputs=matchingGaInputs(item.target);
+      if(inputs.length!==1){inputConflicts++;continue}
+      const input=inputs[0];
+      if(txt(input.value)!==''){
+        const current=normalizedGa(input.value);
+        if(current===item.ga)continue;
+        inputConflicts++;continue;
+      }
+      input.value=String(item.ga);
+      input.dispatchEvent(new root.Event('input',{bubbles:true}));
+      applied++;
+    }
+    return{
+      ...plan,
+      applied,
+      inputConflicts,
+      blocked:plan.conflicts.length+plan.skipped.length+inputConflicts
+    };
+  }
+  function applyState(ev,a){
+    const plan=planGaApplications([ev],a?.entries||[],a?.gaValues||{});
+    if(plan.same.length)return{kind:'same',label:`✓ Đã có GA ${plan.same[0].ga}`,disabled:true};
+    if(plan.conflicts.length)return{kind:'conflict',label:'⚠ Có GA khác',disabled:true};
+    if(plan.skipped.length)return{kind:'skip',label:'Không thể áp dụng',disabled:true};
+    if(plan.apply.length)return{kind:'apply',label:`↘ Áp dụng GA ${plan.apply[0].ga}`,disabled:false};
+    return{kind:'skip',label:'Không thể áp dụng',disabled:true};
+  }
+  function ensureApplyStyle(){
+    if(root.document?.getElementById('lbgGaSuggestionApplyStyle'))return;
+    const style=root.document?.createElement('style');if(!style)return;
+    style.id='lbgGaSuggestionApplyStyle';
+    style.textContent=`
+      .lbg-ga-apply-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0;padding:10px 12px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4}
+      .lbg-ga-apply-toolbar small{color:#475569}
+      .lbg-ga-apply-all,.lbg-ga-apply-one{border:1px solid #16a34a;border-radius:9px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer}
+      .lbg-ga-apply-all{padding:9px 13px}.lbg-ga-apply-one{display:block;margin-top:8px;padding:6px 9px;font-size:12px}
+      .lbg-ga-apply-one:disabled,.lbg-ga-apply-all:disabled{cursor:not-allowed;opacity:.6}
+      .lbg-ga-apply-one[data-state="same"]{border-color:#0f766e;background:#ecfdf5;color:#0f766e}
+      .lbg-ga-apply-one[data-state="conflict"],.lbg-ga-apply-one[data-state="skip"]{border-color:#d97706;background:#fff7ed;color:#9a3412}
+    `;
+    root.document.head?.appendChild(style);
+  }
+  function refreshApplyUi(panel,rows,a){
+    panel.querySelectorAll?.('[data-ga-apply-one]').forEach(button=>{
+      const index=Number(button.dataset.gaApplyOne),state=applyState(rows[index],a);
+      button.textContent=state.label;button.disabled=state.disabled;button.dataset.state=state.kind;
+    });
+    const bulk=panel.querySelector?.('[data-ga-apply-all]');
+    if(bulk){
+      const plan=planGaApplications(rows,a?.entries||[],a?.gaValues||{});
+      bulk.disabled=!plan.apply.length;
+      bulk.textContent=plan.apply.length?`✓ Áp dụng tất cả GA hợp lệ (${plan.apply.length} ô)`:'✓ Không còn GA trống để áp dụng';
+    }
+  }
+  function toastApplyResult(out,single=false){
+    if(typeof toast!=='function')return;
+    if(out.applied){
+      const extra=out.blocked?` Bỏ qua ${out.blocked} mục xung đột/không xác định.`:'';
+      toast(`Đã áp dụng ${out.applied} ô GA vào Lịch Báo giảng.${extra}`);
+      return;
+    }
+    if(out.same.length){toast('GA gợi ý này đã có trong Lịch Báo giảng.');return}
+    if(out.conflicts.length){toast('Ô GA đã có giá trị khác nên hệ thống không ghi đè.');return}
+    if(out.inputConflicts){toast('Không xác định được đúng một ô GA trong Lịch Báo giảng; chưa thay đổi dữ liệu.');return}
+    toast('Chưa có GA gợi ý hợp lệ để áp dụng.');
+  }
+  function bindApplyActions(panel,rows,a){
+    ensureApplyStyle();
+    panel.__lbgGaApplyContext={rows,a};
+    if(panel.dataset.gaApplyBound!=='1'){
+      panel.dataset.gaApplyBound='1';
+      panel.addEventListener('click',event=>{
+        const button=event.target?.closest?.('[data-ga-apply-one],[data-ga-apply-all]');if(!button)return;
+        const context=panel.__lbgGaApplyContext;if(!context)return;
+        const one=button.dataset.gaApplyOne;
+        const selected=one!==undefined?[context.rows[Number(one)]].filter(Boolean):context.rows;
+        const out=applySuggestions(selected,context.a);
+        toastApplyResult(out,one!==undefined);
+        refreshApplyUi(panel,context.rows,context.a);
+      });
+    }
+    refreshApplyUi(panel,rows,a);
+  }
+
   function renderPanel(panel,history,a){
     const unique=new Map();
     for(const entry of a.entries||[]){const ev=history.byAddress.get(`${a.sheet}!${entry.address}`);if(ev&&!unique.has(ev.id))unique.set(ev.id,ev)}
     const rows=[...unique.values()].sort((x,y)=>x.date-y.date||dayRank(x.session)-dayRank(y.session)||x.period-y.period),meta=history.crossVersion||{};
-    panel.innerHTML=`<div class="alert info"><b>GA gợi ý — đã sửa lịch sử nhiều phiên bản:</b> đang dò <b>${meta.weekCount||1} tuần</b> từ <b>${meta.sourceCount||1} phiên bản TKB</b> đã lưu đến tuần hiện tại. Mỗi tuần chỉ dùng bản mới nhất; tuần đang chọn luôn dùng đúng bản hiện tại. Ghi chú giờ vào học/quản lý HS ở cột địa điểm được bỏ khỏi khóa đối chiếu để không tách nhầm cùng một trường thành hai điểm dạy.</div>${rows.length?`<div class="wrap"><table><thead><tr><th>STT</th><th>Ngày – buổi – tiết thực dạy</th><th>Trường</th><th>Lớp / nhóm lớp</th><th>Giáo viên / phối hợp</th><th>Luồng</th><th>GA gợi ý & tên bài</th><th>Căn cứ</th></tr></thead><tbody>${rows.map((ev,i)=>{const lesson=titleFor(ev),collab=(ev.participants||[]).length>1,src=(ev.addresses||[]).join(', ');return`<tr><td>${i+1}</td><td>${esc(fmtDate(ev.date))}<br>${esc(ev.session)} – <b>Tiết ${esc(ev.period)}</b></td><td>${esc(ev.school)}</td><td>${esc(ev.classDisplay)}<br><small>Ô nguồn: ${esc(src)}${ev.atoms?.length>1?` • ${ev.atoms.length} ô cùng sự kiện (không tăng GA)`:''}</small></td><td>${collab?'<b style="color:#0f766e">🤝 Phối hợp</b><br>':''}${esc(participantText(ev))}</td><td><b style="color:${ev.track==='stem'?'#b91c1c':'#1d4ed8'}">${esc(trackText(ev))}</b></td><td><div class="lbg-ga-main">${ev.ga==null?'Chưa xác định':`GA ${esc(ev.ga)} – ${esc(trackText(ev))}`}</div><div style="margin-top:4px;font-weight:700;color:#4b342b">${esc(lesson.title)}</div>${lesson.overridden?`<small>Quy ước vận hành: GA ${esc(ev.ga)} lấy tên bài gốc tiết ${esc(lesson.sourcePeriod)}.</small>`:''}</td><td>${esc(basisText(ev,meta))}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="alert warn">Không ghép được các ô nguồn hiện tại với lịch sử TKB.</div>'}`;
+    panel.innerHTML=`<div class="alert info"><b>GA gợi ý — đã sửa lịch sử nhiều phiên bản:</b> đang dò <b>${meta.weekCount||1} tuần</b> từ <b>${meta.sourceCount||1} phiên bản TKB</b> đã lưu đến tuần hiện tại. Mỗi tuần chỉ dùng bản mới nhất; tuần đang chọn luôn dùng đúng bản hiện tại. Ghi chú giờ vào học/quản lý HS ở cột địa điểm được bỏ khỏi khóa đối chiếu để không tách nhầm cùng một trường thành hai điểm dạy.</div>${rows.length?`<div class="lbg-ga-apply-toolbar"><button type="button" class="lbg-ga-apply-all" data-ga-apply-all>✓ Áp dụng tất cả GA hợp lệ</button><small>Chỉ điền các ô GA đang trống trong Lịch Báo giảng; không tự ghi đè GA bạn đã nhập tay. Nếu nhiều gợi ý cùng trỏ vào một ô nhưng khác số GA, hệ thống sẽ bỏ qua ô đó.</small></div><div class="wrap"><table><thead><tr><th>STT</th><th>Ngày – buổi – tiết thực dạy</th><th>Trường</th><th>Lớp / nhóm lớp</th><th>Giáo viên / phối hợp</th><th>Luồng</th><th>GA gợi ý & tên bài</th><th>Căn cứ</th></tr></thead><tbody>${rows.map((ev,i)=>{const lesson=titleFor(ev),collab=(ev.participants||[]).length>1,src=(ev.addresses||[]).join(', ');return`<tr><td>${i+1}</td><td>${esc(fmtDate(ev.date))}<br>${esc(ev.session)} – <b>Tiết ${esc(ev.period)}</b></td><td>${esc(ev.school)}</td><td>${esc(ev.classDisplay)}<br><small>Ô nguồn: ${esc(src)}${ev.atoms?.length>1?` • ${ev.atoms.length} ô cùng sự kiện (không tăng GA)`:''}</small></td><td>${collab?'<b style="color:#0f766e">🤝 Phối hợp</b><br>':''}${esc(participantText(ev))}</td><td><b style="color:${ev.track==='stem'?'#b91c1c':'#1d4ed8'}">${esc(trackText(ev))}</b></td><td><div class="lbg-ga-main">${ev.ga==null?'Chưa xác định':`GA ${esc(ev.ga)} – ${esc(trackText(ev))}`}</div><div style="margin-top:4px;font-weight:700;color:#4b342b">${esc(lesson.title)}</div>${lesson.overridden?`<small>Quy ước vận hành: GA ${esc(ev.ga)} lấy tên bài gốc tiết ${esc(lesson.sourcePeriod)}.</small>`:''}<button type="button" class="lbg-ga-apply-one" data-ga-apply-one="${i}">Áp dụng</button></td><td>${esc(basisText(ev,meta))}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="alert warn">Không ghép được các ô nguồn hiện tại với lịch sử TKB.</div>'}`;
+    if(rows.length)bindApplyActions(panel,rows,a);
   }
   async function run(){
     const b=root.document?.getElementById('gaSuggestV6'),panel=root.document?.getElementById('gaSuggestionV6Panel'),a=resultNow(),currentBook=bookNow();
@@ -189,5 +373,8 @@
     b.dataset.gaCrossVersion='1';b.onclick=run;b.textContent='💡 Phân tích giáo án gợi ý';return true;
   }
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>300)clearInterval(timer)},100);bind();return true}
-  return{version:VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,install};
+  return{
+    version:VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
+    gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications,install
+  };
 });
