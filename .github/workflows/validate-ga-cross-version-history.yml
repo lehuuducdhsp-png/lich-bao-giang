@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'ga-suggestion-cross-version-v1.js'
+      - 'app-runtime-v1.js'
       - 'thu-nghiem-ga-lich-su.html'
       - 'tests/ga-suggestion-cross-version-v1.test.cjs'
       - 'tests/ga-suggestion-v7.test.cjs'
@@ -24,13 +25,16 @@ jobs:
       - name: Check syntax
         run: |
           node --check ga-suggestion-cross-version-v1.js
+          node --check app-runtime-v1.js
           node --check tests/ga-suggestion-cross-version-v1.test.cjs
       - name: Test cross-version history and Hoai Thanh regression
         run: node --test tests/ga-suggestion-cross-version-v1.test.cjs
       - name: Keep GA V7 core regression green
         run: node tests/ga-suggestion-v7.test.cjs
-      - name: Verify test page wiring
+      - name: Verify production and test wiring
         run: |
+          grep -Fq "ga-suggestion-cross-version-v1.js?v=20260912.2" app-runtime-v1.js
+          grep -Fq "lbgGaSuggestionCrossVersionV1Script" app-runtime-v1.js
           grep -Fq 'ga-suggestion-cross-version-v1.js?v=20260912.2' thu-nghiem-ga-lich-su.html
           grep -Fq 'BẢN THỬ AN TOÀN' thu-nghiem-ga-lich-su.html
           grep -Fq 'đã sửa lỗi THUỶ LƯƠNG' thu-nghiem-ga-lich-su.html
