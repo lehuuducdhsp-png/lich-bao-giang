@@ -5,10 +5,10 @@
   if(root)root.LBGGaSuggestionCrossVersionV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260912.3';
+  const VERSION='20260912.4';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]||c));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
   const dateKey=d=>d instanceof Date&&!Number.isNaN(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
   const dayRank=s=>txt(s).toLowerCase().startsWith('sáng')?0:1;
   const createdMs=v=>{const n=Date.parse(v||'');return Number.isFinite(n)?n:0};
@@ -102,8 +102,8 @@
     return history;
   }
 
-  function gaTargetKey(day,session,school){
-    return `${Number(day)}|${txt(session)}|${txt(school)}`;
+  function gaTargetKey(day,session,location){
+    return `${Number(day)}|${txt(session)}|${txt(location)}`;
   }
   function normalizedGa(value){
     if(value===null||value===undefined||txt(value)==='')return null;
@@ -111,19 +111,38 @@
     if(!Number.isFinite(n)||n<0)return null;
     return Math.round(n);
   }
+  function entryApplyTarget(entry,ev){
+    const day=Number(entry?.day),session=txt(entry?.session);
+    const school=txt(entry?.schoolName||entry?.school||ev?.school);
+    const siteDisplay=txt(entry?.siteDisplay||entry?.siteName);
+    const locationLabel=txt(entry?.locationLabel)||(siteDisplay?`${school}\n${siteDisplay}`:school);
+    const locationKey=txt(entry?.locationKey)||(school?`${fold(school)}|${fold(siteDisplay)}`:'');
+    if(!Number.isFinite(day)||!session||!school||!locationKey)return null;
+    const key=gaTargetKey(day,session,locationKey);
+    const legacyKey=gaTargetKey(day,session,txt(entry?.school||school));
+    return{key,legacyKey,day,session,school,siteDisplay,locationLabel,locationKey};
+  }
   function resolveApplyTarget(ev,entries=[]){
     const addresses=new Set((ev?.addresses||[]).map(txt).filter(Boolean));
     if(!addresses.size)return{ok:false,reason:'missing-address'};
     const targets=new Map();
     for(const entry of Array.isArray(entries)?entries:[]){
       if(!addresses.has(txt(entry?.address)))continue;
-      const day=Number(entry?.day),session=txt(entry?.session),school=txt(entry?.school);
-      if(!Number.isFinite(day)||!session||!school)continue;
-      const key=gaTargetKey(day,session,school);
-      if(!targets.has(key))targets.set(key,{key,day,session,school});
+      const target=entryApplyTarget(entry,ev);if(!target)continue;
+      if(!targets.has(target.key))targets.set(target.key,target);
     }
     if(targets.size!==1)return{ok:false,reason:targets.size?'ambiguous-target':'target-not-found',targets:[...targets.values()]};
     return{ok:true,target:[...targets.values()][0]};
+  }
+  function currentGaRaw(currentValues,target){
+    if(!currentValues||typeof currentValues!=='object')return undefined;
+    const keys=[target?.key,target?.legacyKey].filter(Boolean);
+    for(const key of keys){
+      if(!Object.prototype.hasOwnProperty.call(currentValues,key))continue;
+      const raw=currentValues[key];
+      if(raw!==undefined&&raw!==null&&txt(raw)!=='')return raw;
+    }
+    return undefined;
   }
   function planGaApplications(rows,entries=[],currentValues={}){
     const groups=new Map(),skipped=[];
@@ -149,7 +168,7 @@
         conflicts.push({target:group.target,items:group.items,reason:'different-suggestions'});
         continue;
       }
-      const ga=suggestions[0],raw=currentValues?.[group.target.key];
+      const ga=suggestions[0],raw=currentGaRaw(currentValues,group.target);
       if(raw===undefined||raw===null||txt(raw)===''){
         apply.push({target:group.target,ga,items:group.items});
         continue;
@@ -164,7 +183,7 @@
   if(typeof module!=='undefined'&&module.exports){
     return{
       VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
-      gaTargetKey,normalizedGa,resolveApplyTarget,planGaApplications
+      gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications
     };
   }
 
@@ -226,11 +245,16 @@
 
   function decodeData(value){try{return decodeURIComponent(value||'')}catch{return value||''}}
   function matchingGaInputs(target){
-    return[...(root.document?.querySelectorAll?.('#preview .ga-input')||[])].filter(input=>
-      Number(input?.dataset?.day)===Number(target?.day)&&
-      decodeData(input?.dataset?.session)===txt(target?.session)&&
-      decodeData(input?.dataset?.school)===txt(target?.school)
-    );
+    const all=[...(root.document?.querySelectorAll?.('#preview .lbg-r4-ga,#preview .lbg-r3-ga,#preview .ga-input')||[])];
+    return all.filter(input=>{
+      if(Number(input?.dataset?.day)!==Number(target?.day))return false;
+      if(decodeData(input?.dataset?.session)!==txt(target?.session))return false;
+      const location=decodeData(input?.dataset?.location),school=decodeData(input?.dataset?.school),legacy=decodeData(input?.dataset?.legacy);
+      if(location)return location===txt(target?.locationKey);
+      if(school)return school===txt(target?.school);
+      if(legacy)return legacy===txt(target?.school);
+      return false;
+    });
   }
   function applySuggestions(rows,a){
     const plan=planGaApplications(rows,a?.entries||[],a?.gaValues||{});
@@ -239,6 +263,11 @@
       const inputs=matchingGaInputs(item.target);
       if(inputs.length!==1){inputConflicts++;continue}
       const input=inputs[0];
+      if(txt(input.value)!==''){
+        const current=normalizedGa(input.value);
+        if(current===item.ga)continue;
+        inputConflicts++;continue;
+      }
       input.value=String(item.ga);
       input.dispatchEvent(new root.Event('input',{bubbles:true}));
       applied++;
@@ -289,7 +318,7 @@
     if(typeof toast!=='function')return;
     if(out.applied){
       const extra=out.blocked?` Bỏ qua ${out.blocked} mục xung đột/không xác định.`:'';
-      toast(`${single?'Đã áp dụng':'Đã áp dụng'} ${out.applied} ô GA vào Lịch Báo giảng.${extra}`);
+      toast(`Đã áp dụng ${out.applied} ô GA vào Lịch Báo giảng.${extra}`);
       return;
     }
     if(out.same.length){toast('GA gợi ý này đã có trong Lịch Báo giảng.');return}
@@ -346,6 +375,6 @@
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>300)clearInterval(timer)},100);bind();return true}
   return{
     version:VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
-    gaTargetKey,normalizedGa,resolveApplyTarget,planGaApplications,install
+    gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications,install
   };
 });
