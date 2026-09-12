@@ -49,7 +49,7 @@
       await add('teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script');
       await add('conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script');
       await add('ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script');
-      await add('ga-suggestion-cross-version-v1.js?v=20260912.3','lbgGaSuggestionCrossVersionV1Script');
+      await add('ga-suggestion-cross-version-v1.js?v=20260912.4','lbgGaSuggestionCrossVersionV1Script');
 
       const modules=[
         ['sheets-sync-security-v1.js?v=20260909.2','lbgSheetsSyncSecurityV1Script'],
