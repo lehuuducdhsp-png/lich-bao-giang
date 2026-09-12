@@ -1,0 +1,25 @@
+name: Validate assist P Sheets location
+
+on:
+  pull_request:
+    paths:
+      - 'assist-p-sheets-location-safe-v1.js'
+      - 'tests/assist-p-sheets-location-safe-v1.test.cjs'
+      - 'index.html'
+      - '.github/workflows/validate-assist-p-sheets-location-safe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check assist-p-sheets-location-safe-v1.js
+      - run: node --test tests/assist-p-sheets-location-safe-v1.test.cjs
+      - run: grep -Fq 'assist-p-sheets-location-safe-v1.js?v=20260912.1' index.html
