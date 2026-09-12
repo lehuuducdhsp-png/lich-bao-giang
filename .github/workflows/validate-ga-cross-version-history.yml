@@ -1,0 +1,35 @@
+name: Validate GA history across TKB versions
+
+on:
+  pull_request:
+    paths:
+      - 'ga-suggestion-cross-version-v1.js'
+      - 'thu-nghiem-ga-lich-su.html'
+      - 'tests/ga-suggestion-cross-version-v1.test.cjs'
+      - 'tests/ga-suggestion-v7.test.cjs'
+      - '.github/workflows/validate-ga-cross-version-history.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check ga-suggestion-cross-version-v1.js
+          node --check tests/ga-suggestion-cross-version-v1.test.cjs
+      - name: Test cross-version history and Hoai Thanh regression
+        run: node --test tests/ga-suggestion-cross-version-v1.test.cjs
+      - name: Keep GA V7 core regression green
+        run: node tests/ga-suggestion-v7.test.cjs
+      - name: Verify test page wiring
+        run: |
+          grep -Fq 'ga-suggestion-cross-version-v1.js?v=20260912.1' thu-nghiem-ga-lich-su.html
+          grep -Fq 'BẢN THỬ AN TOÀN' thu-nghiem-ga-lich-su.html
