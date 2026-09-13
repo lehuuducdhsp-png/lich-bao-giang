@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260913.4';
+  const VERSION='20260913.5';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -47,15 +47,12 @@
   function classFromPairedMain(main){return classFromKnownSource(main)}
 
   function selectAssistClass(mainCandidates,pairedMain,localMeta){
-    // Ưu tiên lớp của giáo viên chính cùng hàng NẾU lớp đó xác định rõ.
-    const fromMain=classFromPairedMain(pairedMain);
-    if(fromMain.className||fromMain.classRaw)return fromMain;
-    // Nếu lượt chính không có lớp rõ, nhưng ngay block của ô P có một nhãn lớp hợp lệ
-    // (ví dụ 3/7, 4/5 ở Hoài Thanh - Vỹ Dạ), dùng lớp cục bộ đó thay vì ghi "không xác định".
-    const local=classFromKnownSource(localMeta);
-    if(local.className||local.classRaw)return local;
-    // Chỉ khi cả hai nguồn đều không cho lớp chắc chắn mới để lớp không xác định.
-    return emptyClass();
+    // Quy tắc nghiệp vụ: lớp của (P) phải đến từ CHÍNH CỘT có mã P.
+    // Không lấy lớp ở cột kế bên, kể cả cột đó là lượt dạy chính của cùng giáo viên.
+    // Vì vậy Đức: ĐỨC ở AB177 có 3/2 nhưng ĐỨCP ở AC177 không có lớp trong cột AC
+    // => Lớp không xác định (P). Hoài Thanh Vỹ Dạ: THANHP ở AX39/AZ39,
+    // cột AX/AZ có 1/1 và 1/3 => 1/1 (P), 1/3 (P).
+    return classFromKnownSource(localMeta);
   }
 
   if(typeof module!=='undefined'&&module.exports){
@@ -93,30 +90,28 @@
 
   function strictLocalClassAt(ws,row,col,base,currentLoc){
     const p=parser();if(!ws||!p?.classMeta)return emptyClass();
-    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),maxRow=Number(ws.rowCount||0),currentKey=txt(currentLoc?.locationKey),origin=Number(row);
-    const candidates=[];
-    for(const dir of[-1,1]){
-      for(let step=1;step<=8;step++){
-        const r=origin+dir*step;if(r<first||r>maxRow)break;
-        let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
-        const rowKey=txt(rowLoc?.locationKey);
-        if(currentKey&&rowKey&&rowKey!==currentKey)break;
-        let cell=null;try{cell=ws.getCell(r,col)}catch{}
-        const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
-        if(isAssignmentCode(p,ws,value,base))break;
-        if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
-        let meta=null;try{meta=p.classMeta(value)}catch{}
-        const known=classFromKnownSource(meta);
-        if(known.className||known.classRaw){candidates.push({meta:known,distance:step,row:r});break}
+    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),origin=Number(row),currentKey=txt(currentLoc?.locationKey);
+    // Cấu trúc TKB thực tế có dạng: LỚP -> GV chính -> GV trợ (P).
+    // Chỉ nhìn lên tối đa 2 hàng trong CHÍNH CỘT của mã P; tuyệt đối không dò cột bên cạnh.
+    for(const step of[1,2]){
+      const r=origin-step;if(r<first)break;
+      let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
+      const rowKey=txt(rowLoc?.locationKey);
+      if(currentKey&&rowKey&&rowKey!==currentKey)break;
+      let cell=null;try{cell=ws.getCell(r,col)}catch{}
+      const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
+      // Hàng ngay trên thường là GV chính; cho phép đi xuyên qua đúng 1 hàng này để đọc lớp ở hàng kế trên.
+      if(isAssignmentCode(p,ws,value,base)){
+        if(step===1)continue;
+        return emptyClass();
       }
+      if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
+      let meta=null;try{meta=p.classMeta(value)}catch{}
+      const known=classFromKnownSource(meta);
+      if(known.className||known.classRaw)return known;
+      return emptyClass();
     }
-    if(!candidates.length)return emptyClass();
-    candidates.sort((a,b)=>a.distance-b.distance||a.row-b.row);
-    if(candidates.length>1&&candidates[0].distance===candidates[1].distance){
-      const a=txt(candidates[0].meta.classRaw||candidates[0].meta.className),b=txt(candidates[1].meta.classRaw||candidates[1].meta.className);
-      if(a!==b)return emptyClass();
-    }
-    return candidates[0].meta;
+    return emptyClass();
   }
 
   function scanAssist(ws,teacherCode){
@@ -124,7 +119,7 @@
     if(!ws||!p||!base)return[];
     const target=assistantCode(base),out=[];
     const start=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1);
-    let assignments=[];try{assignments=p.scanAssignments?.(ws)||[]}catch(error){console.warn('Trợ giảng (P): không đọc được phân công chính để ghép lớp.',error)}
+    let assignments=[];try{assignments=p.scanAssignments?.(ws)||[]}catch(error){console.warn('Trợ giảng (P): không đọc được phân công chính để đối chiếu.',error)}
     for(const col of p.timetableColumns?.(ws)||[]){
       const info=p.colInfoFor?.(ws,col);if(!info)continue;
       for(let row=start;row<=Number(ws.rowCount||0);row++){
@@ -138,16 +133,14 @@
         const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
-        const mainKnown=Boolean(classFromPairedMain(main).className||classFromPairedMain(main).classRaw);
         const localKnown=Boolean(localMeta.className||localMeta.classRaw);
-        const source=mainKnown?'same-row-main':localKnown?'local-class-label':'unresolved';
         out.push({
           day:Number(info.day),session:txt(info.session),period:Number(info.period),
           teachingPeriod:explicit?Number(explicit[1]):Number(info.period),
           schoolName:txt(loc.schoolName||loc.school),siteDisplay:txt(loc.siteDisplay||loc.siteName),
           className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
-          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:source
+          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:localKnown?'same-column-class':'unresolved'
         });
       }
     }
