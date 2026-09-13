@@ -31,3 +31,7 @@ jobs:
           grep -F 'ga-per-class-v2.js?v=20260912.2' index.html
           grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' index.html
           grep -F 'assist-p-preview-safe-v1.js?v=20260913.4' index.html
+      - name: Assist P class contract
+        run: |
+          grep -F "const VERSION='20260913.4'" assist-p-preview-safe-v1.js
+          grep -F "strictLocalClassAt" assist-p-preview-safe-v1.js
