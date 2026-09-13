@@ -5,12 +5,14 @@ on:
     paths:
       - 'multi-teacher-v5.js'
       - 'ga-suggestion-multi-apply-v1.js'
+      - 'ga-multi-selection-bridge-v1.js'
       - 'tkb-assignment-cache-safe-v1.js'
       - 'teacher-fix-v2.js'
       - 'analysis-fix-v2.js'
       - 'index.html'
       - 'tests/multi-report-performance-v1.test.cjs'
       - 'tests/ga-suggestion-multi-apply-v1.test.cjs'
+      - 'tests/ga-multi-selection-bridge-v1.test.cjs'
       - 'tests/assist-p-class-pairing-v1.test.cjs'
       - 'tests/ga-khanh-thi-history-safe-v1.test.cjs'
       - 'tests/tkb-class-typo-history-v1.test.cjs'
@@ -28,14 +30,18 @@ jobs:
         run: |
           node --check multi-teacher-v5.js
           node --check ga-suggestion-multi-apply-v1.js
+          node --check ga-multi-selection-bridge-v1.js
           node --check tkb-assignment-cache-safe-v1.js
           node --check teacher-fix-v2.js
           node --check analysis-fix-v2.js
           node --check tests/multi-report-performance-v1.test.cjs
+          node --check tests/ga-multi-selection-bridge-v1.test.cjs
       - name: Performance and unified GA regression
         run: |
           node tests/multi-report-performance-v1.test.cjs
           node tests/ga-suggestion-multi-apply-v1.test.cjs
+          node tests/ga-multi-selection-bridge-v1.test.cjs
+          grep -F 'ga-multi-selection-bridge-v1.js?v=20260914.1' index.html
       - name: Preserve recent business rules
         run: |
           node tests/assist-p-class-pairing-v1.test.cjs
