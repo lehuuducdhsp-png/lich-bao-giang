@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionMultiApplyV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260912.1';
+  const VERSION='20260913.2';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -60,6 +60,10 @@
   const startDateFor=ws=>{try{return typeof startDate==='function'?startDate(ws.name):null}catch{return null}};
   const weekLikeFor=ws=>{try{return typeof weekLike==='function'?weekLike(ws):true}catch{return true}};
   const analyzeFn=()=>{try{return typeof analyzeNow==='function'?analyzeNow:null}catch{return null}};
+  const yieldUi=()=>new Promise(resolve=>{
+    if(root.document?.hidden||typeof root.requestAnimationFrame!=='function'){setTimeout(resolve,0);return}
+    root.requestAnimationFrame(()=>resolve());
+  });
 
   function roleResolver(ws,code){
     const m=root.LBGTeacherIntelligenceV6?.summaryRoles?.(ws)?.get?.(txt(code).toUpperCase());
@@ -178,7 +182,7 @@
     let box=q('lbgGaMultiApplyBox');
     if(!box){
       box=root.document.createElement('div');box.id='lbgGaMultiApplyBox';box.className='lbg-ga-multi-box';
-      box.innerHTML='<div class="lbg-ga-multi-main"><button type="button" class="lbg-ga-multi-btn" id="lbgGaMultiApplyButton">✓ Áp dụng GA cho nhiều giáo viên</button><span class="lbg-ga-multi-note">Tự phân tích lịch sử GA của từng giáo viên; chỉ điền ô trống, không ghi đè GA nhập tay.</span></div><div class="lbg-ga-multi-status" id="lbgGaMultiApplyStatus"></div>';
+      box.innerHTML='<div class="lbg-ga-multi-main"><button type="button" class="lbg-ga-multi-btn" id="lbgGaMultiApplyButton">✓ Phân tích & áp dụng GA</button><span class="lbg-ga-multi-note">Dùng được cho một hoặc nhiều giáo viên; chỉ điền ô trống, không ghi đè GA nhập tay.</span></div><div class="lbg-ga-multi-status" id="lbgGaMultiApplyStatus"></div>';
       const anchor=q('multiExportOptions')||q('analyze')?.closest?.('.controls');
       if(anchor)anchor.insertAdjacentElement('afterend',box);
       q('lbgGaMultiApplyButton').onclick=runBatch;
@@ -189,21 +193,22 @@
   function refreshUi(){
     const box=q('lbgGaMultiApplyBox'),button=q('lbgGaMultiApplyButton');if(!box||!button)return;
     const count=selectedTeachers().length;
-    box.classList.toggle('show',count>1);
+    box.classList.toggle('show',count>0);
     if(!button.dataset.busy){
-      button.disabled=count<2;
-      button.textContent=count>1?`✓ Phân tích & áp dụng GA cho ${count} giáo viên`:'✓ Áp dụng GA cho nhiều giáo viên';
+      button.disabled=count<1;
+      button.textContent=count===1?'✓ Phân tích & áp dụng GA cho 1 giáo viên':count>1?`✓ Phân tích & áp dụng GA cho ${count} giáo viên`:'✓ Phân tích & áp dụng GA';
     }
   }
   async function runBatch(){
     const button=q('lbgGaMultiApplyButton'),status=q('lbgGaMultiApplyStatus'),teachers=selectedTeachers(),ws=currentWorksheet(),analyze=analyzeFn();
-    if(!button||teachers.length<2){if(typeof toast==='function')toast('Hãy chọn từ 2 giáo viên trở lên.');return}
+    if(!button||teachers.length<1){if(typeof toast==='function')toast('Hãy chọn ít nhất 1 giáo viên.');return}
     if(!ws||!analyze){if(typeof toast==='function')toast('Hãy chọn tuần và kiểm tra dữ liệu trước.');return}
     button.dataset.busy='1';button.disabled=true;
     let applied=0,affected=0,conflicts=0,skipped=0,same=0,failed=0,lastCurrent=null;
     try{
       for(let i=0;i<teachers.length;i++){
         const t=teachers[i];button.textContent=`Đang xử lý GA ${i+1}/${teachers.length}: ${t.name||t.code}`;
+        await yieldUi();
         try{
           const a=analyze(ws,t.code,t.name||t.code);
           if(!a?.entries?.length){skipped++;continue}
@@ -211,7 +216,8 @@
           applied+=out.applied;same+=out.same;conflicts+=out.conflicts;skipped+=out.skipped+out.protectedCount;
           if(out.applied)affected++;
           const now=currentResult();if(now&&txt(now.code).toUpperCase()===txt(a.code).toUpperCase()&&txt(now.sheet)===txt(a.sheet))lastCurrent=a;
-        }catch(error){failed++;console.error('GA multi apply:',t.code,error)}
+        }catch(error){failed++;console.error('GA apply:',t.code,error)}
+        if(i+1<teachers.length)await yieldUi();
       }
       if(lastCurrent)setCurrentResultGa(lastCurrent);
       const details=[`${applied} ô GA`,`${teachers.length} giáo viên`];
@@ -226,15 +232,25 @@
     }
   }
 
+  let refreshTimer=null;
+  function queueRefresh(delay=0){
+    clearTimeout(refreshTimer);
+    refreshTimer=setTimeout(()=>{ensureUi();refreshUi()},delay);
+  }
   function install(){
     let tries=0;
     const tick=()=>{
       tries++;
-      if(q('teacher')&&q('analyze')&&cross()&&v7()&&parser()&&engine()&&analyzeFn())ensureUi();
+      if(q('teacher')&&q('analyze')&&cross()&&v7()&&parser()&&engine()&&analyzeFn()){
+        ensureUi();
+        return;
+      }
       if(tries<600)setTimeout(tick,150);
     };
-    root.document.addEventListener('change',event=>{if(event.target?.matches?.('#multiTeacherList input[type="checkbox"],#teacher,#week'))setTimeout(()=>{ensureUi();refreshUi()},0)},true);
-    root.document.addEventListener('click',event=>{if(event.target?.closest?.('#multiSelectAll,#multiClearAll'))setTimeout(()=>{ensureUi();refreshUi()},20)},true);
+    root.document.addEventListener('change',event=>{if(event.target?.matches?.('#multiTeacherList input[type="checkbox"],#teacher,#week'))queueRefresh(16)},true);
+    root.document.addEventListener('click',event=>{if(event.target?.closest?.('#multiSelectAll,#multiClearAll'))queueRefresh(32)},true);
+    root.document.addEventListener('lbg-multi-selection-change',()=>queueRefresh(0));
+    root.document.addEventListener('lbg-runtime-ready',()=>queueRefresh(0));
     tick();
     return true;
   }
