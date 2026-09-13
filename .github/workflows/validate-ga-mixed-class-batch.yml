@@ -1,0 +1,42 @@
+name: Validate mixed-class GA batch
+
+on:
+  pull_request:
+    paths:
+      - 'ga-mixed-class-batch-fix-v1.js'
+      - 'ga-per-class-v2.js'
+      - 'ga-suggestion-cross-version-v1.js'
+      - 'ga-suggestion-v7.js'
+      - 'index.html'
+      - 'tests/ga-mixed-class-batch-fix-v1.test.cjs'
+      - '.github/workflows/validate-ga-mixed-class-batch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check ga-mixed-class-batch-fix-v1.js
+          node --check tests/ga-mixed-class-batch-fix-v1.test.cjs
+      - name: Khánh Thi mixed GA regression
+        run: node tests/ga-mixed-class-batch-fix-v1.test.cjs
+      - name: Loader contract
+        run: |
+          grep -Fq 'ga-suggestion-multi-apply-v1.js?v=20260912.1' index.html
+          grep -Fq 'ga-per-class-v2.js?v=20260912.2' index.html
+          grep -Fq 'ga-mixed-class-batch-fix-v1.js?v=20260913.1' index.html
+      - name: Safety contract
+        run: |
+          grep -Fq 'stopImmediatePropagation' ga-mixed-class-batch-fix-v1.js
+          grep -Fq 'planMixedClassApplications' ga-mixed-class-batch-fix-v1.js
+          grep -Fq 'applyMixedClassApplications' ga-mixed-class-batch-fix-v1.js
+          grep -Fq 'localStorage.setItem' ga-mixed-class-batch-fix-v1.js
