@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const Fix=require('../tkb-class-typo-fix-v1.js');
 const V7=require('../ga-suggestion-v7.js');
 const Cross=require('../ga-suggestion-cross-version-v1.js');
+const Multi=require('../ga-suggestion-multi-apply-v1.js');
 
 const oldWeek={name:'07T09',start:new Date(2026,8,7)};
 const currentWeek={name:'14T09',start:new Date(2026,8,14)};
@@ -43,4 +44,14 @@ assert.equal(current.ga,2,'tuần hiện tại phải nối đúng lịch sử 3
 assert.equal(current.gaSource,'previous');
 assert.equal(current.previousEvents[0]?.sheet,'07T09');
 
-console.log('OK class typo history: archived /31 is treated as 3/1 and GA continues');
+// Cùng lịch sử đã chuẩn hóa phải đi tiếp qua planner + batch apply,
+// để nút "Phân tích & áp dụng GA cho nhiều giáo viên" có thể điền GA 2 một lần.
+const currentEntry=Fix.normalizeEntry(sourceByWeek['14T09'][0]);
+const plan=Cross.planGaApplications([current],[currentEntry],{});
+assert.equal(plan.apply.length,1,'GA nối lịch sử phải đủ điều kiện áp dụng');
+assert.equal(plan.apply[0].ga,2,'GA được áp dụng phải là GA 2');
+const write=Multi.applyPlanToValues(plan,{});
+assert.equal(write.applied,1,'batch apply phải ghi được đúng một ô GA');
+assert.equal(write.values['2|Sáng|VY DA|'],'2','GA 2 phải được lưu vào đúng target của VỸ DẠ');
+
+console.log('OK class typo history: archived /31 is treated as 3/1, GA continues, and batch apply writes GA 2');
