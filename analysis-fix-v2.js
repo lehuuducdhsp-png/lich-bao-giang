@@ -63,7 +63,7 @@
 
 (function(){
   function appendScript(src,onload){const script=document.createElement('script');script.src=src;script.async=false;if(onload)script.onload=onload;document.body.appendChild(script);return script}
-  function loadCommonModules(){appendScript('ga-editor.js?v=20260801.1');appendScript('multi-teacher-v5.js?v=20260803.1');appendScript('conflict-check-v5.js?v=20260803.1');appendScript('teacher-intelligence-v6.js?v=20260803.1');appendScript('weekly-stats-enhancement-v7.js?v=20260803.2')}
+  function loadCommonModules(){appendScript('ga-editor.js?v=20260801.1');appendScript('multi-teacher-v5.js?v=20260913.1');appendScript('conflict-check-v5.js?v=20260803.1');appendScript('teacher-intelligence-v6.js?v=20260803.1');appendScript('weekly-stats-enhancement-v7.js?v=20260803.2')}
   function loadDependentScripts(){
     const startMode=()=>{
       if(window.LBG_SUPABASE_CONFIG?.enabled){
