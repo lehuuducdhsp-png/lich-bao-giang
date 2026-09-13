@@ -6,7 +6,7 @@
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
   const dayCellIndex=(days,day)=>{const i=(days||[]).map(Number).indexOf(Number(day));return i<0?-1:i+1};
   const formatClassText=e=>{
-    const base=txt(e?.className||e?.classRaw)||'Lớp chưa xác định';
+    const base=txt(e?.className||e?.classRaw)||'Lớp không xác định';
     const note=txt(e?.groupNote);
     return `${note?`${base} - ${note}`:base} (P)`;
   };
@@ -77,14 +77,16 @@
         const loc=p.locationAt?.(ws,row)||{};
         const main=pairedMainAssignment(assignments,row,col,base,info);
         const meta=classFromPairedMain(main);
-        const explicit=txt(meta.groupNote||meta.classRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
+        const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
+        const resolvedRaw=txt(meta.classRaw)||resolvedClass;
+        const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
         out.push({
           day:Number(info.day),session:txt(info.session),period:Number(info.period),
           teachingPeriod:explicit?Number(explicit[1]):Number(info.period),
           schoolName:txt(loc.schoolName||loc.school),siteDisplay:txt(loc.siteDisplay||loc.siteName),
-          className:txt(meta.className||meta.classRaw),classRaw:txt(meta.classRaw),classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
+          className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
-          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:main?'same-row-main':'unresolved'
+          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:main&&resolvedClass!=='Lớp không xác định'?'same-row-main':'unresolved'
         });
       }
     }
