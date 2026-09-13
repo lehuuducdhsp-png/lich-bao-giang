@@ -1,0 +1,44 @@
+name: Validate Excel web parity
+
+on:
+  pull_request:
+    paths:
+      - 'assist-p-excel-export-parity-v1.js'
+      - 'assist-p-export-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'report-branding-v1.js'
+      - 'index.html'
+      - 'tests/assist-p-excel-export-parity-v1.test.cjs'
+      - '.github/workflows/validate-excel-web-parity.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check assist-p-excel-export-parity-v1.js
+          node --check tests/assist-p-excel-export-parity-v1.test.cjs
+      - name: Excel/web parity regression
+        run: node tests/assist-p-excel-export-parity-v1.test.cjs
+      - name: Loader order contract
+        run: |
+          grep -F 'assist-p-excel-export-parity-v1.js?v=20260914.1' index.html
+          grep -F 'assist-p-export-safe-v1.js?v=20260912.1' index.html
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('assist-p-excel-export-parity-v1.js?v=20260914.1')
+          b=s.index('assist-p-export-safe-v1.js?v=20260912.1')
+          assert a < b, 'Parity interceptor must load before legacy P exporter'
+          PY
+      - name: Preserve recent report contracts
+        run: |
+          grep -F 'report-branding-v1.js?v=20260909.1' index.html
+          grep -F 'assist-p-preview-safe-v1.js?v=20260913.5' index.html
+          grep -F 'ga-group-split-stale-repair-v1.js?v=20260914.1' index.html
+          grep -F 'ga-multi-selection-bridge-v1.js?v=20260914.2' index.html
