@@ -1,46 +1,62 @@
 'use strict';
 (function(){
-  const VERSION='20260913.2';
+  const VERSION='20260913.3';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
   const dayCellIndex=(days,day)=>{const i=(days||[]).map(Number).indexOf(Number(day));return i<0?-1:i+1};
+  const emptyClass=()=>({className:'',classRaw:'',classType:'unknown',classCount:1,groupNote:''});
   const formatClassText=e=>{
     const base=txt(e?.className||e?.classRaw)||'Lớp không xác định';
     const note=txt(e?.groupNote);
     return `${note?`${base} - ${note}`:base} (P)`;
   };
 
-  function pairedMainAssignment(assignments,row,col,base,info={}){
+  function sameRowMainCandidates(assignments,row,col,base,info={}){
     const code=txt(base).toUpperCase(),day=Number(info?.day),session=txt(info?.session);
-    const candidates=(assignments||[]).filter(e=>{
+    return(assignments||[]).filter(e=>{
       if(txt(e?.code).toUpperCase()!==code||Number(e?.row)!==Number(row))return false;
       if(Number.isFinite(day)&&Number(e?.day)!==day)return false;
       if(session&&txt(e?.session)!==session)return false;
       return true;
     }).map(e=>({entry:e,distance:Math.abs(Number(e?.col)-Number(col))})).sort((a,b)=>a.distance-b.distance||Number(a.entry?.col)-Number(b.entry?.col));
+  }
+
+  function pairedMainAssignment(assignments,row,col,base,info={}){
+    const candidates=sameRowMainCandidates(assignments,row,col,base,info);
     if(!candidates.length)return null;
     if(candidates.length>1&&candidates[0].distance===candidates[1].distance)return null;
     return candidates[0].entry;
   }
 
-  function classFromPairedMain(main){
-    if(!main||typeof main!=='object')return{className:'',classRaw:'',classType:'unknown',classCount:1,groupNote:''};
-    const type=txt(main.classType).toLowerCase();
-    if(!type||type==='unknown')return{className:'',classRaw:'',classType:'unknown',classCount:1,groupNote:''};
-    const name=txt(main.className||main.classDisplay||main.classRaw),raw=txt(main.classRaw||name);
-    if(!name&&!raw)return{className:'',classRaw:'',classType:'unknown',classCount:1,groupNote:''};
+  function classFromKnownSource(source){
+    if(!source||typeof source!=='object')return emptyClass();
+    const type=txt(source.classType).toLowerCase();
+    if(!type||type==='unknown')return emptyClass();
+    const name=txt(source.className||source.classDisplay||source.classRaw),raw=txt(source.classRaw||name);
+    if(!name&&!raw)return emptyClass();
     return{
       className:name,
       classRaw:raw,
-      classType:txt(main.classType),
-      classCount:Number(main.classCount)||1,
-      groupNote:txt(main.groupNote)
+      classType:txt(source.classType),
+      classCount:Number(source.classCount)||1,
+      groupNote:txt(source.groupNote)
     };
   }
 
+  function classFromPairedMain(main){return classFromKnownSource(main)}
+
+  function selectAssistClass(mainCandidates,pairedMain,localMeta){
+    // Nếu có lượt giáo viên chính cùng hàng thì lượt đó là nguồn quyết định.
+    // Dù lớp của lượt chính chưa xác định, cũng không được nhảy sang lớp lân cận.
+    if((mainCandidates||[]).length)return classFromPairedMain(pairedMain);
+    // Chỉ khi KHÔNG có lượt chính cùng hàng mới cho phép dùng nhãn lớp cục bộ,
+    // và nhãn này phải là lớp hợp lệ (single/combined), không dùng text mơ hồ.
+    return classFromKnownSource(localMeta);
+  }
+
   if(typeof module!=='undefined'&&module.exports){
-    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,pairedMainAssignment,classFromPairedMain};
+    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass};
     return;
   }
 
@@ -63,6 +79,33 @@
     return'';
   }
 
+  function isAssignmentCode(p,ws,value,base){
+    const code=txt(value).toUpperCase(),main=txt(base).toUpperCase();if(!code)return false;
+    if(code===main||code===assistantCode(main)||code===`${main}+`)return true;
+    try{if(p.resolveTeacherCode?.(ws,code))return true}catch{}
+    const m=code.match(/^(.+?)(P|\+)$/);
+    if(m){try{if(p.resolveTeacherCode?.(ws,m[1]))return true}catch{}}
+    return false;
+  }
+
+  function strictLocalClassAt(ws,row,col,base,currentLoc){
+    const p=parser();if(!ws||!p?.classMeta)return emptyClass();
+    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),floor=Math.max(first,Number(row)-8),currentKey=txt(currentLoc?.locationKey);
+    for(let r=Number(row)-1;r>=floor;r--){
+      let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
+      const rowKey=txt(rowLoc?.locationKey);
+      if(currentKey&&rowKey&&rowKey!==currentKey)break;
+      let cell=null;try{cell=ws.getCell(r,col)}catch{}
+      const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
+      if(isAssignmentCode(p,ws,value,base))break;
+      if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
+      let meta=null;try{meta=p.classMeta(value)}catch{}
+      const known=classFromKnownSource(meta);
+      if(known.className||known.classRaw)return known;
+    }
+    return emptyClass();
+  }
+
   function scanAssist(ws,teacherCode){
     const p=parser(),base=txt(teacherCode).toUpperCase();
     if(!ws||!p||!base)return[];
@@ -75,18 +118,23 @@
         const cell=ws.getCell(row,col);
         if(cellText(cell).toUpperCase()!==target)continue;
         const loc=p.locationAt?.(ws,row)||{};
+        const candidates=sameRowMainCandidates(assignments,row,col,base,info);
         const main=pairedMainAssignment(assignments,row,col,base,info);
-        const meta=classFromPairedMain(main);
+        const localMeta=candidates.length?emptyClass():strictLocalClassAt(ws,row,col,base,loc);
+        const meta=selectAssistClass(candidates,main,localMeta);
         const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
+        const source=candidates.length
+          ?(main&&resolvedClass!=='Lớp không xác định'?'same-row-main':'unresolved-same-row-main')
+          :(resolvedClass!=='Lớp không xác định'?'local-class-label':'unresolved');
         out.push({
           day:Number(info.day),session:txt(info.session),period:Number(info.period),
           teachingPeriod:explicit?Number(explicit[1]):Number(info.period),
           schoolName:txt(loc.schoolName||loc.school),siteDisplay:txt(loc.siteDisplay||loc.siteName),
           className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
-          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:main&&resolvedClass!=='Lớp không xác định'?'same-row-main':'unresolved'
+          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:source
         });
       }
     }
@@ -151,7 +199,7 @@
     if(installed)return;installed=true;
     document.addEventListener('click',onClick,false);
     document.addEventListener('change',onChange,false);
-    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,pairedMainAssignment,classFromPairedMain,scanAssist,placeAssist};
+    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass,scanAssist,placeAssist};
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
