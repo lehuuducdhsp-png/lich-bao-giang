@@ -18,6 +18,7 @@ on:
       - 'tests/sheets-owner-v3.test.cjs'
       - 'tests/production-runtime-performance.test.cjs'
       - 'tests/startup-warmup-v2.test.cjs'
+      - 'tests/runtime-responsive-loader-v1.test.cjs'
       - 'tests/tkb-class-typo-fix-v1.test.cjs'
       - 'tests/tkb-class-typo-history-v1.test.cjs'
       - 'recovery/google-sheets/REPORT_BRANDING_20260909.md'
@@ -44,6 +45,7 @@ jobs:
           node --check tests/sheets-owner-v3.test.cjs
           node --check tests/production-runtime-performance.test.cjs
           node --check tests/startup-warmup-v2.test.cjs
+          node --check tests/runtime-responsive-loader-v1.test.cjs
           node --check tests/tkb-class-typo-fix-v1.test.cjs
           node --check tests/tkb-class-typo-history-v1.test.cjs
       - name: Unit checks
@@ -53,6 +55,7 @@ jobs:
           node tests/sheets-owner-v3.test.cjs
           node tests/production-runtime-performance.test.cjs
           node tests/startup-warmup-v2.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
           node tests/tkb-class-typo-fix-v1.test.cjs
           node tests/tkb-class-typo-history-v1.test.cjs
       - name: Runtime loader contract
@@ -68,9 +71,11 @@ jobs:
           grep -F "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
           grep -F "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
           grep -F "production-mode-v1.js?v=20260909.4" app-runtime-v1.js
-          grep -F "app-runtime-v1.js?v=20260909.4" index.html
-          grep -F "startup-warmup-v2.js?v=20260913.1" index.html
+          grep -F "app-runtime-v1.js?v=20260913.1" index.html
+          grep -F "startup-warmup-v2.js?v=20260913.2" index.html
           grep -F "tkb-class-typo-fix-v1.js?v=20260913.2" index.html
+          grep -F "ga-per-class-history-safe-v1.js?v=20260913.1" index.html
+          grep -F "assist-p-preview-safe-v1.js?v=20260913.5" index.html
           grep -F "{cache:'default'}" index.html
           ! grep -F "cache:'no-store'" index.html
           grep -F "functions/v1/google-sheets-owner" sheets-sync-owner-v3.js

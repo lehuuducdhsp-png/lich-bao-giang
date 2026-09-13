@@ -33,7 +33,7 @@ jobs:
         run: node tests/ga-suggestion-v7.test.cjs
       - name: Verify production and test wiring
         run: |
-          grep -Fq "ga-suggestion-cross-version-v1.js?v=20260912.2" app-runtime-v1.js
+          grep -Fq "ga-suggestion-cross-version-v1.js?v=20260912.4" app-runtime-v1.js
           grep -Fq "lbgGaSuggestionCrossVersionV1Script" app-runtime-v1.js
           grep -Fq 'ga-suggestion-cross-version-v1.js?v=20260912.2' thu-nghiem-ga-lich-su.html
           grep -Fq 'BẢN THỬ AN TOÀN' thu-nghiem-ga-lich-su.html
