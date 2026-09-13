@@ -88,7 +88,7 @@ assert.match(runtime,/preloadWindow\(items,i,lookahead\)/,'only network warming 
 assert.match(runtime,/await yieldToBrowser\(\)/,'loader must yield between bounded groups to reduce UI jank');
 assert.doesNotMatch(runtime,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'runtime optimization must not touch stored user data');
 assert.match(index,/tkb-class-typo-fix-v1\.js\?v=20260913\.2/,'class typo fix must stay loaded');
-assert.match(index,/ga-per-class-v2\.js\?v=20260912\.2/,'per-class GA must stay loaded');
+assert.match(index,/ga-per-class-v2\.js\?v=20260914\.1/,'per-class GA must stay loaded');
 assert.match(index,/ga-per-class-history-safe-v1\.js\?v=20260913\.1/,'Khánh Thi GA history fix must stay loaded');
 assert.match(index,/sheets-ga-save-safe-v1\.js\?v=20260913\.1/,'Sheets GA fix must stay loaded');
 assert.match(index,/assist-p-preview-safe-v1\.js\?v=20260913\.5/,'assistant P class fix must stay loaded');
