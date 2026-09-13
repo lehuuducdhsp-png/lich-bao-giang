@@ -11,30 +11,208 @@
     const note=txt(e?.groupNote);
     return `${note?`${base} - ${note}`:base} (P)`;
   };
-  function sameRowMainCandidates(assignments,row,col,base,info={}){const code=txt(base).toUpperCase(),day=Number(info?.day),session=txt(info?.session);return(assignments||[]).filter(e=>{if(txt(e?.code).toUpperCase()!==code||Number(e?.row)!==Number(row))return false;if(Number.isFinite(day)&&Number(e?.day)!==day)return false;if(session&&txt(e?.session)!==session)return false;return true}).map(e=>({entry:e,distance:Math.abs(Number(e?.col)-Number(col))})).sort((a,b)=>a.distance-b.distance||Number(a.entry?.col)-Number(b.entry?.col))}
-  function pairedMainAssignment(assignments,row,col,base,info={}){const candidates=sameRowMainCandidates(assignments,row,col,base,info);if(!candidates.length)return null;if(candidates.length>1&&candidates[0].distance===candidates[1].distance)return null;return candidates[0].entry}
-  function classFromKnownSource(source){if(!source||typeof source!=='object')return emptyClass();const type=txt(source.classType).toLowerCase();if(!type||type==='unknown')return emptyClass();const name=txt(source.className||source.classDisplay||source.classRaw),raw=txt(source.classRaw||name);if(!name&&!raw)return emptyClass();return{className:name,classRaw:raw,classType:txt(source.classType),classCount:Number(source.classCount)||1,groupNote:txt(source.groupNote)}}
+
+  function sameRowMainCandidates(assignments,row,col,base,info={}){
+    const code=txt(base).toUpperCase(),day=Number(info?.day),session=txt(info?.session);
+    return(assignments||[]).filter(e=>{
+      if(txt(e?.code).toUpperCase()!==code||Number(e?.row)!==Number(row))return false;
+      if(Number.isFinite(day)&&Number(e?.day)!==day)return false;
+      if(session&&txt(e?.session)!==session)return false;
+      return true;
+    }).map(e=>({entry:e,distance:Math.abs(Number(e?.col)-Number(col))})).sort((a,b)=>a.distance-b.distance||Number(a.entry?.col)-Number(b.entry?.col));
+  }
+
+  function pairedMainAssignment(assignments,row,col,base,info={}){
+    const candidates=sameRowMainCandidates(assignments,row,col,base,info);
+    if(!candidates.length)return null;
+    if(candidates.length>1&&candidates[0].distance===candidates[1].distance)return null;
+    return candidates[0].entry;
+  }
+
+  function classFromKnownSource(source){
+    if(!source||typeof source!=='object')return emptyClass();
+    const type=txt(source.classType).toLowerCase();
+    if(!type||type==='unknown')return emptyClass();
+    const name=txt(source.className||source.classDisplay||source.classRaw),raw=txt(source.classRaw||name);
+    if(!name&&!raw)return emptyClass();
+    return{
+      className:name,
+      classRaw:raw,
+      classType:txt(source.classType),
+      classCount:Number(source.classCount)||1,
+      groupNote:txt(source.groupNote)
+    };
+  }
+
   function classFromPairedMain(main){return classFromKnownSource(main)}
-  function selectAssistClass(mainCandidates,pairedMain,localMeta){const fromMain=classFromPairedMain(pairedMain);if(fromMain.className||fromMain.classRaw)return fromMain;const local=classFromKnownSource(localMeta);if(local.className||local.classRaw)return local;return emptyClass()}
-  if(typeof module!=='undefined'&&module.exports){module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass};return}
+
+  function selectAssistClass(mainCandidates,pairedMain,localMeta){
+    // Ưu tiên lớp của giáo viên chính cùng hàng NẾU lớp đó xác định rõ.
+    const fromMain=classFromPairedMain(pairedMain);
+    if(fromMain.className||fromMain.classRaw)return fromMain;
+    // Nếu lượt chính không có lớp rõ, nhưng ngay block của ô P có một nhãn lớp hợp lệ
+    // (ví dụ 3/7, 4/5 ở Hoài Thanh - Vỹ Dạ), dùng lớp cục bộ đó thay vì ghi "không xác định".
+    const local=classFromKnownSource(localMeta);
+    if(local.className||local.classRaw)return local;
+    // Chỉ khi cả hai nguồn đều không cho lớp chắc chắn mới để lớp không xác định.
+    return emptyClass();
+  }
+
+  if(typeof module!=='undefined'&&module.exports){
+    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass};
+    return;
+  }
+
   let installed=false;
   const book=()=>{try{return typeof wb!=='undefined'?wb:null}catch{return null}};
   const currentWs=()=>{const b=book(),name=txt(q('week')?.value);return b&&name?b.getWorksheet(name):null};
   const parser=()=>window.LBGTkbParserV2||null;
   const engine=()=>window.LBGReportEngineV4||null;
   const rules=()=>window.LBGReportPayRulesV1||null;
-  function cellText(cell){try{const t=txt(cell?.text);if(t)return t;const v=cell?.value;if(v==null)return'';if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')return txt(v);if(Array.isArray(v?.richText))return txt(v.richText.map(x=>x?.text??'').join(''));if(v?.result!=null)return txt(v.result);if(typeof v?.text==='string')return txt(v.text)}catch{}return''}
-  function isAssignmentCode(p,ws,value,base){const code=txt(value).toUpperCase(),main=txt(base).toUpperCase();if(!code)return false;if(code===main||code===assistantCode(main)||code===`${main}+`)return true;try{if(p.resolveTeacherCode?.(ws,code))return true}catch{}const m=code.match(/^(.+?)(P|\+)$/);if(m){try{if(p.resolveTeacherCode?.(ws,m[1]))return true}catch{}}return false}
-  function strictLocalClassAt(ws,row,col,base,currentLoc){const p=parser();if(!ws||!p?.classMeta)return emptyClass();const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),maxRow=Number(ws.rowCount||0),currentKey=txt(currentLoc?.locationKey),origin=Number(row);const candidates=[];for(const dir of[-1,1]){for(let step=1;step<=8;step++){const r=origin+dir*step;if(r<first||r>maxRow)break;let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}const rowKey=txt(rowLoc?.locationKey);if(currentKey&&rowKey&&rowKey!==currentKey)break;let cell=null;try{cell=ws.getCell(r,col)}catch{}const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;if(isAssignmentCode(p,ws,value,base))break;if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;let meta=null;try{meta=p.classMeta(value)}catch{}const known=classFromKnownSource(meta);if(known.className||known.classRaw){candidates.push({meta:known,distance:step,row:r});break}}}if(!candidates.length)return emptyClass();candidates.sort((a,b)=>a.distance-b.distance||a.row-b.row);if(candidates.length>1&&candidates[0].distance===candidates[1].distance){const a=txt(candidates[0].meta.classRaw||candidates[0].meta.className),b=txt(candidates[1].meta.classRaw||candidates[1].meta.className);if(a!==b)return emptyClass()}return candidates[0].meta}
-  function scanAssist(ws,teacherCode){const p=parser(),base=txt(teacherCode).toUpperCase();if(!ws||!p||!base)return[];const target=assistantCode(base),out=[];const start=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1);let assignments=[];try{assignments=p.scanAssignments?.(ws)||[]}catch(error){console.warn('Trợ giảng (P): không đọc được phân công chính để ghép lớp.',error)}for(const col of p.timetableColumns?.(ws)||[]){const info=p.colInfoFor?.(ws,col);if(!info)continue;for(let row=start;row<=Number(ws.rowCount||0);row++){const cell=ws.getCell(row,col);if(cellText(cell).toUpperCase()!==target)continue;const loc=p.locationAt?.(ws,row)||{};const candidates=sameRowMainCandidates(assignments,row,col,base,info);const main=pairedMainAssignment(assignments,row,col,base,info);const localMeta=strictLocalClassAt(ws,row,col,base,loc);const meta=selectAssistClass(candidates,main,localMeta);const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';const resolvedRaw=txt(meta.classRaw)||resolvedClass;const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);const mainKnown=Boolean(classFromPairedMain(main).className||classFromPairedMain(main).classRaw);const localKnown=Boolean(localMeta.className||localMeta.classRaw);const source=mainKnown?'same-row-main':localKnown?'local-class-label':'unresolved';out.push({day:Number(info.day),session:txt(info.session),period:Number(info.period),teachingPeriod:explicit?Number(explicit[1]):Number(info.period),schoolName:txt(loc.schoolName||loc.school),siteDisplay:txt(loc.siteDisplay||loc.siteName),className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:source})}}return out.sort((a,b)=>a.day-b.day||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.teachingPeriod-b.teachingPeriod||a.row-b.row||a.col-b.col)}
+
+  function cellText(cell){
+    try{
+      const t=txt(cell?.text);if(t)return t;
+      const v=cell?.value;if(v==null)return'';
+      if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')return txt(v);
+      if(Array.isArray(v?.richText))return txt(v.richText.map(x=>x?.text??'').join(''));
+      if(v?.result!=null)return txt(v.result);
+      if(typeof v?.text==='string')return txt(v.text);
+    }catch{}
+    return'';
+  }
+
+  function isAssignmentCode(p,ws,value,base){
+    const code=txt(value).toUpperCase(),main=txt(base).toUpperCase();if(!code)return false;
+    if(code===main||code===assistantCode(main)||code===`${main}+`)return true;
+    try{if(p.resolveTeacherCode?.(ws,code))return true}catch{}
+    const m=code.match(/^(.+?)(P|\+)$/);
+    if(m){try{if(p.resolveTeacherCode?.(ws,m[1]))return true}catch{}}
+    return false;
+  }
+
+  function strictLocalClassAt(ws,row,col,base,currentLoc){
+    const p=parser();if(!ws||!p?.classMeta)return emptyClass();
+    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),maxRow=Number(ws.rowCount||0),currentKey=txt(currentLoc?.locationKey),origin=Number(row);
+    const candidates=[];
+    for(const dir of[-1,1]){
+      for(let step=1;step<=8;step++){
+        const r=origin+dir*step;if(r<first||r>maxRow)break;
+        let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
+        const rowKey=txt(rowLoc?.locationKey);
+        if(currentKey&&rowKey&&rowKey!==currentKey)break;
+        let cell=null;try{cell=ws.getCell(r,col)}catch{}
+        const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
+        if(isAssignmentCode(p,ws,value,base))break;
+        if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
+        let meta=null;try{meta=p.classMeta(value)}catch{}
+        const known=classFromKnownSource(meta);
+        if(known.className||known.classRaw){candidates.push({meta:known,distance:step,row:r});break}
+      }
+    }
+    if(!candidates.length)return emptyClass();
+    candidates.sort((a,b)=>a.distance-b.distance||a.row-b.row);
+    if(candidates.length>1&&candidates[0].distance===candidates[1].distance){
+      const a=txt(candidates[0].meta.classRaw||candidates[0].meta.className),b=txt(candidates[1].meta.classRaw||candidates[1].meta.className);
+      if(a!==b)return emptyClass();
+    }
+    return candidates[0].meta;
+  }
+
+  function scanAssist(ws,teacherCode){
+    const p=parser(),base=txt(teacherCode).toUpperCase();
+    if(!ws||!p||!base)return[];
+    const target=assistantCode(base),out=[];
+    const start=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1);
+    let assignments=[];try{assignments=p.scanAssignments?.(ws)||[]}catch(error){console.warn('Trợ giảng (P): không đọc được phân công chính để ghép lớp.',error)}
+    for(const col of p.timetableColumns?.(ws)||[]){
+      const info=p.colInfoFor?.(ws,col);if(!info)continue;
+      for(let row=start;row<=Number(ws.rowCount||0);row++){
+        const cell=ws.getCell(row,col);
+        if(cellText(cell).toUpperCase()!==target)continue;
+        const loc=p.locationAt?.(ws,row)||{};
+        const candidates=sameRowMainCandidates(assignments,row,col,base,info);
+        const main=pairedMainAssignment(assignments,row,col,base,info);
+        const localMeta=strictLocalClassAt(ws,row,col,base,loc);
+        const meta=selectAssistClass(candidates,main,localMeta);
+        const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
+        const resolvedRaw=txt(meta.classRaw)||resolvedClass;
+        const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
+        const mainKnown=Boolean(classFromPairedMain(main).className||classFromPairedMain(main).classRaw);
+        const localKnown=Boolean(localMeta.className||localMeta.classRaw);
+        const source=mainKnown?'same-row-main':localKnown?'local-class-label':'unresolved';
+        out.push({
+          day:Number(info.day),session:txt(info.session),period:Number(info.period),
+          teachingPeriod:explicit?Number(explicit[1]):Number(info.period),
+          schoolName:txt(loc.schoolName||loc.school),siteDisplay:txt(loc.siteDisplay||loc.siteName),
+          className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
+          address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
+          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:source
+        });
+      }
+    }
+    return out.sort((a,b)=>a.day-b.day||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.teachingPeriod-b.teachingPeriod||a.row-b.row||a.col-b.col);
+  }
+
   function reportPeriod(e){return Number(rules()?.reportPeriod?.(e)??e?.teachingPeriod??e?.period)||0}
-  function findSessionStart(table,session){for(let i=0;i<table.rows.length;i++){const cells=table.rows[i].cells;if(cells.length>=2&&txt(cells[0].textContent)===session&&/^Tiết$/i.test(txt(cells[1].textContent)))return i}return-1}
-  function clearPlaced(){document.querySelectorAll('.lbg-assist-p-preview').forEach(x=>x.remove());q('lbgAssistPPreviewInfo')?.remove()}
-  function showInfo(entries,code){q('lbgAssistPPreviewInfo')?.remove();const summary=q('summary');if(!summary)return;const box=document.createElement('div');box.id='lbgAssistPPreviewInfo';box.style.cssText='margin-top:10px;padding:10px 12px;border:1px solid #fed7aa;border-radius:12px;background:#fff7ed;color:#7c3f19;font-size:12px';box.innerHTML=entries.length?`<b>Trợ giảng (P): ${entries.length} tiết</b> • đọc từ mã <b>${assistantCode(code)}</b> • không cộng vào tổng chính.`:`Không tìm thấy mã trợ giảng <b>${assistantCode(code)}</b> trong tuần này.`;summary.insertAdjacentElement('afterend',box)}
-  function placeAssist(){clearPlaced();const ws=currentWs(),code=txt(q('teacher')?.value),table=q('preview')?.querySelector('table.report');if(!ws||!code||!table)return;const entries=scanAssist(ws,code),days=engine()?.daysForWorksheet?.(ws)||[2,3,4,5,6,7];for(const e of entries){const di=dayCellIndex(days,e.day),p=reportPeriod(e),start=findSessionStart(table,e.session);if(di<1||p<1||p>5||start<0)continue;const row=table.rows[start+p],cell=row?.cells?.[di];if(!cell)continue;const span=document.createElement('span');span.className='lbg-assist-p-preview';span.style.cssText='font-weight:800;color:#9a5b36';span.textContent=(txt(cell.textContent)?' & ':'')+formatClassText(e);cell.appendChild(span)}showInfo(entries,code);table.dataset.lbgAssistPPreview=VERSION}
-  function addBanner(){if(q('lbgAssistPTestBanner'))return;const box=document.createElement('div');box.id='lbgAssistPTestBanner';box.style.cssText='margin:14px 0;padding:10px 13px;border:2px solid #f4a261;border-radius:13px;background:#fff7ed;color:#7c3f19;font-size:12px';box.innerHTML='<b>🧪 PR TEST — TRỢ GIẢNG (P), GIAI ĐOẠN WEB</b><br>Chỉ thêm hiển thị <b>(P)</b> vào Lịch Báo giảng. Không sửa tính tiết, GA, dấu +, dấu &, Excel, Google Sheets, check-in hay phân quyền.';const hero=document.querySelector('main.shell .hero');hero?hero.insertAdjacentElement('afterend',box):document.querySelector('main.shell')?.prepend(box)}
-  function onClick(event){if(!event.target?.closest?.('#analyze'))return;setTimeout(placeAssist,120);setTimeout(placeAssist,360)}
+  function findSessionStart(table,session){
+    for(let i=0;i<table.rows.length;i++){
+      const cells=table.rows[i].cells;
+      if(cells.length>=2&&txt(cells[0].textContent)===session&&/^Tiết$/i.test(txt(cells[1].textContent)))return i;
+    }
+    return-1;
+  }
+  function clearPlaced(){
+    document.querySelectorAll('.lbg-assist-p-preview').forEach(x=>x.remove());
+    q('lbgAssistPPreviewInfo')?.remove();
+  }
+  function showInfo(entries,code){
+    q('lbgAssistPPreviewInfo')?.remove();
+    const summary=q('summary');if(!summary)return;
+    const box=document.createElement('div');box.id='lbgAssistPPreviewInfo';
+    box.style.cssText='margin-top:10px;padding:10px 12px;border:1px solid #fed7aa;border-radius:12px;background:#fff7ed;color:#7c3f19;font-size:12px';
+    box.innerHTML=entries.length
+      ?`<b>Trợ giảng (P): ${entries.length} tiết</b> • đọc từ mã <b>${assistantCode(code)}</b> • không cộng vào tổng chính.`
+      :`Không tìm thấy mã trợ giảng <b>${assistantCode(code)}</b> trong tuần này.`;
+    summary.insertAdjacentElement('afterend',box);
+  }
+  function placeAssist(){
+    clearPlaced();
+    const ws=currentWs(),code=txt(q('teacher')?.value),table=q('preview')?.querySelector('table.report');
+    if(!ws||!code||!table)return;
+    const entries=scanAssist(ws,code),days=engine()?.daysForWorksheet?.(ws)||[2,3,4,5,6,7];
+    for(const e of entries){
+      const di=dayCellIndex(days,e.day),p=reportPeriod(e),start=findSessionStart(table,e.session);
+      if(di<1||p<1||p>5||start<0)continue;
+      const row=table.rows[start+p],cell=row?.cells?.[di];
+      if(!cell)continue;
+      const span=document.createElement('span');span.className='lbg-assist-p-preview';
+      span.style.cssText='font-weight:800;color:#9a5b36';
+      span.textContent=(txt(cell.textContent)?' & ':'')+formatClassText(e);
+      cell.appendChild(span);
+    }
+    showInfo(entries,code);
+    table.dataset.lbgAssistPPreview=VERSION;
+  }
+
+  function addBanner(){
+    if(q('lbgAssistPTestBanner'))return;
+    const box=document.createElement('div');box.id='lbgAssistPTestBanner';
+    box.style.cssText='margin:14px 0;padding:10px 13px;border:2px solid #f4a261;border-radius:13px;background:#fff7ed;color:#7c3f19;font-size:12px';
+    box.innerHTML='<b>🧪 PR TEST — TRỢ GIẢNG (P), GIAI ĐOẠN WEB</b><br>Chỉ thêm hiển thị <b>(P)</b> vào Lịch Báo giảng. Không sửa tính tiết, GA, dấu +, dấu &, Excel, Google Sheets, check-in hay phân quyền.';
+    const hero=document.querySelector('main.shell .hero');hero?hero.insertAdjacentElement('afterend',box):document.querySelector('main.shell')?.prepend(box);
+  }
+  function onClick(event){
+    if(!event.target?.closest?.('#analyze'))return;
+    setTimeout(placeAssist,120);
+    setTimeout(placeAssist,360);
+  }
   function onChange(event){if(['week','teacher'].includes(event.target?.id))clearPlaced()}
-  function install(){if(installed)return;installed=true;document.addEventListener('click',onClick,false);document.addEventListener('change',onChange,false);window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass,scanAssist,placeAssist}}
+  function install(){
+    if(installed)return;installed=true;
+    document.addEventListener('click',onClick,false);
+    document.addEventListener('change',onChange,false);
+    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass,scanAssist,placeAssist};
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
