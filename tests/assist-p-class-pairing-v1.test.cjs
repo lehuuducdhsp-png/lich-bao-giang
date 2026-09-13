@@ -31,10 +31,16 @@ const missingCandidates=P.sameRowMainCandidates(assignments,20,5,'YEN',{day:3,se
 const missing=P.pairedMainAssignment(assignments,20,5,'YEN',{day:3,session:'Sáng'});
 assert.equal(missing,null,'Không có mã chính cùng hàng thì paired main phải rỗng');
 assert.equal(P.formatClassText(P.classFromPairedMain(missing)),'Lớp không xác định (P)');
-const localKnown={className:'4/5',classRaw:'4/5',classType:'single',classCount:1,groupNote:''};
-const hoaiThanhLike=P.selectAssistClass(missingCandidates,null,localKnown);
-assert.equal(hoaiThanhLike.className,'4/5','Không có lượt chính cùng hàng nhưng có nhãn lớp cục bộ hợp lệ thì P phải nhận lớp đó');
-assert.equal(P.formatClassText(hoaiThanhLike),'4/5 (P)');
+
+// Mô phỏng đúng phản hồi Hoài Thanh ở VỸ DẠ: nếu quanh ô P đọc được lớp 3/7 hoặc 4/5
+// một cách rõ ràng, kết quả phải là "3/7 (P)" / "4/5 (P)", không phải một dòng
+// "Lớp không xác định (P)" tách rời khỏi lớp đang có trong block.
+for(const className of['3/7','4/5']){
+  const localKnown={className,classRaw:className,classType:'single',classCount:1,groupNote:''};
+  const picked=P.selectAssistClass(missingCandidates,null,localKnown);
+  assert.equal(picked.className,className);
+  assert.equal(P.formatClassText(picked),`${className} (P)`);
+}
 
 const ambiguous=[
   {code:'DO',row:21,col:4,day:3,session:'Chiều',className:'2/1',classRaw:'2/1',classType:'single'},
