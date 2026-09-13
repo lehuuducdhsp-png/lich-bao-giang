@@ -30,4 +30,4 @@ jobs:
           grep -F 'app-runtime-v1.js?v=20260909.4' index.html
           grep -F 'ga-per-class-v2.js?v=20260912.2' index.html
           grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' index.html
-          grep -F 'assist-p-preview-safe-v1.js?v=20260913.3' index.html
+          grep -F 'assist-p-preview-safe-v1.js?v=20260913.4' index.html
