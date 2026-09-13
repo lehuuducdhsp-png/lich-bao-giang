@@ -1,18 +1,62 @@
 'use strict';
 (function(){
-  const VERSION='20260911.1';
+  const VERSION='20260913.5';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
   const dayCellIndex=(days,day)=>{const i=(days||[]).map(Number).indexOf(Number(day));return i<0?-1:i+1};
+  const emptyClass=()=>({className:'',classRaw:'',classType:'unknown',classCount:1,groupNote:''});
   const formatClassText=e=>{
-    const base=txt(e?.className||e?.classRaw)||'Lớp chưa xác định';
+    const base=txt(e?.className||e?.classRaw)||'Lớp không xác định';
     const note=txt(e?.groupNote);
     return `${note?`${base} - ${note}`:base} (P)`;
   };
 
+  function sameRowMainCandidates(assignments,row,col,base,info={}){
+    const code=txt(base).toUpperCase(),day=Number(info?.day),session=txt(info?.session);
+    return(assignments||[]).filter(e=>{
+      if(txt(e?.code).toUpperCase()!==code||Number(e?.row)!==Number(row))return false;
+      if(Number.isFinite(day)&&Number(e?.day)!==day)return false;
+      if(session&&txt(e?.session)!==session)return false;
+      return true;
+    }).map(e=>({entry:e,distance:Math.abs(Number(e?.col)-Number(col))})).sort((a,b)=>a.distance-b.distance||Number(a.entry?.col)-Number(b.entry?.col));
+  }
+
+  function pairedMainAssignment(assignments,row,col,base,info={}){
+    const candidates=sameRowMainCandidates(assignments,row,col,base,info);
+    if(!candidates.length)return null;
+    if(candidates.length>1&&candidates[0].distance===candidates[1].distance)return null;
+    return candidates[0].entry;
+  }
+
+  function classFromKnownSource(source){
+    if(!source||typeof source!=='object')return emptyClass();
+    const type=txt(source.classType).toLowerCase();
+    if(!type||type==='unknown')return emptyClass();
+    const name=txt(source.className||source.classDisplay||source.classRaw),raw=txt(source.classRaw||name);
+    if(!name&&!raw)return emptyClass();
+    return{
+      className:name,
+      classRaw:raw,
+      classType:txt(source.classType),
+      classCount:Number(source.classCount)||1,
+      groupNote:txt(source.groupNote)
+    };
+  }
+
+  function classFromPairedMain(main){return classFromKnownSource(main)}
+
+  function selectAssistClass(mainCandidates,pairedMain,localMeta){
+    // Quy tắc nghiệp vụ: lớp của (P) phải đến từ CHÍNH CỘT có mã P.
+    // Không lấy lớp ở cột kế bên, kể cả cột đó là lượt dạy chính của cùng giáo viên.
+    // Vì vậy Đức: ĐỨC ở AB177 có 3/2 nhưng ĐỨCP ở AC177 không có lớp trong cột AC
+    // => Lớp không xác định (P). Hoài Thanh Vỹ Dạ: THANHP ở AX39/AZ39,
+    // cột AX/AZ có 1/1 và 1/3 => 1/1 (P), 1/3 (P).
+    return classFromKnownSource(localMeta);
+  }
+
   if(typeof module!=='undefined'&&module.exports){
-    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText};
+    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass};
     return;
   }
 
@@ -35,26 +79,39 @@
     return'';
   }
 
-  function classAt(ws,row,col,base){
-    const p=parser();
-    if(!p)return{className:'',classRaw:'',groupNote:''};
-    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1);
-    const floor=Math.max(first,row-10);
-    const stop=new Set([txt(base).toUpperCase(),assistantCode(base),`${txt(base).toUpperCase()}+`]);
-    let fallback='';
-    for(let r=row-1;r>=floor;r--){
-      const value=txt(ws.getCell(r,col)?.text).replace(/\s+/g,' ').trim();
-      if(!value)continue;
-      const upper=value.toUpperCase();
-      if(stop.has(upper)||p.resolveTeacherCode?.(ws,upper)){if(fallback)break;continue}
-      if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value))continue;
-      if(/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
-      const meta=p.classMeta?.(value);
-      if(meta&&meta.classType!=='unknown')return{...meta,className:txt(meta.classDisplay||meta.classRaw)};
-      if(!fallback&&value.length<=100)fallback=value;
+  function isAssignmentCode(p,ws,value,base){
+    const code=txt(value).toUpperCase(),main=txt(base).toUpperCase();if(!code)return false;
+    if(code===main||code===assistantCode(main)||code===`${main}+`)return true;
+    try{if(p.resolveTeacherCode?.(ws,code))return true}catch{}
+    const m=code.match(/^(.+?)(P|\+)$/);
+    if(m){try{if(p.resolveTeacherCode?.(ws,m[1]))return true}catch{}}
+    return false;
+  }
+
+  function strictLocalClassAt(ws,row,col,base,currentLoc){
+    const p=parser();if(!ws||!p?.classMeta)return emptyClass();
+    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),origin=Number(row),currentKey=txt(currentLoc?.locationKey);
+    // Cấu trúc TKB thực tế có dạng: LỚP -> GV chính -> GV trợ (P).
+    // Chỉ nhìn lên tối đa 2 hàng trong CHÍNH CỘT của mã P; tuyệt đối không dò cột bên cạnh.
+    for(const step of[1,2]){
+      const r=origin-step;if(r<first)break;
+      let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
+      const rowKey=txt(rowLoc?.locationKey);
+      if(currentKey&&rowKey&&rowKey!==currentKey)break;
+      let cell=null;try{cell=ws.getCell(r,col)}catch{}
+      const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
+      // Hàng ngay trên thường là GV chính; cho phép đi xuyên qua đúng 1 hàng này để đọc lớp ở hàng kế trên.
+      if(isAssignmentCode(p,ws,value,base)){
+        if(step===1)continue;
+        return emptyClass();
+      }
+      if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
+      let meta=null;try{meta=p.classMeta(value)}catch{}
+      const known=classFromKnownSource(meta);
+      if(known.className||known.classRaw)return known;
+      return emptyClass();
     }
-    const meta=p.classMeta?.(fallback)||{};
-    return{...meta,className:txt(meta.classDisplay||meta.classRaw||fallback),classRaw:txt(meta.classRaw||fallback),groupNote:txt(meta.groupNote)};
+    return emptyClass();
   }
 
   function scanAssist(ws,teacherCode){
@@ -62,19 +119,28 @@
     if(!ws||!p||!base)return[];
     const target=assistantCode(base),out=[];
     const start=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1);
+    let assignments=[];try{assignments=p.scanAssignments?.(ws)||[]}catch(error){console.warn('Trợ giảng (P): không đọc được phân công chính để đối chiếu.',error)}
     for(const col of p.timetableColumns?.(ws)||[]){
       const info=p.colInfoFor?.(ws,col);if(!info)continue;
       for(let row=start;row<=Number(ws.rowCount||0);row++){
         const cell=ws.getCell(row,col);
         if(cellText(cell).toUpperCase()!==target)continue;
-        const loc=p.locationAt?.(ws,row)||{},meta=classAt(ws,row,col,base);
-        const explicit=txt(meta.groupNote||meta.classRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
+        const loc=p.locationAt?.(ws,row)||{};
+        const candidates=sameRowMainCandidates(assignments,row,col,base,info);
+        const main=pairedMainAssignment(assignments,row,col,base,info);
+        const localMeta=strictLocalClassAt(ws,row,col,base,loc);
+        const meta=selectAssistClass(candidates,main,localMeta);
+        const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
+        const resolvedRaw=txt(meta.classRaw)||resolvedClass;
+        const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
+        const localKnown=Boolean(localMeta.className||localMeta.classRaw);
         out.push({
           day:Number(info.day),session:txt(info.session),period:Number(info.period),
           teachingPeriod:explicit?Number(explicit[1]):Number(info.period),
           schoolName:txt(loc.schoolName||loc.school),siteDisplay:txt(loc.siteDisplay||loc.siteName),
-          className:txt(meta.className||meta.classDisplay||meta.classRaw),classRaw:txt(meta.classRaw),groupNote:txt(meta.groupNote),
-          address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false
+          className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
+          address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
+          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:localKnown?'same-column-class':'unresolved'
         });
       }
     }
@@ -139,7 +205,7 @@
     if(installed)return;installed=true;
     document.addEventListener('click',onClick,false);
     document.addEventListener('change',onChange,false);
-    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,scanAssist,placeAssist};
+    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass,scanAssist,placeAssist};
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
