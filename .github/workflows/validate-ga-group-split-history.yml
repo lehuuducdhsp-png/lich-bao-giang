@@ -1,0 +1,35 @@
+name: Validate GA group split history
+
+on:
+  pull_request:
+    paths:
+      - 'ga-group-split-history-safe-v1.js'
+      - 'ga-group-split-stale-repair-v1.js'
+      - 'index.html'
+      - 'tests/ga-group-split-history-safe-v1.test.cjs'
+      - 'tests/ga-khanh-thi-history-safe-v1.test.cjs'
+      - '.github/workflows/validate-ga-group-split-history.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check ga-group-split-history-safe-v1.js
+          node --check ga-group-split-stale-repair-v1.js
+          node --check tests/ga-group-split-history-safe-v1.test.cjs
+      - name: Group split regression
+        run: node tests/ga-group-split-history-safe-v1.test.cjs
+      - name: Preserve Khánh Thi class history rule
+        run: node tests/ga-khanh-thi-history-safe-v1.test.cjs
+      - name: Loader contract
+        run: |
+          grep -F 'ga-per-class-history-safe-v1.js?v=20260913.1' index.html
+          grep -F 'ga-group-split-history-safe-v1.js?v=20260914.1' index.html
+          grep -F 'ga-group-split-stale-repair-v1.js?v=20260914.1' index.html
+          grep -F 'ga-multi-selection-bridge-v1.js?v=20260914.2' index.html
