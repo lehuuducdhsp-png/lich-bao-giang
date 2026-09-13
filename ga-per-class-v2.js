@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260912.2';
+  const VERSION='20260914.1';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -146,7 +146,7 @@
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
   const bookNow=()=>{try{return typeof wb!=='undefined'?wb:null}catch{return null}},resultNow=()=>{try{return typeof result!=='undefined'?result:null}catch{return null}},versionList=()=>{try{return typeof versions!=='undefined'&&Array.isArray(versions)?versions:[]}catch{return[]}},activeVersion=()=>{try{return typeof activeId!=='undefined'&&activeId?txt(activeId):'active'}catch{return'active'}};
   const startDateFor=ws=>{try{return typeof startDate==='function'?startDate(ws.name):null}catch{return null}},weekLikeFor=ws=>{try{return typeof weekLike==='function'?weekLike(ws):true}catch{return true}},normalizer=()=>v7()?.normalizeClass;
-  let analyzeInstalled=false,wrappedAnalyze=null,previewObserver=null;
+  let analyzeInstalled=false,wrappedAnalyze=null,previewObserver=null,readyNotified=false;
 
   function currentWorksheet(){const b=bookNow(),name=txt(q('week')?.value);return b&&name?b.getWorksheet?.(name):null}
   function isCurrentWorksheet(ws){return Boolean(ws&&currentWorksheet()===ws)}
@@ -242,17 +242,25 @@
     try{const{history}=await analyzeReport(a);renderSuggestionPanel(panel,history,a);if(typeof toast==='function')toast(`Đã phân tích GA theo lớp qua ${history.crossVersion?.weekCount||1} tuần.`)}catch(error){console.error('GA per-class:',error);panel.innerHTML=`<div class="alert warn"><b>Không phân tích được GA theo lớp:</b> ${esc(error?.message||String(error))}</div>`}finally{button.textContent=old;button.disabled=false}
   }
   function bindSuggestionButton(){const b=q('gaSuggestV6');if(!b||!cross()||!v7()||!parser())return false;if(b.onclick!==runSuggestionAnalysis)b.onclick=runSuggestionAnalysis;b.dataset.gaPerClass='2';return true}
-  function selectedTeachers(){const ws=currentWorksheet();if(!ws)return[];let all=[];try{all=typeof root.teachers==='function'?(root.teachers(ws)||[]):[]}catch{}const byCode=new Map(all.map(x=>[txt(x.code).toUpperCase(),x])),checked=[...(root.document?.querySelectorAll?.('#multiTeacherList input[type="checkbox"]:checked')||[])].map(x=>txt(x.value)).filter(Boolean),out=[];for(const code of checked){const x=byCode.get(code.toUpperCase());if(x)out.push({code:txt(x.code),name:txt(x.name||x.teacherName||x.code)})}return out}
-  async function applyReport(a){const{history,rows}=await analyzeReport(a),plan=planFor(rows,a),write=applyPlan(plan,loadStoredValues(a));if(write.applied)persistStoredValues(a,write.values);return{history,rows,plan,values:write.values,applied:write.applied,protectedCount:write.protectedCount,same:plan.same.length,conflicts:plan.conflicts.length,skipped:plan.skipped.length}}
-  async function runBatch(){
-    const button=q('lbgGaMultiApplyButton'),status=q('lbgGaMultiApplyStatus'),teachers=selectedTeachers(),ws=currentWorksheet();if(!button||teachers.length<2){if(typeof toast==='function')toast('Hãy chọn từ 2 giáo viên trở lên.');return}if(!ws||!wrappedAnalyze){if(typeof toast==='function')toast('Hệ thống báo giảng chưa sẵn sàng.');return}
-    button.dataset.busy='1';button.disabled=true;let applied=0,affected=0,conflicts=0,skipped=0,failed=0,currentUpdate=null;
-    try{for(let i=0;i<teachers.length;i++){const t=teachers[i];button.textContent=`Đang xử lý GA theo lớp ${i+1}/${teachers.length}: ${t.name||t.code}`;try{const a=wrappedAnalyze(ws,t.code,t.name||t.code);if(!a?.entries?.length){skipped++;continue}const out=await applyReport(a);applied+=out.applied;conflicts+=out.conflicts;skipped+=out.skipped+out.protectedCount;if(out.applied)affected++;const now=resultNow();if(now&&txt(now.code).toUpperCase()===txt(a.code).toUpperCase()&&txt(now.sheet)===txt(a.sheet))currentUpdate={a,values:out.values}}catch(error){failed++;console.error('GA per-class batch:',t.code,error)}}if(currentUpdate)refreshCurrentReport(currentUpdate.a,currentUpdate.values);const details=[`${applied} GA theo lớp`,`${teachers.length} giáo viên`];if(affected)details.push(`${affected} GV có thay đổi`);if(conflicts)details.push(`${conflicts} xung đột`);if(skipped)details.push(`${skipped} mục bỏ qua`);if(failed)details.push(`${failed} GV lỗi`);if(status)status.innerHTML=`<b>Đã xử lý:</b> ${details.join(' • ')}. Khi xuất Excel, GA chiếm đa số sẽ ở đầu buổi; lớp khác GA có chú thích riêng.`;if(typeof toast==='function')toast(applied?`Đã áp dụng ${applied} GA theo lớp cho ${affected} giáo viên.`:`Không có GA theo lớp mới để áp dụng cho ${teachers.length} giáo viên.`)}finally{delete button.dataset.busy;button.disabled=false;button.textContent=`✓ Phân tích & áp dụng GA cho ${teachers.length} giáo viên`}
+  async function applyReport(a){
+    const{history,rows}=await analyzeReport(a),plan=planFor(rows,a),write=applyPlan(plan,loadStoredValues(a));
+    if(write.applied)persistStoredValues(a,write.values);
+    decorateReport(a,write.values);
+    return{history,rows,plan,values:a.gaValues,applied:write.applied,protectedCount:write.protectedCount,same:plan.same.length,conflicts:plan.conflicts.length,skipped:plan.skipped.length};
   }
-  function bindMultiButton(){const b=q('lbgGaMultiApplyButton');if(!b)return false;if(b.onclick!==runBatch)b.onclick=runBatch;b.dataset.gaPerClass='2';return true}
   function ensureStyle(){if(q('lbgGaPerClassStyle'))return;const style=root.document.createElement('style');style.id='lbgGaPerClassStyle';style.textContent='.lbg-ga-mixed-label{display:inline-block;padding:5px 8px;border:1px dashed #d97706;border-radius:8px;background:#fff7ed;color:#9a3412;font-weight:900}.lbg-ga-main{font-weight:900;color:#0f766e}';root.document.head.appendChild(style)}
+  function notifyReady(){if(readyNotified)return;readyNotified=true;try{root.document.dispatchEvent(new CustomEvent('lbg-ga-per-class-ready',{detail:{version:VERSION}}))}catch{}}
   function install(){
-    let tries=0;const tick=()=>{tries++;ensureStyle();const ready=installAnalyzeOnce();if(ready){bindSuggestionButton();bindMultiButton();installPreviewObserver()}if(tries<600)setTimeout(tick,150)};tick();return true;
+    let tries=0;const tick=()=>{
+      tries++;ensureStyle();const ready=installAnalyzeOnce();
+      if(ready){
+        bindSuggestionButton();installPreviewObserver();
+        setTimeout(bindSuggestionButton,120);setTimeout(()=>{bindSuggestionButton();installPreviewObserver()},600);
+        notifyReady();return;
+      }
+      if(tries<600)setTimeout(tick,150);
+    };
+    tick();return true;
   }
-  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,planApplications,applyPlan,makeAnalyzeDecorator,decorateReport,install};
+  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,planApplications,applyPlan,makeAnalyzeDecorator,decorateReport,analyzeReport,applyReport,loadStoredValues,persistStoredValues,install};
 });
