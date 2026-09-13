@@ -1,5 +1,11 @@
 'use strict';
 (function(){
+  const VERSION='20260913.1';
+  const LOOKAHEAD=8;
+  const YIELD_EVERY=5;
+  const warmed=new Set();
+  const startedAt=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
+
   function add(src,id){
     return new Promise((resolve,reject)=>{
       if(document.getElementById(id)){resolve();return}
@@ -8,6 +14,39 @@
       document.body.appendChild(s);
     });
   }
+
+  function preload(src){
+    if(!src||warmed.has(src))return;
+    warmed.add(src);
+    try{
+      if(document.querySelector(`link[rel="preload"][href="${src}"]`))return;
+      const link=document.createElement('link');
+      link.rel='preload';link.as='script';link.href=src;
+      document.head.appendChild(link);
+    }catch{}
+  }
+
+  function preloadWindow(items,start,count){
+    const end=Math.min(items.length,start+count);
+    for(let i=start;i<end;i++)preload(Array.isArray(items[i])?items[i][0]:items[i]);
+  }
+
+  function yieldToBrowser(){
+    return new Promise(resolve=>{
+      if(document.hidden||typeof requestAnimationFrame!=='function'){setTimeout(resolve,0);return}
+      requestAnimationFrame(()=>resolve());
+    });
+  }
+
+  async function loadSequence(items,{lookahead=0,yieldEvery=0}={}){
+    for(let i=0;i<items.length;i++){
+      if(lookahead)preloadWindow(items,i,lookahead);
+      const [src,id]=items[i];
+      await add(src,id);
+      if(yieldEvery&&(i+1)%yieldEvery===0&&i+1<items.length)await yieldToBrowser();
+    }
+  }
+
   function waitForAuth(){
     return new Promise((resolve,reject)=>{
       let poll=null,tries=0,settled=false;
@@ -33,23 +72,32 @@
   }
 
   window.LBG_PRODUCTION=true;
+  window.LBGRuntimeLoader={version:VERSION,lookahead:LOOKAHEAD,yieldEvery:YIELD_EVERY,startedAt};
   add('light-orange-theme-v2.js?v=20260808.7','lbgLightOrangeThemeV2').catch(console.error);
 
   (async()=>{
     try{
-      await add('school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script');
-      await add('login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1');
-      await add('password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1');
+      const preAuth=[
+        ['school-year-week1-official-v1.js?v=20260903.1','lbgSchoolYearWeek1OfficialV1Script'],
+        ['login-submit-hotfix-v1.js?v=20260808.10','lbgLoginSubmitHotfixV1'],
+        ['password-change-hotfix-v1.js?v=20260810.2','lbgPasswordChangeHotfixV1']
+      ];
+      preloadWindow(preAuth,0,preAuth.length);
+      await loadSequence(preAuth);
       await waitForAuth();
 
-      await add('tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script');
-      await add('tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script');
-      await add('tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script');
-      await add('tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script');
-      await add('teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script');
-      await add('conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script');
-      await add('ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script');
-      await add('ga-suggestion-cross-version-v1.js?v=20260912.4','lbgGaSuggestionCrossVersionV1Script');
+      const reportCore=[
+        ['tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script'],
+        ['tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script'],
+        ['tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script'],
+        ['tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script'],
+        ['teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script'],
+        ['conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script'],
+        ['ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script'],
+        ['ga-suggestion-cross-version-v1.js?v=20260912.4','lbgGaSuggestionCrossVersionV1Script']
+      ];
+      preloadWindow(reportCore,0,reportCore.length);
+      await loadSequence(reportCore);
 
       const modules=[
         ['sheets-sync-security-v1.js?v=20260909.2','lbgSheetsSyncSecurityV1Script'],
@@ -107,7 +155,16 @@
         ['ga-input-visual-fix-v1.js?v=20260903.1','lbgGaInputVisualFixV1Script'],
         ['kns-lesson-detail-v2.js?v=20260909.1','lbgKnsLessonDetailV2Script']
       ];
-      for(const [src,id]of modules)await add(src,id);
-    }catch(error){console.error('Không tải được đầy đủ mô-đun hệ thống:',error)}
+
+      // Giữ nguyên tuyệt đối thứ tự thực thi cũ. Chỉ tải trước một cửa sổ nhỏ
+      // để bỏ waterfall mạng và nhường 1 frame sau mỗi vài module để tránh giật UI.
+      await loadSequence(modules,{lookahead:LOOKAHEAD,yieldEvery:YIELD_EVERY});
+      window.LBGRuntimeLoader.ready=true;
+      window.LBGRuntimeLoader.finishedAt=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
+      document.dispatchEvent(new CustomEvent('lbg-runtime-ready',{detail:{version:VERSION}}));
+    }catch(error){
+      window.LBGRuntimeLoader.error=String(error?.message||error);
+      console.error('Không tải được đầy đủ mô-đun hệ thống:',error)
+    }
   })();
 })();
