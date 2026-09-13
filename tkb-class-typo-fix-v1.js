@@ -7,7 +7,7 @@
     if(typeof document!=='undefined')api.installWhenReady(window);
   }
 })(function(){
-  const VERSION='20260913.1';
+  const VERSION='20260913.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim().replace(/\s+/g,' ');
 
   // Lỗi nhập liệu hẹp: "/31" được hiểu là "3/1".
@@ -17,6 +17,20 @@
     const m=source.match(/^\/\s*([1-5])\s*([1-9])$/);
     if(!m)return{source,value:source,changed:false};
     return{source,value:`${m[1]}/${m[2]}`,changed:true};
+  }
+
+  // Những mẫu dưới đây chỉ được GỢI Ý để người dùng kiểm tra, không tự sửa.
+  function suggestLikelyClass(value){
+    const source=txt(value);
+    const auto=normalizeLeadingSlashClass(source);
+    if(auto.changed)return{source,suggestion:auto.value,kind:'leading-slash',auto:true};
+    let m=source.match(/^([1-5])\s*([1-9])$/);
+    if(m)return{source,suggestion:`${m[1]}/${m[2]}`,kind:'missing-slash',auto:false};
+    m=source.match(/^([1-5])\s*[-\\]\s*([1-9])$/);
+    if(m)return{source,suggestion:`${m[1]}/${m[2]}`,kind:'wrong-separator',auto:false};
+    m=source.match(/^\/\s*([1-5])\s*\/\s*([1-9])$/);
+    if(m)return{source,suggestion:`${m[1]}/${m[2]}`,kind:'extra-leading-slash',auto:false};
+    return null;
   }
 
   function normalizeEntry(entry){
@@ -34,15 +48,37 @@
     };
   }
 
+  function genericWarning(entry,raw){
+    return entry?.address?`Lớp/nhóm lớp tại ô ${entry.address} có định dạng cần kiểm tra: ${raw}.`:'';
+  }
+  function likelyWarning(entry,issue){
+    if(!entry?.address||!issue?.suggestion)return'';
+    return `Lớp/nhóm lớp tại ô ${entry.address} có định dạng nghi ngờ: ${issue.source}. Có thể bạn muốn ghi ${issue.suggestion}; hệ thống chưa tự sửa.`;
+  }
+
   function normalizeAnalysis(result){
     if(!result||typeof result!=='object')return result;
     const entries=Array.isArray(result.entries)?result.entries.map(normalizeEntry):result.entries;
     if(!Array.isArray(entries))return result;
-    const corrected=entries.filter(e=>e?.classTypoNormalized&&e?.address&&e?.classSourceRaw);
-    if(!corrected.length)return{...result,entries};
-    const staleWarnings=new Set(corrected.map(e=>`Lớp/nhóm lớp tại ô ${e.address} có định dạng cần kiểm tra: ${e.classSourceRaw}.`));
-    const warnings=Array.isArray(result.warnings)?result.warnings.filter(w=>!staleWarnings.has(String(w))):result.warnings;
-    return{...result,entries,warnings};
+    let warnings=Array.isArray(result.warnings)?[...result.warnings]:[];
+
+    for(const entry of entries){
+      const raw=txt(entry?.classSourceRaw||entry?.classRaw||entry?.className||'');
+      if(!raw)continue;
+      if(entry?.classTypoNormalized){
+        const stale=genericWarning(entry,entry.classSourceRaw||raw);
+        warnings=warnings.filter(w=>String(w)!==stale);
+        continue;
+      }
+      if(entry?.classType!=='unknown')continue;
+      const issue=suggestLikelyClass(raw);
+      if(!issue||issue.auto)continue;
+      const generic=genericWarning(entry,raw),precise=likelyWarning(entry,issue);
+      warnings=warnings.filter(w=>String(w)!==generic);
+      if(precise&&!warnings.includes(precise))warnings.push(precise);
+    }
+
+    return{...result,entries,warnings:[...new Set(warnings)]};
   }
 
   function patchApi(api,root){
@@ -52,6 +88,8 @@
     const originalScan=api.scanAssignments.bind(api);
     const originalAnalyze=typeof api.analyze==='function'?api.analyze.bind(api):null;
 
+    // scanAssignments là đường chung cho tuần hiện tại lẫn các workbook lịch sử.
+    // Vì vậy /31 ở tuần trước cũng trở thành 3/1 trước khi bộ GA V7 đối chiếu lịch sử lớp.
     api.scanAssignments=function(ws,onlyCode=''){
       return(originalScan(ws,onlyCode)||[]).map(normalizeEntry);
     };
@@ -61,6 +99,7 @@
     }
 
     api.normalizeLeadingSlashClass=normalizeLeadingSlashClass;
+    api.suggestLikelyClass=suggestLikelyClass;
     api.__lbgClassTypoFixV1=true;
     return true;
   }
@@ -78,5 +117,5 @@
     return false;
   }
 
-  return{version:VERSION,normalizeLeadingSlashClass,normalizeEntry,normalizeAnalysis,patchApi,installWhenReady};
+  return{version:VERSION,normalizeLeadingSlashClass,suggestLikelyClass,normalizeEntry,normalizeAnalysis,patchApi,installWhenReady};
 });
