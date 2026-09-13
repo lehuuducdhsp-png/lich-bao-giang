@@ -1,0 +1,25 @@
+name: Validate Khánh Thi GA history
+
+on:
+  pull_request:
+    paths:
+      - 'ga-per-class-history-safe-v1.js'
+      - 'index.html'
+      - 'tests/ga-khanh-thi-history-safe-v1.test.cjs'
+      - '.github/workflows/validate-khanh-thi-ga-history.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check ga-per-class-history-safe-v1.js
+          node --check tests/ga-khanh-thi-history-safe-v1.test.cjs
+      - name: Regression check
+        run: node tests/ga-khanh-thi-history-safe-v1.test.cjs
+      - name: Loader contract
+        run: |
+          grep -F 'ga-per-class-v2.js?v=20260912.2' index.html
+          grep -F 'ga-per-class-history-safe-v1.js?v=20260913.1' index.html
