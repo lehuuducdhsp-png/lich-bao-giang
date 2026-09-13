@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const Cross=require('../ga-suggestion-cross-version-v1.js');
+const V7=require('../ga-suggestion-v7.js');
 const Per=require('../ga-per-class-v2.js');
 const Fix=require('../ga-mixed-class-batch-fix-v1.js');
 
@@ -13,7 +14,27 @@ const entries=[
 const event=(ga,address,classId)=>({ga,gaSource:ga===1?'first':'previous',addresses:[address],classId,classDisplay:classId});
 const rows=[event(1,'AJ141','2/1'),event(1,'AK141','2/4'),event(2,'AL141','2/2')];
 
-// Đây chính là lỗi thực tế: planner cũ theo địa điểm gom cả ba gợi ý vào một ô,
+// Khóa đúng lịch sử từ file người dùng: tuần 7T9 Khánh Thi chỉ có 2/2 tại PHÚ THUẬN;
+// sang 14T09 có 2/1, 2/4, 2/2 => phải ra 1, 1, 2.
+const week7={name:'7T9'},week14={name:'14T09'};
+const scans=new Map([
+  [week7,[
+    {code:'K.THI',teacherName:'Khánh Thi',day:5,session:'Chiều',teachingPeriod:3,period:3,schoolName:'PHÚ THUẬN',siteDisplay:'Trường chính: PHÚ THUẬN CŨ',locationKey,className:'2/2',classRaw:'2/2',address:'AL141'}
+  ]],
+  [week14,entries.map((e,i)=>({...e,code:'K.THI',teacherName:'Khánh Thi',teachingPeriod:i+1,period:i+1}))]
+]);
+const parser={scanAssignments:ws=>scans.get(ws)||[]};
+const history=V7.buildHistory({worksheets:[week7,week14]},'14T09',{
+  parser,
+  roleResolver:()=> 'KNS',
+  startDateFor:ws=>ws.name==='7T9'?new Date(2026,8,7,12):new Date(2026,8,14,12),
+  weekLike:()=>true
+});
+assert.equal(history.byAddress.get('14T09!AJ141')?.ga,1);
+assert.equal(history.byAddress.get('14T09!AK141')?.ga,1);
+assert.equal(history.byAddress.get('14T09!AL141')?.ga,2);
+
+// Đây chính là lỗi thực tế của batch cũ: planner theo địa điểm gom cả ba gợi ý vào một ô,
 // thấy GA 1 và GA 2 khác nhau nên báo conflict và không ghi gì.
 const legacy=Cross.planGaApplications(rows,entries,{});
 assert.equal(legacy.apply.length,0);
@@ -48,4 +69,4 @@ assert.equal(protectedOut.applied,0);
 assert.equal(protectedOut.conflicts,1);
 assert.equal(protectedOut.values[Per.classGaKey(5,'Chiều',locationKey,'2/2')],'3');
 
-console.log('OK Khánh Thi mixed GA batch: 2/1=GA1, 2/4=GA1, 2/2=GA2 => header GA1 + 2/2 (GA2)');
+console.log('OK Khánh Thi mixed GA batch: history 1/1/2 => header GA1 + 2/2 (GA2), manual class GA protected');
