@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260913.3';
+  const VERSION='20260913.4';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -47,12 +47,15 @@
   function classFromPairedMain(main){return classFromKnownSource(main)}
 
   function selectAssistClass(mainCandidates,pairedMain,localMeta){
-    // Nếu có lượt giáo viên chính cùng hàng thì lượt đó là nguồn quyết định.
-    // Dù lớp của lượt chính chưa xác định, cũng không được nhảy sang lớp lân cận.
-    if((mainCandidates||[]).length)return classFromPairedMain(pairedMain);
-    // Chỉ khi KHÔNG có lượt chính cùng hàng mới cho phép dùng nhãn lớp cục bộ,
-    // và nhãn này phải là lớp hợp lệ (single/combined), không dùng text mơ hồ.
-    return classFromKnownSource(localMeta);
+    // Ưu tiên lớp của giáo viên chính cùng hàng NẾU lớp đó xác định rõ.
+    const fromMain=classFromPairedMain(pairedMain);
+    if(fromMain.className||fromMain.classRaw)return fromMain;
+    // Nếu lượt chính không có lớp rõ, nhưng ngay block của ô P có một nhãn lớp hợp lệ
+    // (ví dụ 3/7, 4/5 ở Hoài Thanh - Vỹ Dạ), dùng lớp cục bộ đó thay vì ghi "không xác định".
+    const local=classFromKnownSource(localMeta);
+    if(local.className||local.classRaw)return local;
+    // Chỉ khi cả hai nguồn đều không cho lớp chắc chắn mới để lớp không xác định.
+    return emptyClass();
   }
 
   if(typeof module!=='undefined'&&module.exports){
@@ -90,20 +93,30 @@
 
   function strictLocalClassAt(ws,row,col,base,currentLoc){
     const p=parser();if(!ws||!p?.classMeta)return emptyClass();
-    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),floor=Math.max(first,Number(row)-8),currentKey=txt(currentLoc?.locationKey);
-    for(let r=Number(row)-1;r>=floor;r--){
-      let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
-      const rowKey=txt(rowLoc?.locationKey);
-      if(currentKey&&rowKey&&rowKey!==currentKey)break;
-      let cell=null;try{cell=ws.getCell(r,col)}catch{}
-      const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
-      if(isAssignmentCode(p,ws,value,base))break;
-      if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
-      let meta=null;try{meta=p.classMeta(value)}catch{}
-      const known=classFromKnownSource(meta);
-      if(known.className||known.classRaw)return known;
+    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),maxRow=Number(ws.rowCount||0),currentKey=txt(currentLoc?.locationKey),origin=Number(row);
+    const candidates=[];
+    for(const dir of[-1,1]){
+      for(let step=1;step<=8;step++){
+        const r=origin+dir*step;if(r<first||r>maxRow)break;
+        let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
+        const rowKey=txt(rowLoc?.locationKey);
+        if(currentKey&&rowKey&&rowKey!==currentKey)break;
+        let cell=null;try{cell=ws.getCell(r,col)}catch{}
+        const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
+        if(isAssignmentCode(p,ws,value,base))break;
+        if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
+        let meta=null;try{meta=p.classMeta(value)}catch{}
+        const known=classFromKnownSource(meta);
+        if(known.className||known.classRaw){candidates.push({meta:known,distance:step,row:r});break}
+      }
     }
-    return emptyClass();
+    if(!candidates.length)return emptyClass();
+    candidates.sort((a,b)=>a.distance-b.distance||a.row-b.row);
+    if(candidates.length>1&&candidates[0].distance===candidates[1].distance){
+      const a=txt(candidates[0].meta.classRaw||candidates[0].meta.className),b=txt(candidates[1].meta.classRaw||candidates[1].meta.className);
+      if(a!==b)return emptyClass();
+    }
+    return candidates[0].meta;
   }
 
   function scanAssist(ws,teacherCode){
@@ -120,14 +133,14 @@
         const loc=p.locationAt?.(ws,row)||{};
         const candidates=sameRowMainCandidates(assignments,row,col,base,info);
         const main=pairedMainAssignment(assignments,row,col,base,info);
-        const localMeta=candidates.length?emptyClass():strictLocalClassAt(ws,row,col,base,loc);
+        const localMeta=strictLocalClassAt(ws,row,col,base,loc);
         const meta=selectAssistClass(candidates,main,localMeta);
         const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
-        const source=candidates.length
-          ?(main&&resolvedClass!=='Lớp không xác định'?'same-row-main':'unresolved-same-row-main')
-          :(resolvedClass!=='Lớp không xác định'?'local-class-label':'unresolved');
+        const mainKnown=Boolean(classFromPairedMain(main).className||classFromPairedMain(main).classRaw);
+        const localKnown=Boolean(localMeta.className||localMeta.classRaw);
+        const source=mainKnown?'same-row-main':localKnown?'local-class-label':'unresolved';
         out.push({
           day:Number(info.day),session:txt(info.session),period:Number(info.period),
           teachingPeriod:explicit?Number(explicit[1]):Number(info.period),
