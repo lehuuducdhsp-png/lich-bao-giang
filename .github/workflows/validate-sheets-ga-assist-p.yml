@@ -35,3 +35,5 @@ jobs:
         run: |
           grep -F "const VERSION='20260913.4'" assist-p-preview-safe-v1.js
           grep -F "strictLocalClassAt" assist-p-preview-safe-v1.js
+          grep -F "3/7" tests/assist-p-class-pairing-v1.test.cjs
+          grep -F "4/5" tests/assist-p-class-pairing-v1.test.cjs
