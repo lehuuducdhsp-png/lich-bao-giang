@@ -19,6 +19,7 @@ on:
       - 'tests/production-runtime-performance.test.cjs'
       - 'tests/startup-warmup-v2.test.cjs'
       - 'tests/tkb-class-typo-fix-v1.test.cjs'
+      - 'tests/tkb-class-typo-history-v1.test.cjs'
       - 'recovery/google-sheets/REPORT_BRANDING_20260909.md'
       - '.github/workflows/validate-export-sheets-hotfix.yml'
 
@@ -44,6 +45,7 @@ jobs:
           node --check tests/production-runtime-performance.test.cjs
           node --check tests/startup-warmup-v2.test.cjs
           node --check tests/tkb-class-typo-fix-v1.test.cjs
+          node --check tests/tkb-class-typo-history-v1.test.cjs
       - name: Unit checks
         run: |
           node tests/report-export-hotfix-v2.test.cjs
@@ -52,6 +54,7 @@ jobs:
           node tests/production-runtime-performance.test.cjs
           node tests/startup-warmup-v2.test.cjs
           node tests/tkb-class-typo-fix-v1.test.cjs
+          node tests/tkb-class-typo-history-v1.test.cjs
       - name: Runtime loader contract
         run: |
           grep -F "report-logo-data-v1.js?v=20260909.1" production-mode-v1.js
@@ -67,7 +70,7 @@ jobs:
           grep -F "production-mode-v1.js?v=20260909.4" app-runtime-v1.js
           grep -F "app-runtime-v1.js?v=20260909.4" index.html
           grep -F "startup-warmup-v2.js?v=20260913.1" index.html
-          grep -F "tkb-class-typo-fix-v1.js?v=20260913.1" index.html
+          grep -F "tkb-class-typo-fix-v1.js?v=20260913.2" index.html
           grep -F "{cache:'default'}" index.html
           ! grep -F "cache:'no-store'" index.html
           grep -F "functions/v1/google-sheets-owner" sheets-sync-owner-v3.js
