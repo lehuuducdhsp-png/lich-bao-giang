@@ -24,12 +24,14 @@ jobs:
         run: node tests/school-report-v1.test.cjs
       - name: Loader and safety contracts
         run: |
-          grep -F 'school-report-v1.js?v=20260914.2' index.html
+          grep -F 'school-report-v1.js?v=20260914.3' index.html
           grep -F "canReviewAllReports" school-report-v1.js
           grep -F "LBGAllTeachers" school-report-v1.js
           grep -F "LBGAssistPPreviewSafe" school-report-v1.js
           grep -F "collectSchoolSiteOptions" school-report-v1.js
           grep -F "teacherCodeText" school-report-v1.js
+          grep -F "layoutSpec" school-report-v1.js
+          grep -F "footerRow:15" school-report-v1.js
           grep -F "Trường:" school-report-v1.js
           grep -F "option value=\"class\"" school-report-v1.js
           grep -F "option value=\"teacher\"" school-report-v1.js
