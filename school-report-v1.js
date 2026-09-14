@@ -12,7 +12,7 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const q=id=>root.document?.getElementById(id)||null;
   const safeFile=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'TRUONG';
-  const cache=new WeakMap();
+  const mainCache=new WeakMap(),assistCache=new WeakMap();
   let installed=false,currentData=null,exportBusy=false;
 
   function classText(e){
@@ -51,17 +51,30 @@
   }
   function normalizeMain(e){return{...(e||{}),isAssist:false,teachingPeriod:Number(e?.teachingPeriod??e?.period)||0}}
   function normalizeAssist(e,t){return{...(e||{}),code:txt(t?.code),teacherName:txt(t?.name||t?.teacherName||t?.code),isAssist:true,teachingPeriod:Number(e?.teachingPeriod??e?.period)||0}}
-  function allEvents(ws){
-    if(!ws)return[];const hit=cache.get(ws);if(hit)return hit;
-    const parser=root.LBGTkbParserV2,assistApi=root.LBGAssistPPreviewSafe;if(!parser?.scanAssignments)throw new Error('Bộ đọc TKB chưa sẵn sàng.');
-    const teachers=allTeachers(ws),allowed=new Set(teachers.map(t=>txt(t?.code).toUpperCase()).filter(Boolean));
-    const main=(parser.scanAssignments(ws)||[]).filter(e=>allowed.has(txt(e?.code).toUpperCase())).map(normalizeMain),assists=[];
-    if(assistApi?.scanAssist){
-      const seen=new Set();
-      for(const t of teachers){const code=txt(t?.code);if(!code)continue;for(const e of assistApi.scanAssist(ws,code)||[]){const id=txt(e?.address)||`${code}|${slotKey(e)}|${txt(e?.schoolName)}|${txt(e?.className)}`;if(seen.has(id))continue;seen.add(id);assists.push(normalizeAssist(e,t))}}
-    }
-    const out=[...main,...assists];cache.set(ws,out);return out;
+  function cellText(cell){
+    try{const c=cell?.master||cell,t=txt(c?.text);if(t)return t;const v=c?.value;if(v==null)return'';if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')return txt(v);if(Array.isArray(v?.richText))return txt(v.richText.map(x=>x?.text??'').join(''));if(v?.result!=null)return txt(v.result);if(typeof v?.text==='string')return txt(v.text)}catch{}return'';
   }
+  function mainEvents(ws){
+    if(!ws)return[];if(mainCache.has(ws))return mainCache.get(ws);
+    const parser=root.LBGTkbParserV2;if(!parser?.scanAssignments)throw new Error('Bộ đọc TKB chưa sẵn sàng.');
+    const teachers=allTeachers(ws),allowed=new Set(teachers.map(t=>txt(t?.code).toUpperCase()).filter(Boolean));
+    const out=(parser.scanAssignments(ws)||[]).filter(e=>allowed.has(txt(e?.code).toUpperCase())).map(normalizeMain);mainCache.set(ws,out);return out;
+  }
+  function assistTeacherCodesPresent(ws,teachers){
+    const parser=root.LBGTkbParserV2,map=new Map((teachers||[]).map(t=>[`${txt(t?.code).toUpperCase()}P`,txt(t?.code).toUpperCase()]).filter(x=>x[0]!=='P')),found=new Set();
+    if(!ws||!map.size||!parser?.timetableColumns)return found;
+    const start=Math.max(1,Number(parser.buildHeader?.(ws)?.headerRow||4)+1),last=Number(ws.rowCount||0);
+    for(const col of parser.timetableColumns(ws)||[]){for(let row=start;row<=last;row++){const value=cellText(ws.getCell(row,col)).toUpperCase();const base=map.get(value);if(base)found.add(base)}}
+    return found;
+  }
+  function assistEvents(ws){
+    if(!ws)return[];if(assistCache.has(ws))return assistCache.get(ws);
+    const api=root.LBGAssistPPreviewSafe,teachers=allTeachers(ws),byCode=new Map(teachers.map(t=>[txt(t?.code).toUpperCase(),t]));if(!api?.scanAssist){assistCache.set(ws,[]);return[]}
+    const present=assistTeacherCodesPresent(ws,teachers),out=[],seen=new Set();
+    for(const code of present){const t=byCode.get(code);if(!t)continue;for(const e of api.scanAssist(ws,code)||[]){const id=txt(e?.address)||`${code}|${slotKey(e)}|${txt(e?.schoolName)}|${txt(e?.className)}`;if(seen.has(id))continue;seen.add(id);out.push(normalizeAssist(e,t))}}
+    assistCache.set(ws,out);return out;
+  }
+  function allEvents(ws){return[...mainEvents(ws),...assistEvents(ws)]}
   function daysFor(ws,events){
     try{const days=root.LBGReportEngineV4?.daysForWorksheet?.(ws);if(Array.isArray(days)&&days.length)return days.map(Number)}catch{}
     return(events||[]).some(e=>Number(e?.day)===8)?[2,3,4,5,6,7,8]:[2,3,4,5,6,7];
@@ -93,8 +106,8 @@
     if(!canWholeSchool()){note.innerHTML='<b>Phạm vi bảo mật:</b> Lịch theo trường chỉ mở cho Chủ sở hữu hoặc tài khoản được quyền kiểm tra toàn bộ báo giảng, để không lộ lịch của giáo viên ngoài phạm vi.';select.innerHTML='<option value="">Không có quyền xem toàn trường</option>';setEnabled(false);return}
     if(!ws){note.textContent='Hãy mở TKB và chọn tuần trước.';select.innerHTML='<option value="">Chưa có tuần</option>';setEnabled(false);return}
     try{
-      const events=allEvents(ws),schools=collectSchoolOptions(events),old=select.value;select.innerHTML=schools.length?schools.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join(''):'<option value="">Không tìm thấy trường</option>';if(old&&schools.some(x=>x.key===old))select.value=old;
-      note.textContent='Chế độ chỉ đọc: không sửa GA, TKB, Google Sheets, tổng tiết hay dữ liệu giáo viên. Trợ (P) được hiển thị riêng nhưng không cộng vào lượt phân công chính.';setEnabled(Boolean(schools.length));
+      const events=mainEvents(ws),schools=collectSchoolOptions(events),old=select.value;select.innerHTML=schools.length?schools.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join(''):'<option value="">Không tìm thấy trường</option>';if(old&&schools.some(x=>x.key===old))select.value=old;
+      note.textContent='Chế độ chỉ đọc: không sửa GA, TKB, Google Sheets, tổng tiết hay dữ liệu giáo viên. Trợ (P) chỉ được quét khi bấm Kiểm tra để tránh làm chậm trang.';setEnabled(Boolean(schools.length));
     }catch(error){note.textContent='Chưa đọc được dữ liệu trường: '+(error?.message||String(error));setEnabled(false)}
   }
   function makeData(){
