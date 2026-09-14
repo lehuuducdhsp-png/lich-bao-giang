@@ -1,0 +1,44 @@
+name: Validate school report
+
+on:
+  pull_request:
+    paths:
+      - 'school-report-v1.js'
+      - 'index.html'
+      - 'tests/school-report-v1.test.cjs'
+      - '.github/workflows/validate-school-report.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check school-report-v1.js
+          node --check tests/school-report-v1.test.cjs
+      - name: School report regression
+        run: node tests/school-report-v1.test.cjs
+      - name: Loader and safety contracts
+        run: |
+          grep -F 'school-report-v1.js?v=20260914.2' index.html
+          grep -F "canReviewAllReports" school-report-v1.js
+          grep -F "LBGAllTeachers" school-report-v1.js
+          grep -F "LBGAssistPPreviewSafe" school-report-v1.js
+          grep -F "collectSchoolSiteOptions" school-report-v1.js
+          grep -F "teacherCodeText" school-report-v1.js
+          grep -F "Trường:" school-report-v1.js
+          grep -F "option value=\"class\"" school-report-v1.js
+          grep -F "option value=\"teacher\"" school-report-v1.js
+          grep -F "option value=\"teacher-class\"" school-report-v1.js
+      - name: Preserve recent production modules
+        run: |
+          grep -F 'ga-group-split-history-safe-v1.js?v=20260914.1' index.html
+          grep -F 'ga-group-split-stale-repair-v1.js?v=20260914.1' index.html
+          grep -F 'ga-per-class-v2.js?v=20260914.1' index.html
+          grep -F 'assist-p-preview-safe-v1.js?v=20260913.5' index.html
+          grep -F 'assist-p-excel-export-parity-v1.js?v=20260914.1' index.html
+          grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' index.html
