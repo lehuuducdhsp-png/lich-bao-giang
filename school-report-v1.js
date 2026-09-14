@@ -5,9 +5,11 @@
   if(root)root.LBGSchoolReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260914.2';
+  const VERSION='20260914.3';
   const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp'};
   const TARGET_SEP='::LBG_SITE::';
+  const PERIODS=5;
+  const LAYOUT=Object.freeze({headerRow:4,morningStart:5,afternoonStart:10,footerRow:15,periods:PERIODS});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -16,9 +18,9 @@
   const mainCache=new WeakMap(),assistCache=new WeakMap();
   let installed=false,currentData=null,exportBusy=false;
 
+  function layoutSpec(){return{...LAYOUT}}
   function classText(e){
-    const base=txt(e?.className||e?.classRaw)||'Lớp không xác định';
-    const note=txt(e?.groupNote);
+    const base=txt(e?.className||e?.classRaw)||'Lớp không xác định',note=txt(e?.groupNote);
     return note&&!base.toUpperCase().includes(note.toUpperCase())?`${base} - ${note}`:base;
   }
   function teacherCodeText(e){return txt(e?.code)||'GV?'}
@@ -31,7 +33,7 @@
   function schoolKey(e){return fold(e?.schoolName||e?.school)}
   function siteText(e){return txt(e?.siteDisplay||e?.siteName||e?.site)}
   function siteKey(e){return fold(siteText(e))}
-  function targetKey(e){return `${schoolKey(e)}${TARGET_SEP}${siteKey(e)}`}
+  function targetKey(e){return`${schoolKey(e)}${TARGET_SEP}${siteKey(e)}`}
   function collectSchoolOptions(entries){
     const map=new Map();
     for(const e of entries||[]){const key=schoolKey(e),name=txt(e?.schoolName||e?.school);if(key&&name&&!map.has(key))map.set(key,{key,name})}
@@ -79,7 +81,7 @@
     const parser=root.LBGTkbParserV2,map=new Map((teachers||[]).map(t=>[`${txt(t?.code).toUpperCase()}P`,txt(t?.code).toUpperCase()]).filter(x=>x[0]!=='P')),found=new Set();
     if(!ws||!map.size||!parser?.timetableColumns)return found;
     const start=Math.max(1,Number(parser.buildHeader?.(ws)?.headerRow||4)+1),last=Number(ws.rowCount||0);
-    for(const col of parser.timetableColumns(ws)||[]){for(let row=start;row<=last;row++){const value=cellText(ws.getCell(row,col)).toUpperCase();const base=map.get(value);if(base)found.add(base)}}
+    for(const col of parser.timetableColumns(ws)||[]){for(let row=start;row<=last;row++){const value=cellText(ws.getCell(row,col)).toUpperCase(),base=map.get(value);if(base)found.add(base)}}
     return found;
   }
   function assistEvents(ws){
@@ -131,11 +133,15 @@
     const all=allEvents(ws),entries=filterBySchoolSite(all,key),main=entries.filter(e=>!e.isAssist),assist=entries.filter(e=>e.isAssist),days=daysFor(ws,entries);
     return{ws,school:target.school,site:target.site,label:target.label,key,mode,entries,main,assist,days,slots:buildSlots(entries,mode)};
   }
+  function renderSessionRows(d,session){
+    let rows='';
+    for(let p=1;p<=PERIODS;p++)rows+=`<tr>${p===1?`<td class="session" rowspan="${PERIODS}">${session}</td>`:''}<td class="period-head">Tiết ${p}</td>${d.days.map(day=>{const list=d.slots.get(`${day}|${session}|${p}`)||[];return`<td>${list.map(e=>`<span class="slot-line ${e.isAssist?'slot-assist':''}">${esc(displayEntry(e,d.mode))}</span>`).join('')}</td>`}).join('')}</tr>`;
+    return rows;
+  }
   function renderCurrent(){
     const box=q('lbgSchoolPreview'),summary=q('lbgSchoolSummary');if(!box)return;
     try{
-      const d=makeData();currentData=d;const year=Number(q('year')?.value)||new Date().getFullYear();let rows='';
-      for(const session of['Sáng','Chiều']){rows+=`<tr><td class="session" rowspan="6">${session}</td><td class="period-head">Tiết</td>${d.days.map(()=>'<td class="period-head"></td>').join('')}</tr>`;for(let p=1;p<=5;p++)rows+=`<tr><td class="period-head">Tiết ${p}</td>${d.days.map(day=>{const list=d.slots.get(`${day}|${session}|${p}`)||[];return`<td>${list.map(e=>`<span class="slot-line ${e.isAssist?'slot-assist':''}">${esc(displayEntry(e,d.mode))}</span>`).join('')}</td>`}).join('')}</tr>`}
+      const d=makeData();currentData=d;const year=Number(q('year')?.value)||new Date().getFullYear(),rows=renderSessionRows(d,'Sáng')+renderSessionRows(d,'Chiều');
       const sitePart=d.site?` • <b>${esc(d.site)}</b>`:'';if(summary)summary.innerHTML=`<div class="lbg-school-summary"><b>${esc(d.school)}</b>${sitePart} • ${d.main.length} lượt phân công chính • ${d.assist.length} Trợ (P) • Hiển thị: <b>${esc(MODES[d.mode]||d.mode)}</b></div>`;
       box.innerHTML=`<div class="wrap"><div class="sheet"><div class="title"><h2>LỊCH BÁO GIẢNG NĂM HỌC ${year} - ${year+1}</h2><h3>THEO TRƯỜNG: ${esc(d.school)}${d.site?` — ${esc(d.site)}`:''}</h3><p>TKB tuần: ${esc(d.ws.name)} • Chế độ: ${esc(MODES[d.mode]||d.mode)}</p></div><table class="report"><tr>${['Buổi','Tiết',...d.days.map(dayLabel)].map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${rows}</table><div class="foot"><span>TỔNG: ${d.main.length} lượt phân công${d.assist.length?` • ${d.assist.length} Trợ (P)`:''}</span><span>Trường: ${esc(reportLocationText(d.school,d.site))}</span></div></div></div>`;q('lbgSchoolExport').disabled=!d.entries.length;
     }catch(error){currentData=null;q('lbgSchoolExport').disabled=true;if(summary)summary.innerHTML='';box.innerHTML=`<div class="lbg-school-empty">${esc(error?.message||String(error))}</div>`}
@@ -143,11 +149,22 @@
   function styleCell(cell,fill,bold=false,size=12){cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};cell.font={name:'Times New Roman',size,bold};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};cell.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}}}
   function colLetter(n){let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
   function addExcelSheet(bookOut,d){
-    const ws=bookOut.addWorksheet('LBG TRƯỜNG'),last=2+d.days.length,endCol=colLetter(last),year=Number(q('year')?.value)||new Date().getFullYear();ws.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:.2,right:.2,top:.3,bottom:.3,header:.1,footer:.1}};
-    [`A1:${endCol}1`,`A2:${endCol}2`,`A3:${endCol}3`,'A5:A10','A11:A16','A17:D17',`E17:${endCol}17`].forEach(r=>{try{ws.mergeCells(r)}catch{}});ws.getCell('A1').value=`LỊCH BÁO GIẢNG NĂM HỌC ${year} - ${year+1}`;ws.getCell('A2').value=`THEO TRƯỜNG: ${d.school}${d.site?` — ${d.site}`:''}`;ws.getCell('A3').value=`TKB tuần: ${d.ws.name} • Chế độ: ${MODES[d.mode]||d.mode}`;ws.getRow(4).values=['Buổi','Tiết',...d.days.map(dayLabel)];
-    for(const[session,sr,pr]of[['Sáng',5,6],['Chiều',11,12]]){ws.getCell(sr,1).value=session;ws.getCell(sr,2).value='Tiết';for(let p=1;p<=5;p++)ws.getCell(pr+p-1,2).value='Tiết '+p;d.days.forEach((day,i)=>{const col=i+3;for(let p=1;p<=5;p++){const list=d.slots.get(`${day}|${session}|${p}`)||[];ws.getCell(pr+p-1,col).value=list.map(e=>displayEntry(e,d.mode)).join('\n')}})}
-    ws.getCell('A17').value=`TỔNG: ${d.main.length} lượt phân công${d.assist.length?` • ${d.assist.length} Trợ (P)`:''}`;ws.getCell('E17').value='Trường: '+reportLocationText(d.school,d.site);ws.columns=[{width:9},{width:10},...d.days.map(()=>({width:d.days.includes(8)?20:23}))];
-    for(let r=1;r<=17;r++){ws.getRow(r).height=r<=3?26:r===4?42:(r===5||r===11?34:r===17?42:38);for(let c=1;c<=last;c++)styleCell(ws.getCell(r,c),[1,2,3,17].includes(r)?'FFB9E6A5':(r===4||c<=2?'FFF6C9AE':'FFDFF5E4'),[4,5,11,17].includes(r),r===1?18:r===2?15:12)}
+    const ws=bookOut.addWorksheet('LBG TRƯỜNG'),last=2+d.days.length,endCol=colLetter(last),year=Number(q('year')?.value)||new Date().getFullYear(),footer=LAYOUT.footerRow;
+    ws.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:.2,right:.2,top:.3,bottom:.3,header:.1,footer:.1}};
+    [`A1:${endCol}1`,`A2:${endCol}2`,`A3:${endCol}3`,`A${LAYOUT.morningStart}:A${LAYOUT.morningStart+PERIODS-1}`,`A${LAYOUT.afternoonStart}:A${LAYOUT.afternoonStart+PERIODS-1}`,`A${footer}:D${footer}`,`E${footer}:${endCol}${footer}`].forEach(r=>{try{ws.mergeCells(r)}catch{}});
+    ws.getCell('A1').value=`LỊCH BÁO GIẢNG NĂM HỌC ${year} - ${year+1}`;ws.getCell('A2').value=`THEO TRƯỜNG: ${d.school}${d.site?` — ${d.site}`:''}`;ws.getCell('A3').value=`TKB tuần: ${d.ws.name} • Chế độ: ${MODES[d.mode]||d.mode}`;ws.getRow(LAYOUT.headerRow).values=['Buổi','Tiết',...d.days.map(dayLabel)];
+    for(const[session,start]of[['Sáng',LAYOUT.morningStart],['Chiều',LAYOUT.afternoonStart]]){
+      ws.getCell(start,1).value=session;
+      for(let p=1;p<=PERIODS;p++){
+        const row=start+p-1;ws.getCell(row,2).value='Tiết '+p;
+        d.days.forEach((day,i)=>{const list=d.slots.get(`${day}|${session}|${p}`)||[];ws.getCell(row,i+3).value=list.map(e=>displayEntry(e,d.mode)).join('\n')});
+      }
+    }
+    ws.getCell(footer,1).value=`TỔNG: ${d.main.length} lượt phân công${d.assist.length?` • ${d.assist.length} Trợ (P)`:''}`;ws.getCell(footer,5).value='Trường: '+reportLocationText(d.school,d.site);ws.columns=[{width:9},{width:10},...d.days.map(()=>({width:d.days.includes(8)?20:23}))];
+    for(let r=1;r<=footer;r++){
+      ws.getRow(r).height=r<=3?26:r===LAYOUT.headerRow?42:r===footer?42:38;
+      for(let c=1;c<=last;c++)styleCell(ws.getCell(r,c),[1,2,3,footer].includes(r)?'FFB9E6A5':(r===LAYOUT.headerRow||c<=2?'FFF6C9AE':'FFDFF5E4'),[LAYOUT.headerRow,LAYOUT.morningStart,LAYOUT.afternoonStart,footer].includes(r),r===1?18:r===2?15:12);
+    }
     return ws;
   }
   async function exportCurrent(){
@@ -155,7 +172,7 @@
     try{const d=currentData&&currentData.key===txt(q('lbgSchoolSelect')?.value)&&currentData.mode===txt(q('lbgSchoolMode')?.value)?currentData:makeData();if(!root.ExcelJS||!root.saveAs)throw new Error('Thư viện xuất Excel chưa sẵn sàng.');const out=new root.ExcelJS.Workbook();addExcelSheet(out,d);const buf=await out.xlsx.writeBuffer();root.saveAs(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`LBG_TRUONG_${safeFile(d.school)}${d.site?`_${safeFile(d.site)}`:''}_${safeFile(d.ws.name)}_${safeFile(d.mode)}.xlsx`);if(typeof root.toast==='function')root.toast(`Đã xuất LBG ${d.label} • ${MODES[d.mode]||d.mode}.`)}catch(error){console.error(error);root.alert?.('Không xuất được LBG theo trường: '+(error?.message||String(error)))}finally{exportBusy=false;if(button){button.disabled=false;button.textContent=old||'⇩ Xuất Excel'}}
   }
   function install(){
-    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,canWholeSchool,refresh,renderCurrent,addExcelSheet};
+    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,canWholeSchool,refresh,renderCurrent,addExcelSheet};
   }
-  return{VERSION,MODES,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,install};
+  return{VERSION,MODES,layoutSpec,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,install};
 });
