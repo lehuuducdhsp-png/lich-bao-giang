@@ -9,7 +9,7 @@
   const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp'};
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const q=id=>root.document?.getElementById(id)||null;
   const safeFile=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'TRUONG';
   const cache=new WeakMap();
@@ -120,7 +120,7 @@
     for(const[session,sr,pr]of[['Sáng',5,6],['Chiều',11,12]]){ws.getCell(sr,1).value=session;ws.getCell(sr,2).value='Tiết';for(let p=1;p<=5;p++)ws.getCell(pr+p-1,2).value='Tiết '+p;d.days.forEach((day,i)=>{const col=i+3;for(let p=1;p<=5;p++){const list=d.slots.get(`${day}|${session}|${p}`)||[];ws.getCell(pr+p-1,col).value=list.map(e=>displayEntry(e,d.mode)).join('\n')}})}
     ws.getCell('A17').value=`TỔNG: ${d.main.length} lượt phân công${d.assist.length?` • ${d.assist.length} Trợ (P)`:''}`;ws.getCell('E17').value='Trường: '+d.school;ws.columns=[{width:9},{width:10},...d.days.map(()=>({width:d.days.includes(8)?20:23}))];
     for(let r=1;r<=17;r++){ws.getRow(r).height=r<=3?26:r===4?42:(r===5||r===11?34:r===17?42:38);for(let c=1;c<=last;c++)styleCell(ws.getCell(r,c),[1,2,3,17].includes(r)?'FFB9E6A5':(r===4||c<=2?'FFF6C9AE':'FFDFF5E4'),[4,5,11,17].includes(r),r===1?18:r===2?15:12)}
-    try{root.LBGReportBrandingV1?.brandWorksheet?.(bookOut,ws)}catch(error){console.warn('School report branding:',error)}return ws;
+    return ws;
   }
   async function exportCurrent(){
     if(exportBusy)return;const button=q('lbgSchoolExport'),old=button?.textContent;exportBusy=true;if(button){button.disabled=true;button.textContent='Đang tạo Excel…'}
