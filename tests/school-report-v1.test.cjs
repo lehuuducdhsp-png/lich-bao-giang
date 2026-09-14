@@ -2,8 +2,9 @@
 const assert=require('node:assert/strict');
 const api=require('../school-report-v1.js');
 
-assert.equal(api.VERSION,'20260914.2');
+assert.equal(api.VERSION,'20260914.3');
 assert.deepEqual(api.MODES,{class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp'});
+assert.deepEqual(api.layoutSpec(),{headerRow:4,morningStart:5,afternoonStart:10,footerRow:15,periods:5},'web và Excel phải chỉ có đúng 5 hàng tiết mỗi buổi, không còn hàng Tiết dư');
 
 const mainA={day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'PHÚ BÌNH',siteDisplay:'Cơ sở 1: PHÚ HẬU CŨ',teacherName:'Diệu Tâm',code:'TÂM',className:'5/4',classType:'single',address:'A1'};
 const mainB={day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'PHÚ BÌNH',siteDisplay:'Cơ sở 2: PHÚ BÌNH CŨ',teacherName:'Hoài Thanh',code:'THANH',className:'1/1',classType:'single',address:'A2'};
@@ -52,4 +53,4 @@ assert.match(footer,/2 Trợ \(P\)/);
 assert.match(footer,/Trường: PHÚ BÌNH • Cơ sở 1: PHÚ HẬU CŨ/);
 assert.doesNotMatch(footer,/Giáo viên:/,'LBG theo trường phải ghi Trường thay cho Giáo viên');
 
-console.log('OK school report: 3 modes, split sites, teacher codes only, P labels, no slot dedupe, school footer');
+console.log('OK school report: compact 5-row sessions, split sites, teacher codes only, P labels, no slot dedupe, school footer');
