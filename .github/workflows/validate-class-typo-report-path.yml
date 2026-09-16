@@ -1,0 +1,45 @@
+name: Validate class typo report path
+
+on:
+  pull_request:
+    paths:
+      - 'class-typo-report-path-safe-v1.js'
+      - 'tkb-class-typo-fix-v1.js'
+      - 'analysis-fix-v2.js'
+      - 'report-engine-v4.js'
+      - 'index.html'
+      - 'tests/class-typo-report-path-safe-v1.test.cjs'
+      - 'tests/tkb-class-typo-fix-v1.test.cjs'
+      - '.github/workflows/validate-class-typo-report-path.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check class-typo-report-path-safe-v1.js
+          node --check tkb-class-typo-fix-v1.js
+          node --check tests/class-typo-report-path-safe-v1.test.cjs
+          node --check tests/tkb-class-typo-fix-v1.test.cjs
+      - name: Class typo core regression
+        run: node tests/tkb-class-typo-fix-v1.test.cjs
+      - name: Full report path regression
+        run: node tests/class-typo-report-path-safe-v1.test.cjs
+      - name: Loader contract
+        run: |
+          grep -F 'tkb-class-typo-fix-v1.js?v=20260913.2' index.html
+          grep -F 'class-typo-report-path-safe-v1.js?v=20260916.1' index.html
+          grep -F 'tkb-assignment-cache-safe-v1.js?v=20260913.1' index.html
+      - name: Preserve recent production modules
+        run: |
+          grep -F 'ga-group-split-history-safe-v1.js?v=20260914.1' index.html
+          grep -F 'ga-group-split-stale-repair-v1.js?v=20260914.1' index.html
+          grep -F 'ga-per-class-v2.js?v=20260914.1' index.html
+          grep -F 'assist-p-preview-safe-v1.js?v=20260913.5' index.html
+          grep -F 'assist-p-excel-export-parity-v1.js?v=20260914.1' index.html
+          grep -F 'school-report-v1.js?v=20260914.3' index.html
