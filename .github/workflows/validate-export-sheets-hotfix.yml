@@ -75,7 +75,7 @@ jobs:
           grep -F "startup-warmup-v2.js?v=20260913.2" index.html
           grep -F "tkb-class-typo-fix-v1.js?v=20260913.2" index.html
           grep -F "ga-per-class-history-safe-v1.js?v=20260913.1" index.html
-          grep -F "assist-p-preview-safe-v1.js?v=20260913.5" index.html
+          grep -F "assist-p-preview-safe-v1.js?v=20260918.1" index.html
           grep -F "{cache:'default'}" index.html
           ! grep -F "cache:'no-store'" index.html
           grep -F "functions/v1/google-sheets-owner" sheets-sync-owner-v3.js
