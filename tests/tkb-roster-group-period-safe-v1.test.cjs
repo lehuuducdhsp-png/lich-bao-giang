@@ -34,10 +34,13 @@ const ws={
   getCell(row,col){return cells.get(`${row},${col}`)||{text:'',value:''}}
 };
 
+const locationAt=(sheet,row)=>({locationKey:row<=64?'TRẦN QUỐC TOẢN|TRẦN QUỐC TOẢN CŨ':'TRẦN QUỐC TOẢN|PHÚ HÒA CŨ'});
 for(const [row,col] of [[61,50],[61,51],[61,52],[61,53],[61,54],[63,54]]){
-  assert.equal(R.periodHintAt(ws,row,col)?.period,4,`expected roster teaching period 4 at ${row},${col}`);
+  assert.equal(R.periodHintAt(ws,row,col,locationAt)?.period,4,`expected roster teaching period 4 at ${row},${col}`);
 }
-assert.equal(R.periodHintAt(ws,61,55),null,'BC61 lies outside the roster merge; P adjacency is handled only via paired main');
+assert.equal(R.periodHintAt(ws,61,55,locationAt),null,'BC61 lies outside the roster merge; P adjacency is handled only via paired main');
+// BA66 đã sang PHÚ HÒA CŨ; không được ăn nhầm ghi chú AX63:BA63 của TRẦN QUỐC TOẢN CŨ.
+assert.equal(R.periodHintAt(ws,66,53,locationAt),null,'period hint must stop at the site/location boundary');
 
 const fixed=R.applyHint({
   row:61,col:52,className:'1/3',classRaw:'1/3',classType:'single',
