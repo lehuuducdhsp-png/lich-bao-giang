@@ -45,12 +45,20 @@
     const m=mergeFor(ws,row,col);
     return m?ws.getCell(m.r1,m.c1):ws.getCell(row,col);
   }
-  function periodHintAt(ws,row,col){
+  function periodHintAt(ws,row,col,locationResolver=null,originLocationKey=''){
     if(!ws?.getCell||!Number.isFinite(Number(row))||!Number.isFinite(Number(col)))return null;
     const origin=Number(row),first=Math.max(1,origin-6),last=Math.min(Number(ws.rowCount||origin+2),origin+2);
+    let baseKey=txt(originLocationKey);
+    if(!baseKey&&typeof locationResolver==='function'){
+      try{baseKey=txt(locationResolver(ws,origin)?.locationKey)}catch{}
+    }
     for(let r=first;r<=last;r++){
+      if(baseKey&&typeof locationResolver==='function'){
+        let rowKey='';try{rowKey=txt(locationResolver(ws,r)?.locationKey)}catch{}
+        if(rowKey&&rowKey!==baseKey)continue;
+      }
       const value=cellText(masterCell(ws,r,Number(col))),period=periodHintFromText(value);
-      if(period)return{period,row:r,col:Number(col),sourceText:value};
+      if(period)return{period,row:r,col:Number(col),sourceText:value,locationKey:baseKey};
     }
     return null;
   }
@@ -60,7 +68,10 @@
     const slot=Number(entry.slotPeriod??entry.period)||null,period=Number(hint.period);
     return{...entry,slotPeriod:slot,teachingPeriod:period,rosterTeachingPeriod:period,rosterTeachingPeriodSource:txt(hint.sourceText),rosterTeachingPeriodRow:Number(hint.row)||null};
   }
-  function normalizeEntry(ws,entry){return applyHint(entry,periodHintAt(ws,entry?.row,entry?.col))}
+  function normalizeEntry(ws,entry,parser=null){
+    const resolver=parser?.locationAt?(w,r)=>parser.locationAt(w,r):null;
+    return applyHint(entry,periodHintAt(ws,entry?.row,entry?.col,resolver,entry?.locationKey));
+  }
 
   if(typeof module==='object'&&module.exports){
     return{VERSION,periodHintFromText,periodHintAt,applyHint,normalizeEntry};
@@ -71,12 +82,15 @@
     if(!parser?.scanAssignments||!parser.__lbgAtomicTeachingV1||!parser.__lbgClassTypoFixV1)return false;
     if(parser.__lbgRosterGroupPeriodSafeV1===VERSION)return true;
     const original=parser.scanAssignments.bind(parser);
-    const wrapped=function(ws,onlyCode=''){return(original(ws,onlyCode)||[]).map(entry=>normalizeEntry(ws,entry))};
+    const wrapped=function(ws,onlyCode=''){return(original(ws,onlyCode)||[]).map(entry=>normalizeEntry(ws,entry,parser))};
     wrapped.__lbgRosterGroupPeriodSafeV1=VERSION;
     wrapped.__lbgOriginalScanAssignments=original;
     parser.scanAssignments=wrapped;
-    parser.rosterTeachingPeriodHintAt=periodHintAt;
-    parser.rosterTeachingPeriodAt=(ws,row,col)=>periodHintAt(ws,row,col)?.period||null;
+    parser.rosterTeachingPeriodHintAt=(ws,row,col)=>{
+      const resolver=parser.locationAt?(w,r)=>parser.locationAt(w,r):null;
+      return periodHintAt(ws,row,col,resolver);
+    };
+    parser.rosterTeachingPeriodAt=(ws,row,col)=>parser.rosterTeachingPeriodHintAt(ws,row,col)?.period||null;
     parser.__lbgRosterGroupPeriodSafeV1=VERSION;
     try{root.document.dispatchEvent(new CustomEvent('lbg-tkb-roster-group-period-ready',{detail:{version:VERSION}}))}catch{}
     return true;
