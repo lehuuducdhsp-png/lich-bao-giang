@@ -32,10 +32,10 @@ jobs:
           grep -F 'app-runtime-v1.js?v=20260913.1' index.html
           grep -F 'ga-per-class-v2.js?v=20260914.1' index.html
           grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' index.html
-          grep -F 'assist-p-preview-safe-v1.js?v=20260913.5' index.html
+          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' index.html
       - name: Assist P own-column class contract
         run: |
-          grep -F "const VERSION='20260913.5'" assist-p-preview-safe-v1.js
+          grep -F "const VERSION='20260918.1'" assist-p-preview-safe-v1.js
           grep -F "CHÍNH CỘT" assist-p-preview-safe-v1.js
           grep -F "1/1" tests/assist-p-class-pairing-v1.test.cjs
           grep -F "1/3" tests/assist-p-class-pairing-v1.test.cjs

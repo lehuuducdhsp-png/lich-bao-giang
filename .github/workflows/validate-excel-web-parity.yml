@@ -27,18 +27,18 @@ jobs:
         run: node tests/assist-p-excel-export-parity-v1.test.cjs
       - name: Loader order contract
         run: |
-          grep -F 'assist-p-excel-export-parity-v1.js?v=20260914.1' index.html
+          grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' index.html
           grep -F 'assist-p-export-safe-v1.js?v=20260912.1' index.html
           python - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
-          a=s.index('assist-p-excel-export-parity-v1.js?v=20260914.1')
+          a=s.index('assist-p-excel-export-parity-v1.js?v=20260918.1')
           b=s.index('assist-p-export-safe-v1.js?v=20260912.1')
           assert a < b, 'Parity interceptor must load before legacy P exporter'
           PY
       - name: Preserve recent report contracts
         run: |
           grep -F 'report-branding-v1.js?v=20260909.1' index.html
-          grep -F 'assist-p-preview-safe-v1.js?v=20260913.5' index.html
+          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' index.html
           grep -F 'ga-group-split-stale-repair-v1.js?v=20260914.1' index.html
           grep -F 'ga-multi-selection-bridge-v1.js?v=20260914.2' index.html

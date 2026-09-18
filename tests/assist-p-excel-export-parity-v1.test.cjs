@@ -5,6 +5,9 @@ const M=require('../assist-p-excel-export-parity-v1.js');
 assert.equal(M.classWithP({className:'1/1'}),'1/1 (P)');
 assert.equal(M.classWithP({className:'',classRaw:''}),'Lớp không xác định (P)');
 assert.equal(M.assistLabel(4),'4 Trợ (P)');
+assert.equal(M.assistAppendFragment('1/3','1/3 (P)'),' (P)');
+assert.equal(M.assistAppendFragment('1/3 (GA 2)','1/3 (P)'),' (P)');
+assert.equal(M.assistAppendFragment('1/3','1/4 (P)'),' & 1/4 (P)');
 
 const oldLayout=[
  ['LỊCH BÁO GIẢNG'],['Tuần'],['Ngày'],['Buổi','Tiết','Thứ 2'],
@@ -37,4 +40,4 @@ assert.equal(M.targetRow(layout,'Chiều',3),17);
 assert.equal(M.targetRow(layout,'Chiều',5),19);
 assert.equal(layout.footerRow,20);
 
-console.log('OK Excel/web parity: branded layout 7/8/14/20 detected; P rows use same visual slots as web.');
+console.log('OK Excel/web parity: branded layout detected; P rows match web and same-class P labels are compact.');

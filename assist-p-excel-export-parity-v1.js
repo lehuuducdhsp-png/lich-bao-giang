@@ -5,11 +5,17 @@
   if(root)root.LBGAssistPExcelExportParityV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260914.1';
+  const VERSION='20260918.1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
   const assistLabel=count=>`${Math.max(0,Number(count)||0)} Trợ (P)`;
+  function assistAppendFragment(existing,label){
+    const current=txt(existing),full=txt(label),assistClass=full.replace(/\s*\(P\)\s*$/i,'').trim();
+    const visible=current.replace(/\s*\(GA\s*\d+\)\s*/ig,' ').replace(/\s+/g,' ').trim();
+    if(visible&&assistClass&&fold(visible)===fold(assistClass))return' (P)';
+    return `${current?' & ':''}${full}`;
+  }
 
   function classWithP(e){
     try{
@@ -69,8 +75,8 @@
   function appendAssistText(cell,label){
     if(!cell||!label)return;
     const existing=cellText(cell);if(existing.includes(label))return;
-    const rich=richTextOf(cell);
-    rich.push({text:(rich.length?' & ':'')+label,font:{name:'Times New Roman',size:12,bold:true,color:{argb:'FF9A5B36'}}});
+    const rich=richTextOf(cell),fragment=(()=>{try{return root.LBGAssistPPreviewSafe?.assistAppendFragment?.(existing,label)||assistAppendFragment(existing,label)}catch{return assistAppendFragment(existing,label)}})();
+    rich.push({text:fragment,font:{name:'Times New Roman',size:12,bold:true,color:{argb:'FF9A5B36'}}});
     cell.value={richText:rich};
     cell.alignment={...(cell.alignment||{}),horizontal:'center',vertical:'middle',wrapText:true,shrinkToFit:false};
   }
@@ -113,7 +119,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,assistantCode,assistLabel,classWithP,detectReportLayoutRows,targetRow};
+    return{VERSION,assistantCode,assistLabel,classWithP,assistAppendFragment,detectReportLayoutRows,targetRow};
   }
 
   const q=id=>root.document?.getElementById(id);
@@ -190,5 +196,5 @@
     root.addEventListener('click',onWindowClick,true);
     return true;
   }
-  return{VERSION,assistantCode,assistLabel,classWithP,detectReportLayoutRows,targetRow,patchAssistSheet,install};
+  return{VERSION,assistantCode,assistLabel,classWithP,assistAppendFragment,detectReportLayoutRows,targetRow,patchAssistSheet,install};
 });

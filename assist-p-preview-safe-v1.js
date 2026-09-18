@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260913.5';
+  const VERSION='20260918.1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -11,6 +11,12 @@
     const note=txt(e?.groupNote);
     return `${note?`${base} - ${note}`:base} (P)`;
   };
+  function assistAppendFragment(existing,label){
+    const current=txt(existing),full=txt(label),assistClass=full.replace(/\s*\(P\)\s*$/i,'').trim();
+    const visible=current.replace(/\s*\(GA\s*\d+\)\s*/ig,' ').replace(/\s+/g,' ').trim();
+    if(visible&&assistClass&&visible.toUpperCase()===assistClass.toUpperCase())return' (P)';
+    return `${current?' & ':''}${full}`;
+  }
 
   function sameRowMainCandidates(assignments,row,col,base,info={}){
     const code=txt(base).toUpperCase(),day=Number(info?.day),session=txt(info?.session);
@@ -24,6 +30,18 @@
 
   function pairedMainAssignment(assignments,row,col,base,info={}){
     const candidates=sameRowMainCandidates(assignments,row,col,base,info);
+    if(!candidates.length)return null;
+    if(candidates.length>1&&candidates[0].distance===candidates[1].distance)return null;
+    return candidates[0].entry;
+  }
+  function specialPairedMainAssignment(assignments,row,col,base,parser,ws){
+    const code=txt(base).toUpperCase();
+    const candidates=(assignments||[]).filter(e=>{
+      if(txt(e?.code).toUpperCase()!==code||Number(e?.row)!==Number(row))return false;
+      const distance=Math.abs(Number(e?.col)-Number(col));if(distance<1||distance>2)return false;
+      const hinted=Number(e?.rosterTeachingPeriod)||Number(parser?.rosterTeachingPeriodAt?.(ws,e?.row,e?.col))||0;
+      return hinted>=1&&hinted<=5;
+    }).map(e=>({entry:e,distance:Math.abs(Number(e?.col)-Number(col))})).sort((a,b)=>a.distance-b.distance||Number(a.entry?.col)-Number(b.entry?.col));
     if(!candidates.length)return null;
     if(candidates.length>1&&candidates[0].distance===candidates[1].distance)return null;
     return candidates[0].entry;
@@ -46,17 +64,18 @@
 
   function classFromPairedMain(main){return classFromKnownSource(main)}
 
-  function selectAssistClass(mainCandidates,pairedMain,localMeta){
-    // Quy tắc nghiệp vụ: lớp của (P) phải đến từ CHÍNH CỘT có mã P.
-    // Không lấy lớp ở cột kế bên, kể cả cột đó là lượt dạy chính của cùng giáo viên.
-    // Vì vậy Đức: ĐỨC ở AB177 có 3/2 nhưng ĐỨCP ở AC177 không có lớp trong cột AC
-    // => Lớp không xác định (P). Hoài Thanh Vỹ Dạ: THANHP ở AX39/AZ39,
-    // cột AX/AZ có 1/1 và 1/3 => 1/1 (P), 1/3 (P).
-    return classFromKnownSource(localMeta);
+  function selectAssistClass(mainCandidates,pairedMain,localMeta,specialMain=null){
+    // Mặc định vẫn giữ quy tắc nghiệp vụ cũ: lớp (P) lấy từ CHÍNH CỘT có mã P.
+    // Ngoại lệ hẹp duy nhất: TKB dạng "KHỐI ... - DẠY TIẾT N" xếp P ngay cạnh GV chính
+    // (ví dụ ĐÔ ở BB61, ĐÔP ở BC61). Khi parser đã xác nhận GV chính thuộc cụm đặc biệt,
+    // P được kế thừa đúng lớp/tiết của GV chính; các ca thông thường như ĐỨCP vẫn không mượn lớp bên cạnh.
+    const own=classFromKnownSource(localMeta);
+    if(own.className||own.classRaw)return own;
+    return specialMain?classFromPairedMain(specialMain):emptyClass();
   }
 
   if(typeof module!=='undefined'&&module.exports){
-    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass};
+    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,assistAppendFragment,sameRowMainCandidates,pairedMainAssignment,specialPairedMainAssignment,classFromPairedMain,selectAssistClass};
     return;
   }
 
@@ -129,18 +148,25 @@
         const candidates=sameRowMainCandidates(assignments,row,col,base,info);
         const main=pairedMainAssignment(assignments,row,col,base,info);
         const localMeta=strictLocalClassAt(ws,row,col,base,loc);
-        const meta=selectAssistClass(candidates,main,localMeta);
+        const ownRosterPeriod=Number(p.rosterTeachingPeriodAt?.(ws,row,col))||0;
+        const specialMain=ownRosterPeriod?null:specialPairedMainAssignment(assignments,row,col,base,p,ws);
+        const meta=selectAssistClass(candidates,main,localMeta,specialMain);
         const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
-        const localKnown=Boolean(localMeta.className||localMeta.classRaw);
+        const localKnown=Boolean(localMeta.className||localMeta.classRaw),anchor=specialMain||null;
+        const sourceInfo=anchor?{day:anchor.day,session:anchor.session,period:anchor.period}:info;
+        const sourceLoc=anchor||loc;
+        const rosterPeriod=ownRosterPeriod||Number(anchor?.teachingPeriod||anchor?.rosterTeachingPeriod)||0;
         out.push({
-          day:Number(info.day),session:txt(info.session),period:Number(info.period),
-          teachingPeriod:explicit?Number(explicit[1]):Number(info.period),
-          schoolName:txt(loc.schoolName||loc.school),siteDisplay:txt(loc.siteDisplay||loc.siteName),
+          day:Number(sourceInfo.day),session:txt(sourceInfo.session),period:Number(sourceInfo.period),
+          teachingPeriod:rosterPeriod||(explicit?Number(explicit[1]):Number(sourceInfo.period)),
+          schoolName:txt(sourceLoc.schoolName||sourceLoc.school),siteDisplay:txt(sourceLoc.siteDisplay||sourceLoc.siteName),
           className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
-          pairedMainAddress:txt(main?.address),pairedMainCode:txt(main?.code),assistClassSource:localKnown?'same-column-class':'unresolved'
+          pairedMainAddress:txt((anchor||main)?.address),pairedMainCode:txt((anchor||main)?.code),
+          assistClassSource:localKnown?'same-column-class':anchor?'special-roster-paired-main':'unresolved',
+          rosterTeachingPeriod:rosterPeriod||null
         });
       }
     }
@@ -181,7 +207,7 @@
       if(!cell)continue;
       const span=document.createElement('span');span.className='lbg-assist-p-preview';
       span.style.cssText='font-weight:800;color:#9a5b36';
-      span.textContent=(txt(cell.textContent)?' & ':'')+formatClassText(e);
+      span.textContent=assistAppendFragment(txt(cell.textContent),formatClassText(e));
       cell.appendChild(span);
     }
     showInfo(entries,code);
@@ -205,7 +231,7 @@
     if(installed)return;installed=true;
     document.addEventListener('click',onClick,false);
     document.addEventListener('change',onChange,false);
-    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,sameRowMainCandidates,pairedMainAssignment,classFromPairedMain,selectAssistClass,scanAssist,placeAssist};
+    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,assistAppendFragment,sameRowMainCandidates,pairedMainAssignment,specialPairedMainAssignment,classFromPairedMain,selectAssistClass,scanAssist,placeAssist};
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();

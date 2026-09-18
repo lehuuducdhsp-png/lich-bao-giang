@@ -1,0 +1,53 @@
+name: Validate new roster group period
+
+on:
+  pull_request:
+    paths:
+      - 'tkb-roster-group-period-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'assist-p-excel-export-parity-v1.js'
+      - 'index.html'
+      - 'tests/tkb-roster-group-period-safe-v1.test.cjs'
+      - 'tests/assist-p-class-pairing-v1.test.cjs'
+      - 'tests/assist-p-excel-export-parity-v1.test.cjs'
+      - 'tests/runtime-responsive-loader-v1.test.cjs'
+      - '.github/workflows/validate-new-roster-group-period.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check tkb-roster-group-period-safe-v1.js
+          node --check assist-p-preview-safe-v1.js
+          node --check assist-p-excel-export-parity-v1.js
+          node --check tests/tkb-roster-group-period-safe-v1.test.cjs
+          node --check tests/assist-p-class-pairing-v1.test.cjs
+          node --check tests/assist-p-excel-export-parity-v1.test.cjs
+          node --check tests/runtime-responsive-loader-v1.test.cjs
+      - name: Roster and P regressions
+        run: |
+          node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/assist-p-excel-export-parity-v1.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+      - name: Loader order and narrow-scope contracts
+        run: |
+          grep -F 'tkb-roster-group-period-safe-v1.js?v=20260918.1' index.html
+          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' index.html
+          grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' index.html
+          grep -F "KHỐI" tests/tkb-roster-group-period-safe-v1.test.cjs
+          grep -F "MỖI NGƯỜI 1 LỚP" tests/tkb-roster-group-period-safe-v1.test.cjs
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('class-typo-report-path-safe-v1.js?v=20260916.1')
+          b=s.index('tkb-roster-group-period-safe-v1.js?v=20260918.1')
+          c=s.index('tkb-assignment-cache-safe-v1.js?v=20260913.1')
+          assert a < b < c, 'roster group period safety must run after class normalization and before assignment cache'
+          PY
