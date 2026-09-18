@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const P=require('../assist-p-preview-safe-v1.js');
 
-assert.equal(P.VERSION,'20260913.5');
+assert.equal(P.VERSION,'20260918.1');
 
 // Quy tắc mới: lớp của (P) chỉ được lấy từ CHÍNH CỘT có mã P.
 // Không được mượn lớp ở cột kế bên, kể cả đó là lượt dạy chính của cùng giáo viên.
@@ -38,4 +38,21 @@ assert.equal(P.formatClassText(ownColumn),'4/2 (P)');
 // Text mơ hồ không được coi là lớp.
 assert.equal(P.selectAssistClass([],null,{className:'ghi chú',classRaw:'ghi chú',classType:'unknown'}).className,'');
 
-console.log('OK assist P class: own-column class only; Hoài Thanh Vỹ DẠ gets class, Đức stays unresolved when P column has none');
+// Ngoại lệ hẹp của TKB 21T9 mới: ĐÔ ở BB61 thuộc cụm KHỐI 1 - DẠY TIẾT 4,
+ // còn ĐÔP được xếp ngay ô BC61 bên cạnh. Chỉ cụm roster đã được parser xác nhận mới được ghép.
+const rosterMain={code:'ĐÔ',row:61,col:54,address:'BB61',className:'1/5',classRaw:'1/5',classType:'single',classCount:1,day:6,session:'Chiều',period:5,teachingPeriod:4,rosterTeachingPeriod:4};
+const special=P.specialPairedMainAssignment([rosterMain],61,55,'ĐÔ',{rosterTeachingPeriodAt:()=>4},{});
+assert.equal(special?.address,'BB61');
+const rosterPicked=P.selectAssistClass([],null,{className:'',classRaw:'',classType:'unknown'},special);
+assert.equal(rosterPicked.className,'1/5');
+assert.equal(P.formatClassText(rosterPicked),'1/5 (P)');
+
+// Ca bình thường ĐỨCP vẫn không được mượn lớp bên cạnh vì không có cờ roster đặc biệt.
+assert.equal(P.specialPairedMainAssignment([ducMain],177,29,'ĐỨC',{rosterTeachingPeriodAt:()=>null},{}),null);
+
+// Khi lớp chính và lớp P trùng nhau trong cùng ô báo giảng, chỉ thêm nhãn (P), không lặp "1/3 & 1/3 (P)".
+assert.equal(P.assistAppendFragment('1/3','1/3 (P)'),' (P)');
+assert.equal(P.assistAppendFragment('1/3 (GA 2)','1/3 (P)'),' (P)');
+assert.equal(P.assistAppendFragment('1/3','1/4 (P)'),' & 1/4 (P)');
+
+console.log('OK assist P class: own-column by default; special roster adjacency only; duplicate same-class P label compacted');
