@@ -88,6 +88,22 @@ assert.equal(promoted.apply.length,1);
 assert.equal(promoted.apply[0].replaceExisting,true);
 assert.equal(promoted.apply[0].reason,'stale-role-track-mix');
 
+const fakePer={
+  applyPlan(p,base){
+    const out={...base};let applied=0,protectedCount=0;
+    for(const item of p.apply||[]){
+      const key=item?.target?.key,ga=item?.ga;
+      if(!key)continue;
+      if(Object.prototype.hasOwnProperty.call(out,key)){protectedCount++;continue}
+      out[key]=String(ga);applied++;
+    }
+    return{values:out,applied,protectedCount};
+  }
+};
+const repairedWrite=R.applyPlanWithRoleTrackReplacement(fakePer,promoted,values);
+assert.equal(repairedWrite.applied,1,'verified stale class key must actually be rewritten, not only promoted in the plan');
+assert.equal(repairedWrite.values[target.key],'2','stale class GA4 must become GA2 in stored values');
+
 // Nếu conflict không mang cờ lịch sử stale-role-track thì vẫn bảo vệ GA tay.
 const manualEvent={...current};
 delete manualEvent.__lbgStaleRoleTrackManual;
