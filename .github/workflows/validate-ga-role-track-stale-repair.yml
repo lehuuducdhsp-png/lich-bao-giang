@@ -35,7 +35,7 @@ jobs:
           node tests/multi-report-performance-v1.test.cjs
       - name: Loader and role contracts
         run: |
-          grep -F "ga-role-track-stale-repair-v1.js?v=20260919.3" index.html
+          grep -F "ga-role-track-stale-repair-v1.js?v=20260919.4" index.html
           grep -F "isRed(nameCell)" teacher-intelligence-v6.js
           grep -F "role=ROLE.STEM" teacher-intelligence-v6.js
           grep -F "if(r==='STEM')" ga-suggestion-v7.js
@@ -44,7 +44,7 @@ jobs:
           from pathlib import Path
           s=Path('index.html').read_text()
           a=s.index('ga-group-split-stale-repair-v1.js?v=20260914.1')
-          b=s.index('ga-role-track-stale-repair-v1.js?v=20260919.3')
+          b=s.index('ga-role-track-stale-repair-v1.js?v=20260919.4')
           c=s.index('ga-multi-selection-bridge-v1.js?v=20260914.2')
           assert a < b < c, 'STEM/KNS repair must run after group-split repair and before shared GA bridge'
           PY
