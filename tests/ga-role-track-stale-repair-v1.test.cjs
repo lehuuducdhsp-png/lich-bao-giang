@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const V7=require('../ga-suggestion-v7.js');
 const R=require('../ga-role-track-stale-repair-v1.js');
 
-assert.equal(R.VERSION,'20260919.2');
+assert.equal(R.VERSION,'20260919.3');
 assert.equal(V7.roleTrack('STEM').track,'stem');
 assert.equal(V7.roleTrack('KNS').track,'kns');
 
@@ -58,6 +58,13 @@ const stem=history.events.filter(x=>x.track==='stem');
 assert.deepEqual(kns.map(x=>x.ga),[1,2],'HUỆ KNS 7T9 -> 21T9 must be GA1 -> GA2');
 assert.deepEqual(stem.map(x=>x.ga),[3],'HƯƠNG red STEM 14T9 must live on the separate STEM sequence even when fallback role says KNS');
 assert.equal(R.roleFor(sheets[1],'HƯƠNG',{row:170,col:39},()=> 'KNS'),'STEM','red timetable code must override an incorrect KNS fallback');
+
+// Nếu history chọn một snapshot 14T9 cũ bị mất màu đỏ, workbook đang mở vẫn phải là nguồn ưu tiên về ban STEM.
+const stale14={name:'14T9',getCell(){return blackCell}};
+const current14={name:'14T9',getCell(){return blackCell}};
+const referenceBook={getWorksheet(name){return name==='14T9'?current14:null}};
+const intelligence={summaryRoles(ws){return new Map([['HƯƠNG',{role:ws===current14?'STEM':'KNS'}]])}};
+assert.equal(R.roleFor(stale14,'HƯƠNG',{row:170,col:39},()=> 'KNS',referenceBook,intelligence),'STEM','active workbook red STEM role must override a stale historical KNS snapshot');
 assert.equal(history.byAddress.get('21T9!AM170')?.ga,2);
 
 // Giả lập GA4 cũ đã được lưu trước khi tách đúng STEM/KNS.
