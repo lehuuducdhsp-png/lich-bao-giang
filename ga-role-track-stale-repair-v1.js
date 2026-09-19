@@ -13,6 +13,31 @@
   const seqFor=track=>track==='stem'?STEM_SEQUENCE:KNS_SEQUENCE;
   const nextGa=(track,ga)=>{const seq=seqFor(track),i=seq.indexOf(Number(ga));return i<0?seq.find(x=>x>Number(ga))??seq[0]??null:seq[i+1]??null};
   const overlap=(a,b)=>{const set=new Set(Array.isArray(a)?a:[]);return(Array.isArray(b)?b:[]).some(x=>set.has(x))};
+  function rgb(cell){
+    try{
+      const c=cell?.font?.color||{};
+      if(c.argb)return String(c.argb).slice(-6).toUpperCase();
+      if(Number(c.indexed)===10)return'FF0000';
+      return'';
+    }catch{return''}
+  }
+  function isRedCell(cell){
+    const value=rgb(cell);if(!/^[0-9A-F]{6}$/.test(value))return false;
+    const r=parseInt(value.slice(0,2),16),g=parseInt(value.slice(2,4),16),b=parseInt(value.slice(4,6),16);
+    return r>=150&&r>g*1.45&&r>b*1.35;
+  }
+  function roleFor(ws,code,e,fallback){
+    // Nguồn ưu tiên 1: chính ô mã GV trong TKB. Chữ đỏ = STEM.
+    // Điều này giữ đúng cả các phiên bản TKB cũ khi bảng tổng/tên GV thay đổi cách ghi.
+    try{
+      const row=Number(e?.row),col=Number(e?.col);
+      if(row>0&&col>0&&isRedCell(ws?.getCell?.(row,col)))return'STEM';
+    }catch{}
+    // Nguồn ưu tiên 2: bảng tổng bên phải (teacher-intelligence-v6).
+    let role='';try{role=txt(fallback?.(ws,code,e)).toUpperCase()}catch{}
+    if(role==='STEM'||role==='CTV'||role==='KNS')return role;
+    return'KNS';
+  }
   const eventTime=ev=>{
     const t=ev?.date instanceof Date&&!Number.isNaN(ev.date.getTime())?ev.date.getTime():0;
     const session=txt(ev?.session).toLowerCase().startsWith('sáng')?0:1;
@@ -59,7 +84,11 @@
   }
   function wrapBuildHistory(original){
     if(typeof original!=='function')return null;
-    const wrapped=function(...args){return repairHistory(original.apply(this,args))};
+    const wrapped=function(book,selectedSheet,opts={}){
+      const fallback=opts?.roleResolver;
+      const safeOpts={...opts,roleResolver:(ws,code,e)=>roleFor(ws,code,e,fallback)};
+      return repairHistory(original.call(this,book,selectedSheet,safeOpts));
+    };
     wrapped.__lbgGaRoleTrackStaleRepair=VERSION;
     wrapped.__lbgOriginalBuildHistory=original;
     return wrapped;
@@ -85,11 +114,11 @@
         const expected=normalizedGa(x?.ev?.__lbgRoleTrackExpected);
         return old!==null&&old===exact&&expected!==null&&expected===normalizedGa(x?.ga);
       });
-      // Chỉ tự sửa GA lớp cũ khi:
-      // 1) lịch sử chứng minh nó bị tăng do trộn STEM/KNS,
-      // 2) GA chung hiện tại của địa điểm đã đúng bằng gợi ý tách luồng.
-      // Nhờ vậy GA riêng do người dùng chủ động nhập khác GA chung vẫn được bảo vệ.
-      if(stale&&exact!==null&&common!==null&&suggestions.length===1&&common===suggestions[0]&&suggestions[0]!==exact){
+      // Chỉ tự sửa khi lịch sử đã chứng minh chính GA lớp hiện tại bị tăng đúng
+      // số bước do các lần STEM/KNS của luồng đối diện chen giữa. Đây là bằng chứng
+      // theo từng lớp, mạnh hơn GA chung của địa điểm (vì một buổi có thể có nhiều GA).
+      // Các GA tay không khớp mẫu "trộn luồng" vẫn được bảo vệ.
+      if(stale&&exact!==null&&suggestions.length===1&&suggestions[0]!==exact){
         next.apply.push({target:conflict.target,ga:suggestions[0],items,replaceExisting:true,reason:'stale-role-track-mix'});
       }else next.conflicts.push(conflict);
     }
@@ -106,7 +135,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications};
+    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications};
   }
 
   function installOnce(){
@@ -122,5 +151,5 @@
     return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,install};
 });
