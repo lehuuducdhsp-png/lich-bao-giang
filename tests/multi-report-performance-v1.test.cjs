@@ -34,7 +34,7 @@ assert.match(ga,/await yieldUi\(\)/,'GA apply must yield between teachers');
 assert.match(ga,/if\(q\('teacher'\).*ensureUi\(\);\s*return;/s,'GA installer must stop polling once dependencies are ready');
 
 // Per-class GA là chủ nghiệp vụ cuối cùng; không được tranh onclick với bridge hoặc giữ luật cũ >=2 GV.
-assert.match(per,/const VERSION='20260919\.1'/);
+assert.match(per,/const VERSION='20260919\.2'/);
 assert.doesNotMatch(per,/Hãy chọn từ 2 giáo viên trở lên/,'per-class module must not keep the obsolete >=2-teacher guard');
 assert.doesNotMatch(per,/function bindMultiButton/,'per-class module must not fight the shared GA button handler');
 assert.match(per,/decorateReport\(a,write\.values\)/,'per-class batch result must be decorated before the preview consumes it');
