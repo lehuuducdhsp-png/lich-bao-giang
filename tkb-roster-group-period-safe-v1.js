@@ -177,7 +177,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
