@@ -38,7 +38,7 @@ jobs:
           node tests/multi-report-performance-v1.test.cjs
       - name: Loader and role contracts
         run: |
-          grep -F "ga-per-class-v2.js?v=20260919.1" index.html
+          grep -F "ga-per-class-v2.js?v=20260919.2" index.html
           grep -F "ga-role-track-stale-repair-v1.js?v=20260919.4" index.html
           grep -F "isRed(nameCell)" teacher-intelligence-v6.js
           grep -F "role=ROLE.STEM" teacher-intelligence-v6.js
