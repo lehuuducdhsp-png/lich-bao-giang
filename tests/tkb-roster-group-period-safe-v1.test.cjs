@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 
-assert.equal(R.VERSION,'20260918.1');
+assert.equal(R.VERSION,'20260919.1');
 
 // Đúng cấu trúc TKB mới ở TRẦN QUỐC TOẢN, sheet 21T9.
 assert.equal(R.periodHintFromText('KHỐI 1  - DẠY TIẾT 4'),4);
@@ -54,4 +54,39 @@ assert.equal(fixed.rosterTeachingPeriod,4);
 const combined={className:'KHỐI 4 (6 LỚP)',classRaw:'KHỐI 4 (6 LỚP) - TIẾT 4',classType:'combined',period:1,teachingPeriod:4};
 assert.equal(R.applyHint(combined,{period:4}),combined,'legacy combined classes must not be rewritten');
 
-console.log('OK roster group period: 21T9 KHỐI 1 roster columns map to actual Tiết 4 while individual classes stay separate');
+// TKB 21T9 - TRẦN QUỐC TOẢN CŨ: tiêu đề J59:N59, tên Nhã Phương phải xuống dòng K61/L61 vì hàng trên không đủ chỗ.
+const groupCells=new Map([
+  ['59,10',{text:'KHỐI 4 (6 LỚP) - TIẾT 4'}],
+  ['60,10',{text:'TÂM'}],['60,11',{text:'TÂM'}],['60,12',{text:'D.PHƯƠNG'}],['60,13',{text:'D.PHƯƠNG'}],
+  ['61,11',{text:'NhaPhuong'}],['61,12',{text:'NhaPhuong'}],
+  ['65,10',{text:'KHỐI 4 (4 LỚP) - TIẾT 4'}],['66,14',{text:'DƯƠNG+'}]
+]);
+const groupWs={
+  rowCount:80,
+  model:{merges:['J59:N59','J65:N65']},
+  getCell(row,col){return groupCells.get(`${row},${col}`)||{text:'',value:''}}
+};
+const classMeta=value=>{
+  const m=String(value||'').match(/KHỐI\s*(\d+)\s*\(\s*(\d+)\s*LỚP\s*\)\s*-\s*TIẾT\s*([1-5])/i);
+  return m?{classRaw:String(value),classType:'combined',classCount:Number(m[2]),classDisplay:`KHỐI ${m[1]} (${m[2]} LỚP)`,groupNote:`TIẾT ${m[3]}`}:{classRaw:String(value||''),classType:'unknown',classCount:1,classDisplay:String(value||''),groupNote:''};
+};
+const known=new Set(['TÂM','D.PHƯƠNG','NHAPHUONG','DƯƠNG']);
+const groupParser={
+  classMeta,
+  resolveTeacherCode(sheet,raw){const base=String(raw||'').toUpperCase().replace(/[P+]$/,'');return known.has(base)?{code:base}:null},
+  locationAt(sheet,row){return{locationKey:row<65?'TRẦN QUỐC TOẢN|TRẦN QUỐC TOẢN CŨ':'TRẦN QUỐC TOẢN|PHÚ HÒA CŨ'}}
+};
+const nhaAnchor=R.explicitGroupAnchorAt(groupWs,61,11,groupParser,'TRẦN QUỐC TOẢN|TRẦN QUỐC TOẢN CŨ');
+assert.equal(nhaAnchor?.period,4,'Nhã Phương ở dòng tiếp theo vẫn phải thuộc KHỐI 4 - TIẾT 4');
+assert.equal(nhaAnchor?.merge?.ref,'J59:N59');
+const nhaFixed=R.applyGroupContinuation({row:61,col:11,className:'',classRaw:'',classType:'unknown',period:2,slotPeriod:2,teachingPeriod:2},nhaAnchor);
+assert.equal(nhaFixed.className,'KHỐI 4 (6 LỚP)');
+assert.equal(nhaFixed.groupNote,'TIẾT 4');
+assert.equal(nhaFixed.teachingPeriod,4);
+
+// DƯƠNG+ nằm ở N66 ngay dưới merge J65:N65: phải nhận đúng nhóm để báo giảng có lớp/GA, nhưng vẫn là Cộng 1 riêng.
+const duongAnchor=R.explicitGroupAnchorAt(groupWs,66,14,groupParser,'TRẦN QUỐC TOẢN|PHÚ HÒA CŨ');
+assert.equal(duongAnchor?.period,4);
+assert.equal(duongAnchor?.meta?.classDisplay,'KHỐI 4 (4 LỚP)');
+
+console.log('OK roster group period: roster-style classes and wrapped merged-group participants resolve to actual Tiết 4');
