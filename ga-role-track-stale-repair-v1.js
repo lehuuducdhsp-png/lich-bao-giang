@@ -5,7 +5,7 @@
   if(root)root.LBGGaRoleTrackStaleRepairV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260919.2';
+  const VERSION='20260919.3';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').trim();
@@ -26,16 +26,32 @@
     const r=parseInt(value.slice(0,2),16),g=parseInt(value.slice(2,4),16),b=parseInt(value.slice(4,6),16);
     return r>=150&&r>g*1.45&&r>b*1.35;
   }
-  function roleFor(ws,code,e,fallback){
-    // Nguồn ưu tiên 1: chính ô mã GV trong TKB. Chữ đỏ = STEM.
-    // Điều này giữ đúng cả các phiên bản TKB cũ khi bảng tổng/tên GV thay đổi cách ghi.
+  function summaryRole(intelligence,ws,code){
+    try{return txt(intelligence?.summaryRoles?.(ws)?.get?.(txt(code).toUpperCase())?.role).toUpperCase()}catch{return''}
+  }
+  function roleFor(ws,code,e,fallback,referenceBook=null,intelligence=null){
+    const intel=intelligence||root.LBGTeacherIntelligenceV6;
+    let refWs=null;try{refWs=referenceBook?.getWorksheet?.(ws?.name)||null}catch{}
+    // Nguồn ưu tiên 1: workbook ĐANG mở. Nếu cùng sheet hiện tại xác nhận GV thuộc ban STEM
+    // bằng chữ đỏ ở bảng tổng, không để một snapshot lịch sử cũ ghi đè thành KNS.
+    const refSummary=summaryRole(intel,refWs,code);
+    if(refSummary==='STEM')return'STEM';
+    // Nếu ô mã GV trong workbook đang mở là đỏ, cũng xác nhận STEM cho đúng lần dạy.
+    try{
+      const row=Number(e?.row),col=Number(e?.col);
+      if(refWs&&row>0&&col>0&&isRedCell(refWs.getCell?.(row,col)))return'STEM';
+    }catch{}
+    // Nguồn ưu tiên 2: chính worksheet đang được lịch sử chọn.
+    const sourceSummary=summaryRole(intel,ws,code);
+    if(sourceSummary==='STEM')return'STEM';
     try{
       const row=Number(e?.row),col=Number(e?.col);
       if(row>0&&col>0&&isRedCell(ws?.getCell?.(row,col)))return'STEM';
     }catch{}
-    // Nguồn ưu tiên 2: bảng tổng bên phải (teacher-intelligence-v6).
+    // CTV/KNS vẫn dùng resolver nghiệp vụ hiện có.
     let role='';try{role=txt(fallback?.(ws,code,e)).toUpperCase()}catch{}
     if(role==='STEM'||role==='CTV'||role==='KNS')return role;
+    if(refSummary==='CTV'||sourceSummary==='CTV')return'CTV';
     return'KNS';
   }
   const eventTime=ev=>{
@@ -86,7 +102,8 @@
     if(typeof original!=='function')return null;
     const wrapped=function(book,selectedSheet,opts={}){
       const fallback=opts?.roleResolver;
-      const safeOpts={...opts,roleResolver:(ws,code,e)=>roleFor(ws,code,e,fallback)};
+      let referenceBook=null;try{referenceBook=typeof wb!=='undefined'?wb:null}catch{}
+      const safeOpts={...opts,roleResolver:(ws,code,e)=>roleFor(ws,code,e,fallback,referenceBook)};
       return repairHistory(original.call(this,book,selectedSheet,safeOpts));
     };
     wrapped.__lbgGaRoleTrackStaleRepair=VERSION;
@@ -173,7 +190,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport};
+    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport};
   }
 
   function installOnce(){
@@ -192,5 +209,5 @@
     return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport,install};
 });
