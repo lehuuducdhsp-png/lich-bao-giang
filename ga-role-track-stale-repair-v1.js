@@ -5,7 +5,7 @@
   if(root)root.LBGGaRoleTrackStaleRepairV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260919.1';
+  const VERSION='20260919.2';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').trim();
