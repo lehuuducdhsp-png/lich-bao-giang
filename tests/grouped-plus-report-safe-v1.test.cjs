@@ -25,7 +25,7 @@ const parser={
   buildHeader(){return{headerRow:4}},
   timetableColumns(){return[10,11,12,13,14]},
   colInfoFor(sheet,col){return{day:2,session:'Chiều',period:col-9,col}},
-  resolveTeacherCode(sheet,raw){return String(raw||'').toUpperCase()==='DƯƠNG'?{code:'DƯƠNG',mapping:'exact'}:null},
+  resolveTeacherCode(sheet,raw){const code=String(raw||'').toUpperCase();return new Set(['M.LINH','YẾN','DƯƠNG']).has(code)?{code,mapping:'exact'}:null},
   teacherSummary(){return{byCode:new Map([['DƯƠNG',{name:'Hồ Hải Dương',code:'DƯƠNG'}]])}},
   locationAt(){return{schoolName:'TRẦN QUỐC TOẢN',siteDisplay:'Địa điểm: PHÚ HÒA CŨ',locationLabel:'TRẦN QUỐC TOẢN\nĐịa điểm: PHÚ HÒA CŨ',locationKey:'TRAN QUOC TOAN|PHU HOA CU',notes:[]}}
 };
