@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260914.1';
+  const VERSION='20260919.1';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -108,6 +108,14 @@
   }
   function exactRaw(values,target){return rawValue(values,target?.key)}
   function inheritedRaw(values,target){const direct=rawValue(values,target?.defaultKey);return direct!==undefined?direct:rawValue(values,target?.legacyKey)}
+  function staleRoleTrackReplacement(items,current,ga){
+    if(current===null||ga===null||!Array.isArray(items)||!items.length)return false;
+    return items.every(item=>{
+      const old=normalizedGa(item?.ev?.__lbgStaleRoleTrackManual);
+      const expected=normalizedGa(item?.ev?.__lbgRoleTrackExpected);
+      return old!==null&&old===current&&expected!==null&&expected===ga;
+    });
+  }
   function planApplications(rows,entries=[],values={},normalizer){
     const groups=new Map(),skipped=[];
     (Array.isArray(rows)?rows:[]).forEach((ev,index)=>{
@@ -122,16 +130,28 @@
       const suggestions=[...new Set(group.items.map(x=>x.ga))];
       if(suggestions.length!==1){conflicts.push({target:group.target,items:group.items,reason:'different-suggestions'});continue}
       const ga=suggestions[0],exact=exactRaw(values,group.target);
-      if(exact!==undefined){const current=normalizedGa(exact);if(current===ga)same.push({target:group.target,ga,items:group.items,source:'class'});else conflicts.push({target:group.target,ga,current:exact,items:group.items,reason:'existing-class-ga'});continue}
+      if(exact!==undefined){
+        const current=normalizedGa(exact);
+        if(current===ga)same.push({target:group.target,ga,items:group.items,source:'class'});
+        else if(staleRoleTrackReplacement(group.items,current,ga))apply.push({target:group.target,ga,current,items:group.items,replaceExisting:true,reason:'stale-role-track-mix'});
+        else conflicts.push({target:group.target,ga,current:exact,items:group.items,reason:'existing-class-ga'});
+        continue;
+      }
       const inherited=inheritedRaw(values,group.target),current=normalizedGa(inherited);
       if(current===ga)same.push({target:group.target,ga,items:group.items,source:'location'});else apply.push({target:group.target,ga,items:group.items,inherited});
     }
     return{apply,same,conflicts,skipped};
   }
   function applyPlan(plan,values={}){
-    const out={...(values&&typeof values==='object'?values:{})};let applied=0,protectedCount=0;
-    for(const item of plan?.apply||[]){const key=txt(item?.target?.key),ga=normalizedGa(item?.ga);if(!key||ga===null)continue;if(rawValue(out,key)!==undefined){protectedCount++;continue}out[key]=String(ga);applied++}
-    return{values:out,applied,protectedCount};
+    const out={...(values&&typeof values==='object'?values:{})};let applied=0,protectedCount=0,replacedCount=0;
+    for(const item of plan?.apply||[]){
+      const key=txt(item?.target?.key),ga=normalizedGa(item?.ga);if(!key||ga===null)continue;
+      const existing=rawValue(out,key);
+      if(existing!==undefined&&!item?.replaceExisting){protectedCount++;continue}
+      if(existing!==undefined&&item?.replaceExisting)replacedCount++;
+      out[key]=String(ga);applied++;
+    }
+    return{values:out,applied,protectedCount,replacedCount};
   }
   function makeAnalyzeDecorator(original,decorate,isCurrent){
     if(typeof original!=='function'||typeof decorate!=='function')return null;
@@ -140,7 +160,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,planApplications,applyPlan,makeAnalyzeDecorator};
+    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator};
   }
 
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
@@ -226,11 +246,11 @@
   function planFor(rows,a){return planApplications(rows,a?.entries||[],loadStoredValues(a),normalizer())}
   function applyRows(rows,a){
     const plan=planFor(rows,a),write=applyPlan(plan,loadStoredValues(a));if(write.applied)persistStoredValues(a,write.values);if(write.applied)refreshCurrentReport(a,write.values);
-    return{...plan,applied:write.applied,protectedCount:write.protectedCount,blocked:(plan.conflicts?.length||0)+(plan.skipped?.length||0)+write.protectedCount};
+    return{...plan,applied:write.applied,replacedCount:write.replacedCount||0,protectedCount:write.protectedCount,blocked:(plan.conflicts?.length||0)+(plan.skipped?.length||0)+write.protectedCount};
   }
-  function stateFor(ev,a){const plan=planFor([ev],a);if(plan.same.length)return{kind:'same',label:`✓ Đã có GA ${plan.same[0].ga}`,disabled:true};if(plan.conflicts.length)return{kind:'conflict',label:'⚠ Có GA lớp khác',disabled:true};if(plan.skipped.length)return{kind:'skip',label:'Không thể áp dụng',disabled:true};if(plan.apply.length)return{kind:'apply',label:`↘ Áp dụng GA ${plan.apply[0].ga}`,disabled:false};return{kind:'skip',label:'Không thể áp dụng',disabled:true}}
+  function stateFor(ev,a){const plan=planFor([ev],a);if(plan.same.length)return{kind:'same',label:`✓ Đã có GA ${plan.same[0].ga}`,disabled:true};if(plan.conflicts.length)return{kind:'conflict',label:'⚠ Có GA lớp khác',disabled:true};if(plan.skipped.length)return{kind:'skip',label:'Không thể áp dụng',disabled:true};if(plan.apply.length){const x=plan.apply[0];return{kind:'apply',label:x.replaceExisting?`↻ Sửa GA ${x.current} → ${x.ga}`:`↘ Áp dụng GA ${x.ga}`,disabled:false}}return{kind:'skip',label:'Không thể áp dụng',disabled:true}}
   function refreshSuggestionUi(panel,rows,a){panel.querySelectorAll('[data-ga-per-class-one]').forEach(button=>{const state=stateFor(rows[Number(button.dataset.gaPerClassOne)],a);button.textContent=state.label;button.disabled=state.disabled;button.dataset.state=state.kind});const bulk=panel.querySelector('[data-ga-per-class-all]'),plan=planFor(rows,a);if(bulk){bulk.disabled=!plan.apply.length;bulk.textContent=plan.apply.length?`✓ Áp dụng tất cả GA theo lớp (${plan.apply.length} lớp)`:'✓ Không còn GA lớp trống để áp dụng'}}
-  function toastApply(out){if(typeof toast!=='function')return;if(out.applied){toast(`Đã áp dụng ${out.applied} GA theo lớp vào Lịch Báo giảng${out.blocked?` • bỏ qua ${out.blocked} mục cần kiểm tra`:''}.`);return}if(out.conflicts.length){toast('Có GA riêng của lớp khác với gợi ý nên hệ thống không ghi đè.');return}if(out.same.length){toast('GA gợi ý đã có trong Lịch Báo giảng.');return}toast('Chưa có GA theo lớp hợp lệ để áp dụng.')}
+  function toastApply(out){if(typeof toast!=='function')return;if(out.applied){toast(`${out.replacedCount?`Đã sửa ${out.replacedCount} GA cũ do trộn STEM/KNS${out.applied>out.replacedCount?` và áp dụng thêm ${out.applied-out.replacedCount} GA`:''}`:`Đã áp dụng ${out.applied} GA theo lớp`} vào Lịch Báo giảng${out.blocked?` • bỏ qua ${out.blocked} mục cần kiểm tra`:''}.`);return}if(out.conflicts.length){toast('Có GA riêng của lớp khác với gợi ý nên hệ thống không ghi đè.');return}if(out.same.length){toast('GA gợi ý đã có trong Lịch Báo giảng.');return}toast('Chưa có GA theo lớp hợp lệ để áp dụng.')}
   function renderSuggestionPanel(panel,history,a){
     const rows=rowsFor(history,a),meta=history.crossVersion||{};
     panel.innerHTML=`<div class="alert info"><b>GA gợi ý theo lớp:</b> đang dò <b>${meta.weekCount||1} tuần</b> từ <b>${meta.sourceCount||1} phiên bản TKB</b>. Nếu cùng một buổi có nhiều GA, hệ thống lưu GA riêng cho từng lớp; GA có nhiều lớp hơn sẽ ở đầu buổi, lớp khác GA được ghi rõ ngay sau tên lớp.</div>${rows.length?`<div class="lbg-ga-apply-toolbar"><button type="button" class="lbg-ga-apply-all" data-ga-per-class-all>✓ Áp dụng tất cả GA theo lớp</button><small>Không ghi đè GA riêng của lớp đã được nhập trước đó.</small></div><div class="wrap"><table><thead><tr><th>STT</th><th>Ngày – buổi – tiết</th><th>Trường</th><th>Lớp / nhóm lớp</th><th>Giáo viên / phối hợp</th><th>Luồng</th><th>GA gợi ý & tên bài</th><th>Căn cứ</th></tr></thead><tbody>${rows.map((ev,i)=>{const lesson=titleFor(ev),collab=(ev.participants||[]).length>1,src=(ev.addresses||[]).join(', ');return`<tr><td>${i+1}</td><td>${esc(fmtDate(ev.date))}<br>${esc(ev.session)} – <b>Tiết ${esc(ev.period)}</b></td><td>${esc(ev.school)}</td><td>${esc(ev.classDisplay)}<br><small>Ô nguồn: ${esc(src)}</small></td><td>${collab?'<b style="color:#0f766e">🤝 Phối hợp</b><br>':''}${esc(participantText(ev))}</td><td><b>${esc(trackText(ev))}</b></td><td><div class="lbg-ga-main">${ev.ga==null?'Chưa xác định':`GA ${esc(ev.ga)} – ${esc(trackText(ev))}`}</div><div style="margin-top:4px;font-weight:700;color:#4b342b">${esc(lesson.title)}</div><button type="button" class="lbg-ga-apply-one" data-ga-per-class-one="${i}">Áp dụng</button></td><td>${esc(basisText(ev))}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="alert warn">Không ghép được các ô nguồn hiện tại với lịch sử TKB.</div>'}`;
@@ -246,7 +266,7 @@
     const{history,rows}=await analyzeReport(a),plan=planFor(rows,a),write=applyPlan(plan,loadStoredValues(a));
     if(write.applied)persistStoredValues(a,write.values);
     decorateReport(a,write.values);
-    return{history,rows,plan,values:a.gaValues,applied:write.applied,protectedCount:write.protectedCount,same:plan.same.length,conflicts:plan.conflicts.length,skipped:plan.skipped.length};
+    return{history,rows,plan,values:a.gaValues,applied:write.applied,replacedCount:write.replacedCount||0,protectedCount:write.protectedCount,same:plan.same.length,conflicts:plan.conflicts.length,skipped:plan.skipped.length};
   }
   function ensureStyle(){if(q('lbgGaPerClassStyle'))return;const style=root.document.createElement('style');style.id='lbgGaPerClassStyle';style.textContent='.lbg-ga-mixed-label{display:inline-block;padding:5px 8px;border:1px dashed #d97706;border-radius:8px;background:#fff7ed;color:#9a3412;font-weight:900}.lbg-ga-main{font-weight:900;color:#0f766e}';root.document.head.appendChild(style)}
   function notifyReady(){if(readyNotified)return;readyNotified=true;try{root.document.dispatchEvent(new CustomEvent('lbg-ga-per-class-ready',{detail:{version:VERSION}}))}catch{}}
@@ -262,5 +282,5 @@
     };
     tick();return true;
   }
-  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,planApplications,applyPlan,makeAnalyzeDecorator,decorateReport,analyzeReport,applyReport,loadStoredValues,persistStoredValues,install};
+  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator,decorateReport,analyzeReport,applyReport,loadStoredValues,persistStoredValues,install};
 });
