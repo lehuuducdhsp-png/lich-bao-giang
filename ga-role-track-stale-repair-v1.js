@@ -5,7 +5,7 @@
   if(root)root.LBGGaRoleTrackStaleRepairV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260919.3';
+  const VERSION='20260919.4';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').trim();
@@ -29,29 +29,39 @@
   function summaryRole(intelligence,ws,code){
     try{return txt(intelligence?.summaryRoles?.(ws)?.get?.(txt(code).toUpperCase())?.role).toUpperCase()}catch{return''}
   }
+  function workbookRole(intelligence,book,code){
+    const target=txt(code).toUpperCase();if(!target||!book)return'';
+    let sawCtv=false,sawKns=false;
+    for(const ws of book.worksheets||[]){
+      const role=summaryRole(intelligence,ws,target);
+      if(role==='STEM')return'STEM';
+      if(role==='CTV')sawCtv=true;
+      else if(role==='KNS')sawKns=true;
+    }
+    return sawCtv?'CTV':sawKns?'KNS':'';
+  }
   function roleFor(ws,code,e,fallback,referenceBook=null,intelligence=null){
     const intel=intelligence||root.LBGTeacherIntelligenceV6;
+    const globalRole=workbookRole(intel,referenceBook,code);
+    // Ban STEM là thuộc tính nghiệp vụ của GV trong file đang dùng: chỉ cần workbook hiện tại
+    // xác nhận mã GV màu đỏ ở bất kỳ bảng tổng tuần nào thì lịch sử của mã đó phải đi luồng STEM.
+    if(globalRole==='STEM')return'STEM';
     let refWs=null;try{refWs=referenceBook?.getWorksheet?.(ws?.name)||null}catch{}
-    // Nguồn ưu tiên 1: workbook ĐANG mở. Nếu cùng sheet hiện tại xác nhận GV thuộc ban STEM
-    // bằng chữ đỏ ở bảng tổng, không để một snapshot lịch sử cũ ghi đè thành KNS.
     const refSummary=summaryRole(intel,refWs,code);
     if(refSummary==='STEM')return'STEM';
-    // Nếu ô mã GV trong workbook đang mở là đỏ, cũng xác nhận STEM cho đúng lần dạy.
     try{
       const row=Number(e?.row),col=Number(e?.col);
       if(refWs&&row>0&&col>0&&isRedCell(refWs.getCell?.(row,col)))return'STEM';
     }catch{}
-    // Nguồn ưu tiên 2: chính worksheet đang được lịch sử chọn.
     const sourceSummary=summaryRole(intel,ws,code);
     if(sourceSummary==='STEM')return'STEM';
     try{
       const row=Number(e?.row),col=Number(e?.col);
       if(row>0&&col>0&&isRedCell(ws?.getCell?.(row,col)))return'STEM';
     }catch{}
-    // CTV/KNS vẫn dùng resolver nghiệp vụ hiện có.
     let role='';try{role=txt(fallback?.(ws,code,e)).toUpperCase()}catch{}
     if(role==='STEM'||role==='CTV'||role==='KNS')return role;
-    if(refSummary==='CTV'||sourceSummary==='CTV')return'CTV';
+    if(globalRole==='CTV'||refSummary==='CTV'||sourceSummary==='CTV')return'CTV';
     return'KNS';
   }
   const eventTime=ev=>{
@@ -110,104 +120,20 @@
     wrapped.__lbgOriginalBuildHistory=original;
     return wrapped;
   }
-  function rawValue(values,key){
-    if(!values||typeof values!=='object'||!key||!Object.prototype.hasOwnProperty.call(values,key))return undefined;
-    const value=values[key];return value===undefined||value===null||txt(value)===''?undefined:value;
-  }
-  function commonRaw(values,target){
-    const direct=rawValue(values,target?.defaultKey);
-    return direct!==undefined?direct:rawValue(values,target?.legacyKey);
-  }
-  function promoteSafeRoleTrackConflicts(plan,values={}){
-    const next={...plan,apply:[...(plan?.apply||[])],same:[...(plan?.same||[])],skipped:[...(plan?.skipped||[])],conflicts:[]};
-    for(const conflict of plan?.conflicts||[]){
-      if(conflict?.reason!=='existing-class-ga'){next.conflicts.push(conflict);continue}
-      const exact=normalizedGa(rawValue(values,conflict?.target?.key));
-      const common=normalizedGa(commonRaw(values,conflict?.target));
-      const items=Array.isArray(conflict?.items)?conflict.items:[];
-      const suggestions=[...new Set(items.map(x=>normalizedGa(x?.ga)).filter(x=>x!==null))];
-      const stale=items.length>0&&items.every(x=>{
-        const old=normalizedGa(x?.ev?.__lbgStaleRoleTrackManual);
-        const expected=normalizedGa(x?.ev?.__lbgRoleTrackExpected);
-        return old!==null&&old===exact&&expected!==null&&expected===normalizedGa(x?.ga);
-      });
-      // Chỉ tự sửa khi lịch sử đã chứng minh chính GA lớp hiện tại bị tăng đúng
-      // số bước do các lần STEM/KNS của luồng đối diện chen giữa. Đây là bằng chứng
-      // theo từng lớp, mạnh hơn GA chung của địa điểm (vì một buổi có thể có nhiều GA).
-      // Các GA tay không khớp mẫu "trộn luồng" vẫn được bảo vệ.
-      if(stale&&exact!==null&&suggestions.length===1&&suggestions[0]!==exact){
-        next.apply.push({target:conflict.target,ga:suggestions[0],items,replaceExisting:true,reason:'stale-role-track-mix'});
-      }else next.conflicts.push(conflict);
-    }
-    return next;
-  }
-  function wrapPlanApplications(original){
-    if(typeof original!=='function')return null;
-    const wrapped=function(rows,entries,values,normalizer){
-      return promoteSafeRoleTrackConflicts(original.call(this,rows,entries,values,normalizer),values);
-    };
-    wrapped.__lbgGaRoleTrackStaleRepair=VERSION;
-    wrapped.__lbgOriginalPlanApplications=original;
-    return wrapped;
-  }
-  function applyPlanWithRoleTrackReplacement(per,plan,values={}){
-    const base={...(values&&typeof values==='object'?values:{})};
-    for(const item of plan?.apply||[]){
-      if(item?.replaceExisting&&item?.reason==='stale-role-track-mix'&&item?.target?.key)delete base[item.target.key];
-    }
-    return per?.applyPlan?.(plan,base)||{values:base,applied:0,protectedCount:0};
-  }
-  function wrapApplyReport(original,per,v7){
-    if(typeof original!=='function')return null;
-    const wrapped=async function(a){
-      const first=await original.call(this,a);
-      let rows=Array.isArray(first?.rows)?first.rows:null,history=first?.history||null;
-      if(!rows&&typeof per?.analyzeReport==='function'){
-        const analyzed=await per.analyzeReport(a);rows=analyzed?.rows||[];history=analyzed?.history||history;
-      }
-      if(!Array.isArray(rows)||!rows.length||!per?.loadStoredValues||!per?.planApplications||!per?.applyPlan)return first;
-      const stored=per.loadStoredValues(a);
-      let plan=per.planApplications(rows,a?.entries||[],stored,v7?.normalizeClass);
-      plan=promoteSafeRoleTrackConflicts(plan,stored);
-      const replacements=(plan?.apply||[]).filter(x=>x?.replaceExisting&&x?.reason==='stale-role-track-mix');
-      if(!replacements.length)return first;
-      // Chỉ ghi lại đúng class-key đã được lịch sử xác nhận là GA cũ do trộn luồng.
-      const safePlan={...plan,apply:replacements,same:[],skipped:[],conflicts:[]};
-      const write=applyPlanWithRoleTrackReplacement(per,safePlan,stored);
-      if(write.applied&&per?.persistStoredValues)per.persistStoredValues(a,write.values);
-      if(per?.decorateReport)per.decorateReport(a,write.values);
-      return{
-        ...first,history:history||first?.history,rows,
-        values:a?.gaValues||write.values,
-        applied:(Number(first?.applied)||0)+(Number(write.applied)||0),
-        roleTrackRepaired:(Number(first?.roleTrackRepaired)||0)+(Number(write.applied)||0),
-        protectedCount:Number(first?.protectedCount)||0
-      };
-    };
-    wrapped.__lbgGaRoleTrackStaleRepair=VERSION;
-    wrapped.__lbgOriginalApplyReport=original;
-    return wrapped;
-  }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport};
+    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory};
   }
 
   function installOnce(){
-    const v7=root.LBGGaSuggestionV7,per=root.LBGGaPerClassV2;
-    if(!v7?.buildHistory||!per?.planApplications||!per?.applyReport||!per?.applyPlan||!per?.loadStoredValues)return false;
+    const v7=root.LBGGaSuggestionV7;
+    if(!v7?.buildHistory)return false;
     if(v7.buildHistory.__lbgGaRoleTrackStaleRepair!==VERSION){
       const wrapped=wrapBuildHistory(v7.buildHistory);if(!wrapped)return false;v7.buildHistory=wrapped;
-    }
-    if(per.planApplications.__lbgGaRoleTrackStaleRepair!==VERSION){
-      const wrapped=wrapPlanApplications(per.planApplications);if(!wrapped)return false;per.planApplications=wrapped;
-    }
-    if(per.applyReport.__lbgGaRoleTrackStaleRepair!==VERSION){
-      const wrapped=wrapApplyReport(per.applyReport,per,v7);if(!wrapped)return false;per.applyReport=wrapped;
     }
     try{root.document.dispatchEvent(new CustomEvent('lbg-ga-role-track-stale-repair-ready',{detail:{version:VERSION}}))}catch{}
     return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,install};
 });
