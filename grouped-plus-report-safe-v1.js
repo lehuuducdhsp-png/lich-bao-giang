@@ -115,10 +115,9 @@
     return a&&h;
   }
   function install(){
-    let tries=0;const tick=()=>{tries++;installOnce();if(tries<600)setTimeout(tick,50)};tick();
+    let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<600)setTimeout(tick,50)};tick();
     root.document.addEventListener('lbg-tkb-roster-group-period-ready',installOnce);
     root.document.addEventListener('lbg-runtime-ready',installOnce);
-    root.document.addEventListener('lbg-ga-per-class-ready',installOnce);
     return true;
   }
   return{VERSION,mergeReportPlus,sameEvent,attachPlusToHistory,wrapHistory,install};
