@@ -78,7 +78,7 @@ for(const required of [
   'grouped-plus-report-safe-v1.js?v=20260919.1',
   'ga-per-class-v2.js?v=20260914.1',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
-  'ga-role-track-stale-repair-v1.js?v=20260919.1',
+  'ga-role-track-stale-repair-v1.js?v=20260919.2',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'assist-p-preview-safe-v1.js?v=20260918.1',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
