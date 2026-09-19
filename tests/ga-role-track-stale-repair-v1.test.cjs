@@ -5,7 +5,7 @@ const R=require('../ga-role-track-stale-repair-v1.js');
 const Per=require('../ga-per-class-v2.js');
 
 assert.equal(R.VERSION,'20260919.4');
-assert.equal(Per.VERSION,'20260919.1');
+assert.equal(Per.VERSION,'20260919.2');
 assert.equal(V7.roleTrack('STEM').track,'stem');
 assert.equal(V7.roleTrack('KNS').track,'kns');
 
