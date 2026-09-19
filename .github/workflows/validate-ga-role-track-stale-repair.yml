@@ -10,6 +10,7 @@ on:
       - 'teacher-intelligence-v6.js'
       - 'index.html'
       - 'tests/ga-role-track-stale-repair-v1.test.cjs'
+      - 'tests/ga-per-class-v2.test.cjs'
       - 'tests/runtime-responsive-loader-v1.test.cjs'
       - 'tests/multi-report-performance-v1.test.cjs'
       - '.github/workflows/validate-ga-role-track-stale-repair.yml'
@@ -26,20 +27,23 @@ jobs:
         run: |
           node --check ga-role-track-stale-repair-v1.js
           node --check tests/ga-role-track-stale-repair-v1.test.cjs
+          node --check tests/ga-per-class-v2.test.cjs
           node --check tests/runtime-responsive-loader-v1.test.cjs
           node --check tests/multi-report-performance-v1.test.cjs
       - name: Role-track and regression checks
         run: |
           node tests/ga-role-track-stale-repair-v1.test.cjs
+          node tests/ga-per-class-v2.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
           node tests/multi-report-performance-v1.test.cjs
       - name: Loader and role contracts
         run: |
+          grep -F "ga-per-class-v2.js?v=20260919.1" index.html
           grep -F "ga-role-track-stale-repair-v1.js?v=20260919.4" index.html
           grep -F "isRed(nameCell)" teacher-intelligence-v6.js
           grep -F "role=ROLE.STEM" teacher-intelligence-v6.js
           grep -F "if(r==='STEM')" ga-suggestion-v7.js
-          grep -F "stale-role-track-mix" ga-role-track-stale-repair-v1.js
+          grep -F "stale-role-track-mix" ga-per-class-v2.js
           python - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
