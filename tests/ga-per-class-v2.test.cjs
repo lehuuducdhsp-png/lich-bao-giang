@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const Per=require('../ga-per-class-v2.js');
+assert.equal(Per.VERSION,'20260919.1');
 
 const entries=[
   {day:5,session:'Chiều',school:'PHÚ THUẬN',className:'2/1',address:'A1'},
@@ -59,6 +60,17 @@ plan=Per.planApplications([ev(2,'A3','2/2')],entries,{[defaultKey]:'1',[class2Ke
 assert.equal(plan.apply.length,0);
 assert.equal(plan.conflicts.length,1,'existing class-specific GA must be protected');
 
+
+const staleEvent={ga:2,gaSource:'previous',addresses:['A3'],classId:'2/2',classDisplay:'2/2',__lbgStaleRoleTrackManual:4,__lbgRoleTrackExpected:2};
+const staleValues={[class2Key]:'4'};
+const stalePlan=Per.planApplications([staleEvent],entries,staleValues);
+assert.equal(stalePlan.conflicts.length,0,'verified stale role-track GA must be replaceable');
+assert.equal(stalePlan.apply.length,1);
+assert.equal(stalePlan.apply[0].replaceExisting,true);
+const staleWrite=Per.applyPlan(stalePlan,staleValues);
+assert.equal(staleWrite.replacedCount,1);
+assert.equal(staleWrite.values[class2Key],'2','verified stale class GA must be overwritten with canonical suggestion');
+
 const write=Per.applyPlan(Per.planApplications([ev(1,'A1','2/1'),ev(2,'A3','2/2')],entries,{}),{});
 assert.equal(write.applied,2);
 assert.equal(write.values[Per.classGaKey(5,'Chiều',loc,'2/1')],'1');
@@ -72,4 +84,4 @@ assert.equal(calls,1,'stable wrapper must call base analyzer exactly once');
 assert.equal(result.decorated,true);
 assert.equal(wrapped.__lbgOriginalAnalyze,original,'wrapper must capture immutable original analyzer');
 
-console.log('OK per-class GA v2: majority/tie, weighted groups, class targets, manual protection, stable analyzer wrapper');
+console.log('OK per-class GA v2: majority/tie, weighted groups, class targets, manual protection, verified stale-role replacement, stable analyzer wrapper');
