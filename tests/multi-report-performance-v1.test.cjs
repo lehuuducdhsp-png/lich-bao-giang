@@ -67,16 +67,16 @@ assert.match(teacherFix,/analysis-fix-v2\.js\?v=20260913\.1/);
 assert.match(analysisFix,/multi-teacher-v5\.js\?v=20260913\.1/);
 assert.match(index,/tkb-assignment-cache-safe-v1\.js\?v=20260913\.1/);
 assert.match(index,/ga-suggestion-multi-apply-v1\.js\?v=20260913\.2/);
-assert.match(index,/ga-per-class-v2\.js\?v=20260919\.1/);
+assert.match(index,/ga-per-class-v2\.js\?v=20260919\.2/);
 assert.match(index,/ga-multi-selection-bridge-v1\.js\?v=20260914\.2/);
-assert.ok(index.indexOf('ga-per-class-v2.js?v=20260919.1')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
+assert.ok(index.indexOf('ga-per-class-v2.js?v=20260919.2')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
 
 // Các module nghiệp vụ đã chốt gần đây vẫn phải còn nguyên trên đường chạy chính.
 for(const required of [
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'tkb-roster-group-period-safe-v1.js?v=20260919.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
-  'ga-per-class-v2.js?v=20260919.1',
+  'ga-per-class-v2.js?v=20260919.2',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
   'ga-role-track-stale-repair-v1.js?v=20260919.4',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
