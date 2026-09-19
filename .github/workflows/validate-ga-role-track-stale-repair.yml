@@ -1,0 +1,50 @@
+name: Validate GA role-track stale repair
+
+on:
+  pull_request:
+    paths:
+      - 'ga-role-track-stale-repair-v1.js'
+      - 'ga-suggestion-v7.js'
+      - 'ga-per-class-v2.js'
+      - 'ga-group-split-stale-repair-v1.js'
+      - 'teacher-intelligence-v6.js'
+      - 'index.html'
+      - 'tests/ga-role-track-stale-repair-v1.test.cjs'
+      - 'tests/runtime-responsive-loader-v1.test.cjs'
+      - 'tests/multi-report-performance-v1.test.cjs'
+      - '.github/workflows/validate-ga-role-track-stale-repair.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check ga-role-track-stale-repair-v1.js
+          node --check tests/ga-role-track-stale-repair-v1.test.cjs
+          node --check tests/runtime-responsive-loader-v1.test.cjs
+          node --check tests/multi-report-performance-v1.test.cjs
+      - name: Role-track and regression checks
+        run: |
+          node tests/ga-role-track-stale-repair-v1.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/multi-report-performance-v1.test.cjs
+      - name: Loader and role contracts
+        run: |
+          grep -F "ga-role-track-stale-repair-v1.js?v=20260919.1" index.html
+          grep -F "isRed(nameCell)" teacher-intelligence-v6.js
+          grep -F "role=ROLE.STEM" teacher-intelligence-v6.js
+          grep -F "if(r==='STEM')" ga-suggestion-v7.js
+          grep -F "stale-role-track-mix" ga-role-track-stale-repair-v1.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('ga-group-split-stale-repair-v1.js?v=20260914.1')
+          b=s.index('ga-role-track-stale-repair-v1.js?v=20260919.1')
+          c=s.index('ga-multi-selection-bridge-v1.js?v=20260914.2')
+          assert a < b < c, 'STEM/KNS repair must run after group-split repair and before shared GA bridge'
+          PY
