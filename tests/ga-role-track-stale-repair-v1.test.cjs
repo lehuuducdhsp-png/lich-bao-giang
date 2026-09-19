@@ -15,12 +15,12 @@ const entriesBySheet={
   '7T9':[{
     code:'HUỆ',teacherName:'Phan Thị Huệ',day:5,session:'Sáng',period:4,teachingPeriod:4,
     locationKey:'THUY PHUONG|25 DA LE',locationLabel:'THỦY PHƯƠNG\nTrụ sở chính: 25 DẠ LÊ',
-    schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM176'
+    schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM176',row:176,col:39
   }],
   '14T9':[{
     code:'HƯƠNG',teacherName:'Phan Thị Quý Hương',day:5,session:'Sáng',period:4,teachingPeriod:4,
     locationKey:'THUY PHUONG|25 DA LE',locationLabel:'THỦY PHƯƠNG\nTrụ sở chính: 25 DẠ LÊ',
-    schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM170'
+    schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM170',row:170,col:39
   }],
   '21T9':[{
     code:'HUỆ',teacherName:'Phan Thị Huệ',day:5,session:'Sáng',period:4,teachingPeriod:4,
