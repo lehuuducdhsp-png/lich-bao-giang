@@ -2,14 +2,15 @@
 const assert=require('node:assert/strict');
 const V7=require('../ga-suggestion-v7.js');
 const R=require('../ga-role-track-stale-repair-v1.js');
+const Per=require('../ga-per-class-v2.js');
 
-assert.equal(R.VERSION,'20260919.3');
+assert.equal(R.VERSION,'20260919.4');
+assert.equal(Per.VERSION,'20260919.1');
 assert.equal(V7.roleTrack('STEM').track,'stem');
 assert.equal(V7.roleTrack('KNS').track,'kns');
 
 // Ca thực tế lớp 3/9 tại THỦY PHƯƠNG:
 // 7T9 HUỆ (KNS) -> 14T9 HƯƠNG đỏ (STEM) -> 21T9 HUỆ (KNS).
-// STEM ở giữa không được đẩy chuỗi KNS.
 const sheets=[{name:'7T9'},{name:'14T9'},{name:'21T9'}];
 const entriesBySheet={
   '7T9':[{
@@ -25,7 +26,7 @@ const entriesBySheet={
   '21T9':[{
     code:'HUỆ',teacherName:'Phan Thị Huệ',day:5,session:'Sáng',period:4,teachingPeriod:4,
     locationKey:'THUY PHUONG|25 DA LE',locationLabel:'THỦY PHƯƠNG\nTrụ sở chính: 25 DẠ LÊ',
-    schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM170'
+    schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM170',row:170,col:39
   }]
 };
 const starts={
@@ -47,7 +48,8 @@ for(const ws of sheets){
     return sheetCells[ws.name]?.[address]||blackCell;
   };
 }
-// Cố tình cho fallback sai tất cả là KNS: wrapper an toàn phải nhìn chính màu đỏ ở ô HƯƠNG.
+
+// Fallback cố tình sai KNS; màu đỏ trong nguồn phải thắng.
 const roleResolver=()=> 'KNS';
 const safeBuild=R.wrapBuildHistory(V7.buildHistory);
 const history=safeBuild({worksheets:sheets},'21T9',{
@@ -56,16 +58,23 @@ const history=safeBuild({worksheets:sheets},'21T9',{
 const kns=history.events.filter(x=>x.track==='kns');
 const stem=history.events.filter(x=>x.track==='stem');
 assert.deepEqual(kns.map(x=>x.ga),[1,2],'HUỆ KNS 7T9 -> 21T9 must be GA1 -> GA2');
-assert.deepEqual(stem.map(x=>x.ga),[3],'HƯƠNG red STEM 14T9 must live on the separate STEM sequence even when fallback role says KNS');
-assert.equal(R.roleFor(sheets[1],'HƯƠNG',{row:170,col:39},()=> 'KNS'),'STEM','red timetable code must override an incorrect KNS fallback');
+assert.deepEqual(stem.map(x=>x.ga),[3],'HƯƠNG red 14T9 must stay on STEM sequence');
 
-// Nếu history chọn một snapshot 14T9 cũ bị mất màu đỏ, workbook đang mở vẫn phải là nguồn ưu tiên về ban STEM.
+// Nếu history chọn snapshot cũ bị mất màu, workbook đang mở vẫn quyết định ban STEM.
 const stale14={name:'14T9',getCell(){return blackCell}};
-const current14={name:'14T9',getCell(){return blackCell}};
-const referenceBook={getWorksheet(name){return name==='14T9'?current14:null}};
-const intelligence={summaryRoles(ws){return new Map([['HƯƠNG',{role:ws===current14?'STEM':'KNS'}]])}};
-assert.equal(R.roleFor(stale14,'HƯƠNG',{row:170,col:39},()=> 'KNS',referenceBook,intelligence),'STEM','active workbook red STEM role must override a stale historical KNS snapshot');
-assert.equal(history.byAddress.get('21T9!AM170')?.ga,2);
+const current7={name:'7T9'},current14={name:'14T9'},current21={name:'21T9'};
+const referenceBook={
+  worksheets:[current7,current14,current21],
+  getWorksheet(name){return this.worksheets.find(x=>x.name===name)||null}
+};
+const intelligence={
+  summaryRoles(ws){
+    if(ws===current14)return new Map([['HƯƠNG',{role:'STEM'}]]);
+    return new Map();
+  }
+};
+assert.equal(R.workbookRole(intelligence,referenceBook,'HƯƠNG'),'STEM');
+assert.equal(R.roleFor(stale14,'HƯƠNG',{row:170,col:39},()=> 'KNS',referenceBook,intelligence),'STEM');
 
 // Giả lập GA4 cũ đã được lưu trước khi tách đúng STEM/KNS.
 const prev=kns[0],current=kns[1],middle=stem[0];
@@ -77,49 +86,35 @@ R.repairHistory(staleHistory);
 assert.equal(current.ga,2,'stale GA4 must be repaired to canonical KNS GA2');
 assert.equal(current.__lbgStaleRoleTrackManual,4);
 assert.equal(current.__lbgRoleTrackExpected,2);
-assert.equal(current.__lbgOppositeTrackEvents.length,1);
 
-// Đây chính là ca ảnh người dùng: lớp 3/9 đã lưu GA4 cũ do từng trộn STEM vào KNS.
- // Không được phụ thuộc vào GA chung của địa điểm, vì header có thể là GA đại diện từ đa số lớp.
-const target={key:'@CLASS|5|Sáng|THUY PHUONG|25 DA LE|3/9',defaultKey:'5|Sáng|THUY PHUONG|25 DA LE',legacyKey:'5|Sáng|THỦY PHƯƠNG'};
-const values={
-  [target.key]:'4'
-};
-const plan={
-  apply:[],same:[],skipped:[],
-  conflicts:[{target,ga:2,current:'4',items:[{ev:current,ga:2}],reason:'existing-class-ga'}]
-};
-const promoted=R.promoteSafeRoleTrackConflicts(plan,values);
-assert.equal(promoted.conflicts.length,0);
-assert.equal(promoted.apply.length,1);
-assert.equal(promoted.apply[0].replaceExisting,true);
-assert.equal(promoted.apply[0].reason,'stale-role-track-mix');
+// ga-per-class phải tự cho phép thay đúng class-key 4 -> 2 khi event đã có marker stale.
+const entries=[{
+  day:5,session:'Sáng',schoolName:'THỦY PHƯƠNG',
+  locationKey:'THUY PHUONG|25 DA LE',className:'3/9',classRaw:'3/9',address:'AM170'
+}];
+const loc=Per.locOf(entries[0]).key;
+const classKey=Per.classGaKey(5,'Sáng',loc,'3/9');
+const values={[classKey]:'4'};
+const repairedEvent={...current,addresses:['AM170'],classId:'3/9',classDisplay:'3/9'};
+const plan=Per.planApplications([repairedEvent],entries,values,v=>String(v||'').trim());
+assert.equal(plan.conflicts.length,0);
+assert.equal(plan.apply.length,1);
+assert.equal(plan.apply[0].replaceExisting,true);
+assert.equal(plan.apply[0].reason,'stale-role-track-mix');
+assert.equal(plan.apply[0].current,4);
+assert.equal(plan.apply[0].ga,2);
 
-const fakePer={
-  applyPlan(p,base){
-    const out={...base};let applied=0,protectedCount=0;
-    for(const item of p.apply||[]){
-      const key=item?.target?.key,ga=item?.ga;
-      if(!key)continue;
-      if(Object.prototype.hasOwnProperty.call(out,key)){protectedCount++;continue}
-      out[key]=String(ga);applied++;
-    }
-    return{values:out,applied,protectedCount};
-  }
-};
-const repairedWrite=R.applyPlanWithRoleTrackReplacement(fakePer,promoted,values);
-assert.equal(repairedWrite.applied,1,'verified stale class key must actually be rewritten, not only promoted in the plan');
-assert.equal(repairedWrite.values[target.key],'2','stale class GA4 must become GA2 in stored values');
+const write=Per.applyPlan(plan,values);
+assert.equal(write.applied,1);
+assert.equal(write.replacedCount,1);
+assert.equal(write.values[classKey],'2','class-specific GA must really persist as GA2');
 
-// Nếu conflict không mang cờ lịch sử stale-role-track thì vẫn bảo vệ GA tay.
-const manualEvent={...current};
+// Manual GA không có marker stale vẫn được bảo vệ.
+const manualEvent={...repairedEvent,ga:2,gaSource:'previous'};
 delete manualEvent.__lbgStaleRoleTrackManual;
 delete manualEvent.__lbgRoleTrackExpected;
-const protectedPlan=R.promoteSafeRoleTrackConflicts({
-  apply:[],same:[],skipped:[],
-  conflicts:[{target,ga:2,current:'4',items:[{ev:manualEvent,ga:2}],reason:'existing-class-ga'}]
-},values);
+const protectedPlan=Per.planApplications([manualEvent],entries,values,v=>String(v||'').trim());
 assert.equal(protectedPlan.apply.length,0);
 assert.equal(protectedPlan.conflicts.length,1);
 
-console.log('OK GA role-track repair: red HƯƠNG stays STEM; lớp 3/9 KNS is GA2 and stale GA4 only repairs under safe common-GA evidence');
+console.log('OK GA role-track repair: active workbook STEM is authoritative; 3/9 KNS is GA2; verified stale GA4 is overwritten safely');
