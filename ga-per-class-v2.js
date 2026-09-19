@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260919.1';
+  const VERSION='20260919.2';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -160,7 +160,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator};
+    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverrides};
   }
 
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
@@ -215,14 +215,59 @@
     let queued=false;previewObserver=new MutationObserver(()=>{if(queued)return;queued=true;setTimeout(()=>{queued=false;const a=resultNow();if(a)patchMixedHeaders(a)},0)});previewObserver.observe(q('preview'),{childList:true,subtree:true});
   }
 
-  function roleResolver(ws,code){const m=root.LBGTeacherIntelligenceV6?.summaryRoles?.(ws)?.get?.(txt(code).toUpperCase());return m?.role||'KNS'}
-  function manualResolverFor(a){
+  function roleResolver(ws,code,e){
+    const fallback=(sheet,c)=>{
+      const m=root.LBGTeacherIntelligenceV6?.summaryRoles?.(sheet)?.get?.(txt(c).toUpperCase());
+      return m?.role||'KNS';
+    };
+    try{
+      const safe=root.LBGGaRoleTrackStaleRepairV1;
+      if(safe?.roleFor)return safe.roleFor(ws,code,e,fallback,bookNow(),root.LBGTeacherIntelligenceV6);
+    }catch{}
+    return fallback(ws,code);
+  }
+  function manualResolverFor(a,{classSpecific=true}={}){
     return(e,ws)=>{
       if(ws?.name!==a?.sheet||txt(e?.code).toUpperCase()!==txt(a?.code).toUpperCase())return null;
       const values=loadStoredValues(a),classKey=entryClassKey(e,normalizer()),locations=[txt(e?.locationKey),txt(e?.locationLabel),txt(e?.school),txt(e?.schoolName)].filter(Boolean);
-      for(const loc of locations){const own=rawValue(values,classGaKey(Number(e.day),txt(e.session),loc,classKey));if(own!==undefined){const n=normalizedGa(own);if(n!==null)return n}const common=rawValue(values,gaKey(Number(e.day),txt(e.session),loc));if(common!==undefined){const n=normalizedGa(common);if(n!==null)return n}}
+      for(const loc of locations){
+        if(classSpecific){
+          const own=rawValue(values,classGaKey(Number(e.day),txt(e.session),loc,classKey));
+          if(own!==undefined){const n=normalizedGa(own);if(n!==null)return n}
+        }
+        const common=rawValue(values,gaKey(Number(e.day),txt(e.session),loc));
+        if(common!==undefined){const n=normalizedGa(common);if(n!==null)return n}
+      }
       return null;
     };
+  }
+  function latestPriorSameTrack(ev){
+    return(ev?.previousEvents||[]).filter(x=>x?.track===ev?.track&&normalizedGa(x?.ga)!==null).sort((a,b)=>Number(b?.date)-Number(a?.date))[0]||null;
+  }
+  function markVerifiedStaleClassOverrides(history,canonical,a){
+    const safe=root.LBGGaRoleTrackStaleRepairV1;
+    if(!history?.byAddress||!canonical?.byAddress||!safe?.interveningOpposite||!safe?.contaminationCandidate)return 0;
+    const values=loadStoredValues(a),seen=new Set();let repaired=0;
+    for(const entry of a?.entries||[]){
+      const address=txt(entry?.address),key=`${a.sheet}!${address}`;if(!address||seen.has(key))continue;seen.add(key);
+      const ev=history.byAddress.get(key),canon=canonical.byAddress.get(key);
+      if(!ev||!canon||ev.track!==canon.track)continue;
+      const target=targetForEntry(entry,canon,normalizer());if(!target)continue;
+      const stored=normalizedGa(rawValue(values,target.key)),expected=normalizedGa(canon.ga);
+      if(stored===null||expected===null||stored===expected)continue;
+      const previous=latestPriorSameTrack(canon);if(!previous)continue;
+      const opposite=safe.interveningOpposite(canonical,canon,previous);
+      if(!opposite.length)continue;
+      const contaminated=safe.contaminationCandidate(canon.track,expected,opposite.length);
+      if(contaminated!==stored)continue;
+      ev.__lbgStaleRoleTrackManual=stored;
+      ev.__lbgRoleTrackExpected=expected;
+      ev.__lbgOppositeTrackEvents=opposite.map(x=>x.id||'').filter(Boolean);
+      ev.ga=expected;ev.gaSource='previous';ev.historyMismatch=false;
+      repaired++;
+    }
+    history.__lbgVerifiedStaleClassOverrides=repaired;
+    return repaired;
   }
   async function loadSources(book){
     const list=versionList(),active=activeVersion(),out=[];
@@ -236,7 +281,14 @@
   function rowsFor(history,a){const unique=new Map();for(const entry of a?.entries||[]){const ev=history?.byAddress?.get?.(`${a.sheet}!${entry.address}`);if(ev&&!unique.has(ev.id))unique.set(ev.id,ev)}return[...unique.values()].sort((x,y)=>x.date-y.date||dayRank(x.session)-dayRank(y.session)||x.period-y.period)}
   async function analyzeReport(a){
     const book=bookNow(),c=cross(),base=v7(),p=parser();if(!book||!a?.sheet||!a?.entries?.length)throw new Error('Báo giảng chưa có dữ liệu để phân tích GA.');if(!c?.buildHistoryAcrossSources||!base||!p)throw new Error('Bộ phân tích GA chưa sẵn sàng.');
-    const sources=await loadSources(book),history=c.buildHistoryAcrossSources(base,sources,book,a.sheet,{parser:p,roleResolver,startDateFor,weekLike:weekLikeFor,manualResolver:manualResolverFor(a)});return{history,rows:rowsFor(history,a)};
+    const sources=await loadSources(book);
+    const common={parser:p,roleResolver,startDateFor,weekLike:weekLikeFor};
+    const history=c.buildHistoryAcrossSources(base,sources,book,a.sheet,{...common,manualResolver:manualResolverFor(a,{classSpecific:true})});
+    // Pass 2: bỏ riêng GA theo lớp, vẫn giữ GA chung của địa điểm để tính mốc chuẩn.
+    // Dùng pass này chỉ để nhận diện GA lớp cũ bị tăng do STEM/KNS chen nhau; không đụng GA tay khác.
+    const canonical=c.buildHistoryAcrossSources(base,sources,book,a.sheet,{...common,manualResolver:manualResolverFor(a,{classSpecific:false})});
+    markVerifiedStaleClassOverrides(history,canonical,a);
+    return{history,canonicalHistory:canonical,rows:rowsFor(history,a)};
   }
   function titleFor(ev){const x=root.LBGTeachingPlanProgressV1?.titleFor?.(ev?.grade,ev?.track,ev?.ga);return x?.kind==='lesson'?x:{title:ev?.ga==null?'Chưa xác định GA':'Chưa có tên bài trong kế hoạch'}}
   function fmtDate(d){return d instanceof Date&&!Number.isNaN(d.getTime())?d.toLocaleDateString('vi-VN'):'—'}
@@ -282,5 +334,5 @@
     };
     tick();return true;
   }
-  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator,decorateReport,analyzeReport,applyReport,loadStoredValues,persistStoredValues,install};
+  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverrides,decorateReport,analyzeReport,applyReport,loadStoredValues,persistStoredValues,install};
 });
