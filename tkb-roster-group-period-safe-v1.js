@@ -58,26 +58,51 @@
       return !a||!b||a===b;
     }catch{return true}
   }
-  function assignmentLike(parser,ws,value){
-    const raw=txt(value).toUpperCase();if(!raw)return false;
-    try{if(parser?.resolveTeacherCode?.(ws,raw))return true}catch{}
-    const m=raw.match(/^(.+?)(P|\+)$/);
-    if(m){try{if(parser?.resolveTeacherCode?.(ws,m[1]))return true}catch{}}
-    return false;
+  function assignmentToken(parser,ws,value){
+    const raw=txt(value).toUpperCase();if(!raw)return null;
+    let kind='main',base=raw;
+    if(/\+$/.test(raw)){kind='plus';base=raw.slice(0,-1)}
+    else if(/P$/.test(raw)){kind='assist';base=raw.slice(0,-1)}
+    let resolved=null;
+    try{resolved=parser?.resolveTeacherCode?.(ws,kind==='main'?raw:base)||null}catch{}
+    if(!resolved&&kind==='main'){try{resolved=parser?.resolveTeacherCode?.(ws,raw)||null}catch{}}
+    const code=txt(resolved?.code).toUpperCase();return code?{raw,base,kind,code}:null;
   }
+  function assignmentLike(parser,ws,value){return Boolean(assignmentToken(parser,ws,value))}
   function classMetaOf(parser,value){
     try{return parser?.classMeta?.(value)||null}catch{return null}
   }
-  function clearPathToGroup(parser,ws,anchorRow,row,col){
-    for(let r=Number(anchorRow)+1;r<Number(row);r++){
-      const value=txt(cellText(masterCell(ws,r,col))).replace(/\s+/g,' ').trim();
-      if(!value)continue;
-      if(assignmentLike(parser,ws,value))continue;
-      const meta=classMetaOf(parser,value);
-      if(meta&&txt(meta.classType).toLowerCase()!=='unknown')return false;
-      return false;
+  function groupRosterCells(ws,anchor,parser=null){
+    if(!ws?.getCell||!anchor?.merge||!anchor?.meta)return[];
+    const limit=Math.max(1,Number(anchor.meta.classCount)||1),width=Math.max(1,Number(anchor.merge.c2)-Number(anchor.merge.c1)+1);
+    const expectedRows=Math.max(1,Math.ceil(limit/width)),maxRows=expectedRows+1,out=[];
+    let baseCount=0,reachedAt=null;
+    for(let offset=1;offset<=maxRows;offset++){
+      const r=Number(anchor.row)+offset;
+      if(r>Number(ws.rowCount||r)||!sameLocation(parser,ws,Number(anchor.row),r,anchor.locationKey))break;
+      const tokens=[];let boundary=false;
+      for(let c=Number(anchor.merge.c1);c<=Number(anchor.merge.c2);c++){
+        const value=txt(cellText(masterCell(ws,r,c))).replace(/\s+/g,' ').trim();if(!value)continue;
+        const token=assignmentToken(parser,ws,value);
+        if(token){tokens.push({row:r,col:c,address:txt(ws.getCell(r,c)?.address),value,...token});continue}
+        const meta=classMetaOf(parser,value),type=txt(meta?.classType).toLowerCase();
+        if(type&&type!=='unknown')boundary=true;
+        else boundary=true;
+      }
+      if(boundary)break;
+      for(const token of tokens){
+        if(token.kind==='main'){
+          if(baseCount>=limit)continue;
+          out.push({...token,baseSlot:true,baseIndex:baseCount+1});baseCount++;
+          if(baseCount>=limit&&reachedAt===null)reachedAt=r;
+        }else{
+          out.push({...token,baseSlot:false,baseIndex:null});
+        }
+      }
+      // Sau khi đủ N lớp, chỉ cho phép thêm đúng 1 hàng để chứa +/P; không kéo sang cụm kế tiếp.
+      if(reachedAt!==null&&r>reachedAt)break;
     }
-    return true;
+    out.baseCount=baseCount;out.classCount=limit;out.complete=baseCount>=limit;return out;
   }
   function explicitGroupAnchorAt(ws,row,col,parser=null,locationKey=''){
     if(!ws?.getCell)return null;
@@ -88,10 +113,12 @@
       if(!value)continue;
       const period=explicitGroupPeriod(value),meta=classMetaOf(parser,value);
       const combined=meta&&txt(meta.classType).toLowerCase()==='combined';
-      if(!period||!combined)continue;
-      if(merge&&(column<merge.c1||column>merge.c2))continue;
-      if(!clearPathToGroup(parser,ws,r,origin,column))continue;
-      return{row:r,col:column,period,sourceText:value,merge,meta,locationKey:txt(locationKey)};
+      if(!period||!combined||!merge)continue;
+      if(column<merge.c1||column>merge.c2)continue;
+      const anchor={row:r,col:column,period,sourceText:value,merge,meta,locationKey:txt(locationKey)};
+      const roster=groupRosterCells(ws,anchor,parser);
+      if(!roster.some(x=>Number(x.row)===origin&&Number(x.col)===column))continue;
+      return{...anchor,roster,rosterBaseCount:Number(roster.baseCount)||0,rosterComplete:Boolean(roster.complete)};
     }
     return null;
   }
@@ -177,7 +204,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
@@ -208,5 +235,5 @@
     root.document.addEventListener('lbg-runtime-ready',installOnce);
     return true;
   }
-  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
+  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
 });
