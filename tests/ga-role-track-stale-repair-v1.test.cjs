@@ -33,15 +33,31 @@ const starts={
   '14T9':new Date(2026,8,14,12),
   '21T9':new Date(2026,8,21,12)
 };
+const redCell={font:{color:{argb:'FFFF0000'}}};
+const blackCell={font:{color:{argb:'FF000000'}}};
 const parser={scanAssignments(ws){return entriesBySheet[ws.name]||[]}};
-const roleResolver=(ws,code)=>code==='HƯƠNG'?'STEM':'KNS';
-const history=V7.buildHistory({worksheets:sheets},'21T9',{
+const sheetCells={
+  '7T9':{'AM176':blackCell},
+  '14T9':{'AM170':redCell},
+  '21T9':{'AM170':blackCell}
+};
+for(const ws of sheets){
+  ws.getCell=(row,col)=>{
+    const address=row===170&&col===39?'AM170':row===176&&col===39?'AM176':'';
+    return sheetCells[ws.name]?.[address]||blackCell;
+  };
+}
+// Cố tình cho fallback sai tất cả là KNS: wrapper an toàn phải nhìn chính màu đỏ ở ô HƯƠNG.
+const roleResolver=()=> 'KNS';
+const safeBuild=R.wrapBuildHistory(V7.buildHistory);
+const history=safeBuild({worksheets:sheets},'21T9',{
   parser,roleResolver,startDateFor:ws=>starts[ws.name],weekLike:()=>true
 });
 const kns=history.events.filter(x=>x.track==='kns');
 const stem=history.events.filter(x=>x.track==='stem');
 assert.deepEqual(kns.map(x=>x.ga),[1,2],'HUỆ KNS 7T9 -> 21T9 must be GA1 -> GA2');
-assert.deepEqual(stem.map(x=>x.ga),[3],'HƯƠNG red STEM 14T9 must live on the separate STEM sequence');
+assert.deepEqual(stem.map(x=>x.ga),[3],'HƯƠNG red STEM 14T9 must live on the separate STEM sequence even when fallback role says KNS');
+assert.equal(R.roleFor(sheets[1],'HƯƠNG',{row:170,col:39},()=> 'KNS'),'STEM','red timetable code must override an incorrect KNS fallback');
 assert.equal(history.byAddress.get('21T9!AM170')?.ga,2);
 
 // Giả lập GA4 cũ đã được lưu trước khi tách đúng STEM/KNS.
@@ -56,12 +72,11 @@ assert.equal(current.__lbgStaleRoleTrackManual,4);
 assert.equal(current.__lbgRoleTrackExpected,2);
 assert.equal(current.__lbgOppositeTrackEvents.length,1);
 
-// Chỉ tự ghi đè khi GA chung hiện tại đã đúng bằng GA2.
-// Đây chính là ca ảnh người dùng: header THỦY PHƯƠNG GA2 nhưng lớp 3/9 còn GA4.
+// Đây chính là ca ảnh người dùng: lớp 3/9 đã lưu GA4 cũ do từng trộn STEM vào KNS.
+ // Không được phụ thuộc vào GA chung của địa điểm, vì header có thể là GA đại diện từ đa số lớp.
 const target={key:'@CLASS|5|Sáng|THUY PHUONG|25 DA LE|3/9',defaultKey:'5|Sáng|THUY PHUONG|25 DA LE',legacyKey:'5|Sáng|THỦY PHƯƠNG'};
 const values={
-  [target.key]:'4',
-  [target.defaultKey]:'2'
+  [target.key]:'4'
 };
 const plan={
   apply:[],same:[],skipped:[],
@@ -73,8 +88,14 @@ assert.equal(promoted.apply.length,1);
 assert.equal(promoted.apply[0].replaceExisting,true);
 assert.equal(promoted.apply[0].reason,'stale-role-track-mix');
 
-// Nếu GA chung không xác nhận GA2 thì vẫn bảo vệ GA lớp, không tự sửa.
-const protectedPlan=R.promoteSafeRoleTrackConflicts(plan,{...values,[target.defaultKey]:'5'});
+// Nếu conflict không mang cờ lịch sử stale-role-track thì vẫn bảo vệ GA tay.
+const manualEvent={...current};
+delete manualEvent.__lbgStaleRoleTrackManual;
+delete manualEvent.__lbgRoleTrackExpected;
+const protectedPlan=R.promoteSafeRoleTrackConflicts({
+  apply:[],same:[],skipped:[],
+  conflicts:[{target,ga:2,current:'4',items:[{ev:manualEvent,ga:2}],reason:'existing-class-ga'}]
+},values);
 assert.equal(protectedPlan.apply.length,0);
 assert.equal(protectedPlan.conflicts.length,1);
 
