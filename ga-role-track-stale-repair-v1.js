@@ -133,23 +133,64 @@
     wrapped.__lbgOriginalPlanApplications=original;
     return wrapped;
   }
+  function applyPlanWithRoleTrackReplacement(per,plan,values={}){
+    const base={...(values&&typeof values==='object'?values:{})};
+    for(const item of plan?.apply||[]){
+      if(item?.replaceExisting&&item?.reason==='stale-role-track-mix'&&item?.target?.key)delete base[item.target.key];
+    }
+    return per?.applyPlan?.(plan,base)||{values:base,applied:0,protectedCount:0};
+  }
+  function wrapApplyReport(original,per,v7){
+    if(typeof original!=='function')return null;
+    const wrapped=async function(a){
+      const first=await original.call(this,a);
+      let rows=Array.isArray(first?.rows)?first.rows:null,history=first?.history||null;
+      if(!rows&&typeof per?.analyzeReport==='function'){
+        const analyzed=await per.analyzeReport(a);rows=analyzed?.rows||[];history=analyzed?.history||history;
+      }
+      if(!Array.isArray(rows)||!rows.length||!per?.loadStoredValues||!per?.planApplications||!per?.applyPlan)return first;
+      const stored=per.loadStoredValues(a);
+      let plan=per.planApplications(rows,a?.entries||[],stored,v7?.normalizeClass);
+      plan=promoteSafeRoleTrackConflicts(plan,stored);
+      const replacements=(plan?.apply||[]).filter(x=>x?.replaceExisting&&x?.reason==='stale-role-track-mix');
+      if(!replacements.length)return first;
+      // Chỉ ghi lại đúng class-key đã được lịch sử xác nhận là GA cũ do trộn luồng.
+      const safePlan={...plan,apply:replacements,same:[],skipped:[],conflicts:[]};
+      const write=applyPlanWithRoleTrackReplacement(per,safePlan,stored);
+      if(write.applied&&per?.persistStoredValues)per.persistStoredValues(a,write.values);
+      if(per?.decorateReport)per.decorateReport(a,write.values);
+      return{
+        ...first,history:history||first?.history,rows,
+        values:a?.gaValues||write.values,
+        applied:(Number(first?.applied)||0)+(Number(write.applied)||0),
+        roleTrackRepaired:(Number(first?.roleTrackRepaired)||0)+(Number(write.applied)||0),
+        protectedCount:Number(first?.protectedCount)||0
+      };
+    };
+    wrapped.__lbgGaRoleTrackStaleRepair=VERSION;
+    wrapped.__lbgOriginalApplyReport=original;
+    return wrapped;
+  }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications};
+    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport};
   }
 
   function installOnce(){
     const v7=root.LBGGaSuggestionV7,per=root.LBGGaPerClassV2;
-    if(!v7?.buildHistory||!per?.planApplications)return false;
+    if(!v7?.buildHistory||!per?.planApplications||!per?.applyReport||!per?.applyPlan||!per?.loadStoredValues)return false;
     if(v7.buildHistory.__lbgGaRoleTrackStaleRepair!==VERSION){
       const wrapped=wrapBuildHistory(v7.buildHistory);if(!wrapped)return false;v7.buildHistory=wrapped;
     }
     if(per.planApplications.__lbgGaRoleTrackStaleRepair!==VERSION){
       const wrapped=wrapPlanApplications(per.planApplications);if(!wrapped)return false;per.planApplications=wrapped;
     }
+    if(per.applyReport.__lbgGaRoleTrackStaleRepair!==VERSION){
+      const wrapped=wrapApplyReport(per.applyReport,per,v7);if(!wrapped)return false;per.applyReport=wrapped;
+    }
     try{root.document.dispatchEvent(new CustomEvent('lbg-ga-role-track-stale-repair-ready',{detail:{version:VERSION}}))}catch{}
     return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,promoteSafeRoleTrackConflicts,wrapPlanApplications,applyPlanWithRoleTrackReplacement,wrapApplyReport,install};
 });
