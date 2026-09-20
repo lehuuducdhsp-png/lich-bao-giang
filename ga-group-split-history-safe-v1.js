@@ -5,13 +5,14 @@
   if(root)root.LBGGaGroupSplitHistorySafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260914.1';
+  const VERSION='20260920.1';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const seqFor=track=>track==='stem'?STEM_SEQUENCE:KNS_SEQUENCE;
   const nextGa=(track,ga)=>{const seq=seqFor(track),i=seq.indexOf(Number(ga));return i<0?seq.find(x=>x>Number(ga))??seq[0]??null:seq[i+1]??null};
+  const expectedFromState=(track,state,current)=>txt(state?.event?.sheet)===txt(current?.sheet)?Number(state?.ga):nextGa(track,state?.ga);
   const dayRank=s=>txt(s).toLowerCase().startsWith('sáng')?0:1;
 
   function wholeGradeFromText(value){
@@ -87,8 +88,9 @@
       }else if(!prior.length){
         ev.ga=seq[0]??null;ev.gaSource='first';
       }else{
-        const candidates=prior.map(x=>nextGa(ev.track,x.ga)).filter(x=>x!==null),uniq=[...new Set(candidates)];
-        if(uniq.length===1){ev.ga=uniq[0];ev.gaSource='previous'}
+        const candidates=prior.map(x=>expectedFromState(ev.track,x,ev)).filter(x=>x!==null&&Number.isFinite(Number(x))),uniq=[...new Set(candidates.map(Number))];
+        const sameWeek=prior.length>0&&prior.every(x=>txt(x?.event?.sheet)===txt(ev.sheet));
+        if(uniq.length===1){ev.ga=uniq[0];ev.gaSource=sameWeek?'same-week':'previous'}
         else{
           ev.ga=null;ev.gaSource='conflict';ev.historyMismatch=true;
           addWarning(history,`Lịch sử GA các lớp trong nhóm không đồng nhất tại ${txt(ev.dateKey)}, ${txt(ev.school)}.`);
@@ -124,5 +126,5 @@
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
 
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,wholeGradeFromText,isWholeGradeGroup,specificMembers,scopeKey,reconcileHistory,wrapBuildHistory,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,expectedFromState,wholeGradeFromText,isWholeGradeGroup,specificMembers,scopeKey,reconcileHistory,wrapBuildHistory,install};
 });
