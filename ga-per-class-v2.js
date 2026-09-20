@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.3';
+  const VERSION='20260920.4';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -172,7 +172,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides};
+    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,staleDiagnostics};
   }
 
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
@@ -299,6 +299,55 @@
       history,canonical,a?.sheet,a?.entries||[],loadStoredValues(a),normalizer(),root.LBGGaRoleTrackStaleRepairV1
     );
   }
+  function staleDiagnostics(history,canonical,a){
+    const values=loadStoredValues(a),safe=root.LBGGaRoleTrackStaleRepairV1,rows=[];
+    for(const entry of a?.entries||[]){
+      const address=txt(entry?.address),key=`${txt(a?.sheet)}!${address}`;
+      if(!address||rows.some(x=>x.key===key))continue;
+      const ev=history?.byAddress?.get?.(key),canon=canonical?.byAddress?.get?.(key);
+      if(!ev||!canon)continue;
+      const target=targetForEntry(entry,canon,normalizer());if(!target)continue;
+      const stored=normalizedGa(rawValue(values,target.key)),common=normalizedGa(inheritedRaw(values,target)),expected=normalizedGa(canon.ga);
+      if(stored===null||stored===common)continue;
+      const previous=latestPriorSameTrack(canon);
+      const opposite=previous&&safe?.interveningOpposite?safe.interveningOpposite(canonical,canon,previous):[];
+      const candidate=safe?.contaminationCandidate?safe.contaminationCandidate(canon.track,expected,opposite.length):null;
+      let reason='verified';
+      if(ev.track!==canon.track)reason='track-mismatch';
+      else if(expected===null)reason='canonical-missing';
+      else if(stored===expected)reason='stored-already-canonical';
+      else if(common===null)reason='common-missing';
+      else if(common!==expected)reason='common-ne-canonical';
+      else if(!previous)reason='no-previous-same-track';
+      else if(!opposite.length)reason='no-opposite-track-between';
+      else if(candidate!==stored)reason='candidate-ne-stored';
+      rows.push({
+        key,address,classKey:target.classKey,locationKey:target.locationKey,
+        stored,common,expected,track:canon.track,historyTrack:ev.track,
+        previousGa:normalizedGa(previous?.ga),previousId:txt(previous?.id),
+        oppositeCount:opposite.length,opposite:opposite.map(x=>({id:txt(x?.id),track:x?.track,ga:normalizedGa(x?.ga),code:txt(x?.code)})),
+        candidate,reason,verified:ev.__lbgStaleRoleTrackVerified===true
+      });
+    }
+    return rows;
+  }
+  function showStaleDiagnostics(a,diagnostics){
+    const preview=q('preview');if(!preview)return;
+    preview.querySelector?.('#lbgGaStaleDebug')?.remove?.();
+    if(!Array.isArray(diagnostics)||!diagnostics.length)return;
+    const box=root.document.createElement('div');box.id='lbgGaStaleDebug';
+    box.style.cssText='margin:12px 0;padding:10px;border:2px dashed #b45309;background:#fff7ed;color:#7c2d12;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;text-align:left';
+    box.textContent='GA DEBUG (tạm thời)\n'+diagnostics.map(d=>[
+      `class=${d.classKey} address=${d.address}`,
+      `stored=${d.stored} common=${d.common} canonical=${d.expected}`,
+      `track=${d.track} historyTrack=${d.historyTrack} previousGA=${d.previousGa}`,
+      `oppositeCount=${d.oppositeCount} candidate=${d.candidate}`,
+      `reason=${d.reason} verified=${d.verified}`,
+      `locationKey=${d.locationKey}`,
+      `opposite=${JSON.stringify(d.opposite)}`
+    ].join(' | ')).join('\n');
+    preview.prepend(box);
+  }
   async function loadSources(book){
     const list=versionList(),active=activeVersion(),out=[];
     for(const item of list){
@@ -318,7 +367,8 @@
     // Dùng pass này chỉ để nhận diện GA lớp cũ bị tăng do STEM/KNS chen nhau; không đụng GA tay khác.
     const canonical=c.buildHistoryAcrossSources(base,sources,book,a.sheet,{...common,manualResolver:manualResolverFor(a,{classSpecific:false})});
     markVerifiedStaleClassOverrides(history,canonical,a);
-    return{history,canonicalHistory:canonical,rows:rowsFor(history,a)};
+    const diagnostics=staleDiagnostics(history,canonical,a);
+    return{history,canonicalHistory:canonical,rows:rowsFor(history,a),diagnostics};
   }
   async function repairVerifiedStaleOnly(a){
     const analyzed=await analyzeReport(a),values=loadStoredValues(a);
@@ -336,10 +386,11 @@
     setTimeout(async()=>{
       try{
         const out=await repairVerifiedStaleOnly(a);
+        showStaleDiagnostics(a,out.diagnostics);
         if(!out.applied)return;
         decorateReport(a,out.values);
         const now=resultNow();
-        if(sameReport(now,a))refreshCurrentReport(now,out.values);
+        if(sameReport(now,a)){refreshCurrentReport(now,out.values);showStaleDiagnostics(now,out.diagnostics)}
       }catch(error){console.error('GA verified stale self-heal:',error)}
       finally{selfHealPending.delete(key)}
     },0);
@@ -390,5 +441,5 @@
     };
     tick();return true;
   }
-  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,decorateReport,analyzeReport,repairVerifiedStaleOnly,applyReport,loadStoredValues,persistStoredValues,install};
+  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,staleDiagnostics,decorateReport,analyzeReport,repairVerifiedStaleOnly,applyReport,loadStoredValues,persistStoredValues,install};
 });
