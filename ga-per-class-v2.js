@@ -244,14 +244,13 @@
   function latestPriorSameTrack(ev){
     return(ev?.previousEvents||[]).filter(x=>x?.track===ev?.track&&normalizedGa(x?.ga)!==null).sort((a,b)=>Number(b?.date)-Number(a?.date))[0]||null;
   }
-  function markVerifiedStaleClassOverridesFromValues(history,canonical,entries,values={},normalizer,safe){
+  function markVerifiedStaleClassOverridesFromValues(history,canonical,selectedSheet,entries,values={},normalizer,safe){
     if(!history?.byAddress||!canonical?.byAddress||!safe?.interveningOpposite||!safe?.contaminationCandidate)return 0;
     const seen=new Set();let repaired=0;
     for(const entry of Array.isArray(entries)?entries:[]){
-      const address=txt(entry?.address),sheet=txt(entry?.sheetName||entry?.sheet||canonical?.selectedSheet||'');
-      const ev=[...history.byAddress.entries()].find(([key])=>key.endsWith(`!${address}`))?.[1];
-      const canon=[...canonical.byAddress.entries()].find(([key])=>key.endsWith(`!${address}`))?.[1];
-      const uniqueKey=`${txt(ev?.sheet||canon?.sheet||sheet)}!${address}`;if(!address||seen.has(uniqueKey))continue;seen.add(uniqueKey);
+      const address=txt(entry?.address),uniqueKey=`${txt(selectedSheet)}!${address}`;
+      if(!address||!txt(selectedSheet)||seen.has(uniqueKey))continue;seen.add(uniqueKey);
+      const ev=history.byAddress.get(uniqueKey),canon=canonical.byAddress.get(uniqueKey);
       if(!ev||!canon||ev.track!==canon.track)continue;
       const target=targetForEntry(entry,canon,normalizer);if(!target)continue;
       const stored=normalizedGa(rawValue(values,target.key)),expected=normalizedGa(canon.ga);
@@ -279,7 +278,7 @@
   }
   function markVerifiedStaleClassOverrides(history,canonical,a){
     return markVerifiedStaleClassOverridesFromValues(
-      history,canonical,a?.entries||[],loadStoredValues(a),normalizer(),root.LBGGaRoleTrackStaleRepairV1
+      history,canonical,a?.sheet,a?.entries||[],loadStoredValues(a),normalizer(),root.LBGGaRoleTrackStaleRepairV1
     );
   }
   async function loadSources(book){
