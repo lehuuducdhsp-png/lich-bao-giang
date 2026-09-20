@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260913.1';
+  const VERSION='20260920.1';
   const LOOKAHEAD=8;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -94,7 +94,7 @@
         ['teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script'],
         ['conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script'],
         ['ga-suggestion-v7.js?v=20260909.2','lbgGaSuggestionV7Script'],
-        ['ga-suggestion-cross-version-v1.js?v=20260912.4','lbgGaSuggestionCrossVersionV1Script']
+        ['ga-suggestion-cross-version-v1.js?v=20260920.1','lbgGaSuggestionCrossVersionV1Script']
       ];
       preloadWindow(reportCore,0,reportCore.length);
       await loadSequence(reportCore);
