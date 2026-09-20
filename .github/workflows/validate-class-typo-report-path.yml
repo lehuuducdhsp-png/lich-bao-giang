@@ -33,14 +33,14 @@ jobs:
         run: node tests/class-typo-report-path-safe-v1.test.cjs
       - name: Loader contract
         run: |
-          grep -F 'tkb-class-typo-fix-v1.js?v=20260913.2' index.html
-          grep -F 'class-typo-report-path-safe-v1.js?v=20260916.1' index.html
-          grep -F 'tkb-assignment-cache-safe-v1.js?v=20260913.1' index.html
+          grep -F 'tkb-class-typo-fix-v1.js?v=20260913.2' patch-runtime-loader-v1.js
+          grep -F 'class-typo-report-path-safe-v1.js?v=20260916.1' patch-runtime-loader-v1.js
+          grep -F 'tkb-assignment-cache-safe-v1.js?v=20260913.1' patch-runtime-loader-v1.js
       - name: Preserve recent production modules
         run: |
-          grep -F 'ga-group-split-history-safe-v1.js?v=20260920.1' index.html
-          grep -F 'ga-group-split-stale-repair-v1.js?v=20260920.1' index.html
-          grep -F 'ga-per-class-v2.js?v=20260920.5' index.html
-          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' index.html
-          grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' index.html
-          grep -F 'school-report-v1.js?v=20260914.3' index.html
+          grep -F 'ga-group-split-history-safe-v1.js?v=20260920.1' patch-runtime-loader-v1.js
+          grep -F 'ga-group-split-stale-repair-v1.js?v=20260920.1' patch-runtime-loader-v1.js
+          grep -F 'ga-per-class-v2.js?v=20260920.5' patch-runtime-loader-v1.js
+          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' patch-runtime-loader-v1.js
+          grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' patch-runtime-loader-v1.js
+          grep -F 'school-report-v1.js?v=20260914.3' patch-runtime-loader-v1.js
