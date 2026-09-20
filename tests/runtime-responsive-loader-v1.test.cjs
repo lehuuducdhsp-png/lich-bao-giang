@@ -91,7 +91,7 @@ assert.doesNotMatch(runtime,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'r
 function patchNames(blockName){
   const m=patches.match(new RegExp(`const ${blockName}=\\[([\\s\\S]*?)\\n  \\];`));
   assert.ok(m,`${blockName} list must exist`);
-  return [...m[1].matchAll(/\\['([^']+\\.js\\?v=[^']+)'\\s*,\\s*'[^']+'\\]/g)].map(x=>x[1]);
+  return [...m[1].matchAll(/\['([^']+\.js\?v=[^']+)'\s*,\s*'[^']+'\]/g)].map(x=>x[1]);
 }
 const expectedCorePatches=[
   'tkb-class-typo-fix-v1.js?v=20260913.2',
