@@ -5,10 +5,11 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.3';
+  const VERSION='20260920.4';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
+  const REPAIR_BACKUP_PREFIX='lbgGaRepairBackupV1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -47,6 +48,14 @@
   function gaKey(day,session,location){return`${Number(day)}|${txt(session)}|${txt(location)}`}
   function classGaKey(day,session,location,classKey){return`${CLASS_PREFIX}|${Number(day)}|${txt(session)}|${txt(location)}|${txt(classKey)}`}
   function storageKey(version,sheet,code,prefix=GA_PREFIX){return`${prefix}:${txt(version)||'active'}:${txt(sheet)}:${txt(code)}`}
+  function repairBackupKey(version,sheet,code){return`${REPAIR_BACKUP_PREFIX}:${txt(version)||'active'}:${txt(sheet)}:${txt(code)}`}
+  function buildRepairBackup(values,plan){
+    const replacements=(plan?.apply||[]).filter(x=>x?.replaceExisting===true).map(x=>({
+      key:txt(x?.target?.key),from:normalizedGa(x?.current),to:normalizedGa(x?.ga),
+      reason:txt(x?.reason),repairReason:txt(x?.items?.[0]?.ev?.__lbgStaleRepairReason)
+    })).filter(x=>x.key&&x.from!==null&&x.to!==null);
+    return replacements.length?{schema:1,createdAt:new Date().toISOString(),values:{...(values&&typeof values==='object'?values:{})},replacements}:null;
+  }
   function rawValue(values,key){
     if(!values||typeof values!=='object'||!key||!Object.prototype.hasOwnProperty.call(values,key))return undefined;
     const raw=values[key];return raw===undefined||raw===null||txt(raw)===''?undefined:raw;
@@ -172,7 +181,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides};
+    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,REPAIR_BACKUP_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,repairBackupKey,buildRepairBackup,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides};
   }
 
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
@@ -189,6 +198,14 @@
     return{};
   }
   function persistStoredValues(a,values){try{root.localStorage.setItem(storageKey(activeVersion(),a?.sheet,a?.code||a?.teacherName),JSON.stringify(values&&typeof values==='object'?values:{}));return true}catch{return false}}
+  function backupBeforeRepair(a,values,plan){
+    const snapshot=buildRepairBackup(values,plan);if(!snapshot)return false;
+    try{
+      const key=repairBackupKey(activeVersion(),a?.sheet,a?.code||a?.teacherName);
+      if(!root.localStorage.getItem(key))root.localStorage.setItem(key,JSON.stringify(snapshot));
+      return true;
+    }catch{return false}
+  }
   function decorateReport(a,storedOverride){
     if(!a||!Array.isArray(a.entries))return a;
     const stored={...(storedOverride&&typeof storedOverride==='object'?storedOverride:loadStoredValues(a))};
@@ -278,17 +295,28 @@
       const common=normalizedGa(inheritedRaw(values,target));
       if(common===null||common!==expected)continue;
 
-      const previous=latestPriorSameTrack(canon);if(!previous)continue;
-      const opposite=safe.interveningOpposite(canonical,canon,previous);
-      if(!opposite.length)continue;
-      const contaminated=safe.contaminationCandidate(canon.track,expected,opposite.length);
-      if(contaminated!==stored)continue;
+      let repairReason='',evidence=[];
+      const sameWeek=safe?.sameWeekLegacyCandidate?.(canonical,canon,expected)||null;
+      if(sameWeek?.candidate===stored&&Number(sameWeek?.count)>0){
+        repairReason='legacy-same-week-increment';
+        evidence=sameWeek.eventIds||[];
+      }else{
+        const previous=latestPriorSameTrack(canon);if(!previous)continue;
+        const opposite=safe.interveningOpposite(canonical,canon,previous);
+        if(!opposite.length)continue;
+        const contaminated=safe.contaminationCandidate(canon.track,expected,opposite.length);
+        if(contaminated!==stored)continue;
+        repairReason='legacy-role-track-mix';
+        evidence=opposite.map(x=>x.id||'').filter(Boolean);
+        ev.__lbgOppositeTrackEvents=evidence;
+      }
       ev.__lbgStaleRoleTrackManual=stored;
       ev.__lbgRoleTrackExpected=expected;
-      ev.__lbgOppositeTrackEvents=opposite.map(x=>x.id||'').filter(Boolean);
       ev.__lbgStaleRoleTrackCommon=common;
+      ev.__lbgStaleRepairReason=repairReason;
+      ev.__lbgStaleRepairEvidence=evidence;
       ev.__lbgStaleRoleTrackVerified=true;
-      ev.ga=expected;ev.gaSource='previous';ev.historyMismatch=false;
+      ev.ga=expected;ev.gaSource=canon.gaSource||'previous';ev.historyMismatch=false;
       repaired++;
     }
     history.__lbgVerifiedStaleClassOverrides=repaired;
@@ -324,7 +352,7 @@
     const analyzed=await analyzeReport(a),values=loadStoredValues(a);
     const plan=verifiedStaleOnlyPlan(analyzed.rows,a?.entries||[],values,normalizer());
     const write=applyPlan(plan,values);
-    if(write.applied)persistStoredValues(a,write.values);
+    if(write.applied){backupBeforeRepair(a,values,plan);persistStoredValues(a,write.values);}
     return{...analyzed,plan,values:write.values,applied:write.applied,replacedCount:write.replacedCount||0,protectedCount:write.protectedCount||0};
   }
   function reportIdentity(a){return `${activeVersion()}|${txt(a?.sheet)}|${txt(a?.code||a?.teacherName).toUpperCase()}`}
@@ -390,5 +418,5 @@
     };
     tick();return true;
   }
-  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,decorateReport,analyzeReport,repairVerifiedStaleOnly,applyReport,loadStoredValues,persistStoredValues,install};
+  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,REPAIR_BACKUP_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,repairBackupKey,buildRepairBackup,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,decorateReport,analyzeReport,repairVerifiedStaleOnly,applyReport,loadStoredValues,persistStoredValues,backupBeforeRepair,install};
 });
