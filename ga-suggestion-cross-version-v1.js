@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionCrossVersionV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260912.4';
+  const VERSION='20260920.1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -27,29 +27,57 @@
     if(!book||!name)return null;
     try{return book.getWorksheet?.(name)||book.worksheets?.find?.(ws=>ws?.name===name)||null}catch{return null}
   }
+  function calendarDayNumber(d){
+    if(!(d instanceof Date)||Number.isNaN(d.getTime()))return null;
+    return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
+  }
+  function isAlignedWeekStart(start,selectedStart){
+    const a=calendarDayNumber(start),b=calendarDayNumber(selectedStart);
+    if(a===null||b===null||a>b)return false;
+    return(b-a)%7===0;
+  }
   function selectWeekSheets(sources,currentBook,selectedSheet,opts={}){
     const selectedWs=selectedWorksheet(currentBook,selectedSheet),selectedStart=sheetStart(selectedWs,opts);
     if(!selectedWs||!selectedStart){
       const fallback=(currentBook?.worksheets||[]).filter(ws=>isWeekSheet(ws,opts));
       return{worksheets:fallback,selectedKey:'',weekCount:fallback.length,sourceCount:currentBook?1:0,usedFallback:true};
     }
-    const selectedKey=dateKey(selectedStart),groups=new Map();
-    const all=Array.isArray(sources)?sources:[];
+
+    const selectedKey=dateKey(selectedStart),groups=new Map(),all=Array.isArray(sources)?sources:[];
+    const activeSource=all.find(source=>source?.book===currentBook)||null;
+    const activeSid=txt(activeSource?.id)||'active',activeStamp=createdMs(activeSource?.created)||Number.MAX_SAFE_INTEGER;
+
+    // Nguồn đang mở là nguồn sự thật cho mọi tuần nó đang chứa, không chỉ tuần được chọn.
+    // Các phiên bản cũ chỉ được dùng để bù những tuần còn thiếu trong workbook hiện tại.
+    (currentBook?.worksheets||[]).forEach((ws,index)=>{
+      if(!isWeekSheet(ws,opts))return;
+      const start=sheetStart(ws,opts);
+      if(!start||!isAlignedWeekStart(start,selectedStart))return;
+      const key=dateKey(start);if(!key)return;
+      const cand={ws,start,key,index,stamp:activeStamp,sid:activeSid,forceCurrent:true,forceSelected:ws?.name===selectedSheet};
+      const prev=groups.get(key);
+      if(!prev||cand.forceSelected||(!prev.forceSelected&&index>prev.index))groups.set(key,cand);
+    });
+
     for(const source of all){
-      const book=source?.book;if(!book)continue;
+      const book=source?.book;if(!book||book===currentBook)continue;
       const stamp=createdMs(source?.created),sid=txt(source?.id)||'unknown';
       (book.worksheets||[]).forEach((ws,index)=>{
         if(!isWeekSheet(ws,opts))return;
-        const start=sheetStart(ws,opts);if(!start||start>selectedStart)return;
-        const key=dateKey(start);if(!key)return;
-        const forceSelected=book===currentBook&&ws?.name===selectedSheet;
-        const cand={ws,start,key,index,stamp,sid,forceSelected};
+        const start=sheetStart(ws,opts);
+        // Loại sheet của năm học/lịch tuần khác bị diễn giải bằng năm học hiện tại
+        // (ví dụ 8T9 của năm trước chen giữa 7T9 và 14T9 năm nay).
+        if(!start||!isAlignedWeekStart(start,selectedStart))return;
+        const key=dateKey(start);if(!key||groups.has(key))return;
+        const cand={ws,start,key,index,stamp,sid,forceCurrent:false,forceSelected:false};
         const prev=groups.get(key);
-        if(!prev||forceSelected||(!prev.forceSelected&&(stamp>prev.stamp||(stamp===prev.stamp&&index>prev.index))))groups.set(key,cand);
+        if(!prev||stamp>prev.stamp||(stamp===prev.stamp&&index>prev.index))groups.set(key,cand);
       });
     }
-    if(!groups.has(selectedKey))groups.set(selectedKey,{ws:selectedWs,start:selectedStart,key:selectedKey,index:0,stamp:Number.MAX_SAFE_INTEGER,sid:'active',forceSelected:true});
-    else if(groups.get(selectedKey)?.ws!==selectedWs)groups.set(selectedKey,{ws:selectedWs,start:selectedStart,key:selectedKey,index:0,stamp:Number.MAX_SAFE_INTEGER,sid:'active',forceSelected:true});
+
+    // Tuần đang chọn luôn phải là sheet hiện tại, kể cả khi dữ liệu nguồn lịch sử bất thường.
+    groups.set(selectedKey,{ws:selectedWs,start:selectedStart,key:selectedKey,index:0,stamp:Number.MAX_SAFE_INTEGER,sid:activeSid,forceCurrent:true,forceSelected:true});
+
     const chosen=[...groups.values()].sort((a,b)=>a.start-b.start||a.index-b.index);
     return{
       worksheets:chosen.map(x=>x.ws),
@@ -182,7 +210,7 @@
 
   if(typeof module!=='undefined'&&module.exports){
     return{
-      VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
+      VERSION,dateKey,isAlignedWeekStart,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
       gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications
     };
   }
