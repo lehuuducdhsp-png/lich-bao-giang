@@ -1,0 +1,28 @@
+name: Package GA debug portable
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/package-ga-debug-portable.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build clean portable ZIP
+        run: |
+          mkdir -p portable
+          rsync -a ./ portable/lich-bao-giang-GA-DEBUG/             --exclude '.git'             --exclude '.github'             --exclude 'tests'             --exclude '*.zip'             --exclude '*.log'
+          printf '%s\n'             'BẢN TEST GA DEBUG - PR #62'             'Head source: fix/single-teacher-ga-hook'             'Cách chạy: mở Command Prompt trong thư mục này rồi chạy: python -m http.server 8765'             'Sau đó mở http://localhost:8765 và kiểm tra 21T9 -> Phan Thị Huệ.'             'Nếu 3/9 (GA4) còn, chụp ô GA DEBUG (tạm thời).'             > portable/lich-bao-giang-GA-DEBUG/README-TEST.txt
+          cd portable
+          zip -r ../lich-bao-giang-GA-DEBUG-portable.zip lich-bao-giang-GA-DEBUG
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lich-bao-giang-GA-DEBUG-portable
+          path: lich-bao-giang-GA-DEBUG-portable.zip
+          if-no-files-found: error
+          retention-days: 7
