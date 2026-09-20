@@ -1,0 +1,28 @@
+name: Package GA stale cleanup portable
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/package-ga-stale-cleanup-portable.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build clean portable ZIP
+        run: |
+          mkdir -p portable/LICH-BAO-GIANG-GA-CLEANUP
+          rsync -a ./ portable/LICH-BAO-GIANG-GA-CLEANUP/             --exclude '.git'             --exclude '.github'             --exclude 'tests'             --exclude 'recovery'             --exclude '*.zip'             --exclude '*.log'
+          printf '%s\n'             'BẢN TEST DỌN GA CŨ CÙNG TUẦN - PR #66'             'Mục tiêu: 7T9 THỦY PHƯƠNG GA1; 3/9 GA2 cũ và 2/10 GA4 cũ phải tự dọn về GA1 nếu khớp đúng thuật toán cũ.'             'GA tay không khớp mẫu cũ phải được giữ.'             'Cách chạy: mở CMD trong thư mục này rồi chạy: python -m http.server 8765'             'Mở http://localhost:8765, nạp TKB và kiểm tra Tuần 01 / Phan Thị Huệ.'             > portable/LICH-BAO-GIANG-GA-CLEANUP/README-TEST.txt
+          cd portable
+          zip -r ../LICH-BAO-GIANG-GA-CLEANUP-SACH.zip LICH-BAO-GIANG-GA-CLEANUP
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LICH-BAO-GIANG-GA-CLEANUP-SACH
+          path: LICH-BAO-GIANG-GA-CLEANUP-SACH.zip
+          if-no-files-found: error
+          retention-days: 7
