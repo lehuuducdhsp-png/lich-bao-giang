@@ -19,7 +19,7 @@ const expectedCore=[
   'teaching-plan-progress-v1.js?v=20260909.1',
   'conflict-check-v8.js?v=20260909.1',
   'ga-suggestion-v7.js?v=20260909.2',
-  'ga-suggestion-cross-version-v1.js?v=20260912.4'
+  'ga-suggestion-cross-version-v1.js?v=20260920.1'
 ];
 
 const expectedModules=[
