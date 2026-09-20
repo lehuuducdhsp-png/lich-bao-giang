@@ -9,6 +9,7 @@ const ga=fs.readFileSync('ga-suggestion-multi-apply-v1.js','utf8');
 const bridge=fs.readFileSync('ga-multi-selection-bridge-v1.js','utf8');
 const per=fs.readFileSync('ga-per-class-v2.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
+const patchLoader=fs.readFileSync('patch-runtime-loader-v1.js','utf8');
 const teacherFix=fs.readFileSync('teacher-fix-v2.js','utf8');
 const analysisFix=fs.readFileSync('analysis-fix-v2.js','utf8');
 
@@ -72,12 +73,12 @@ assert.doesNotMatch(analysisFix,/result=safeAnalyze\(ws,teacherCode,teacherName\
 assert.match(analysisFix,/lbg-analyze-now-ready/,'analysis-fix must announce late analyzeNow replacement');
 assert.match(per,/addEventListener\('lbg-analyze-now-ready'/,'per-class GA must re-wrap after late analyzeNow replacement');
 assert.doesNotMatch(per,/if\(analyzeInstalled\)return true/,'per-class installer must verify the current wrapper instead of trusting stale state');
-assert.match(index,/tkb-assignment-cache-safe-v1\.js\?v=20260913\.1/);
-assert.match(index,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.3/);
-assert.match(index,/ga-per-class-v2\.js\?v=20260920\.5/);
-assert.match(index,/ga-multi-selection-bridge-v1\.js\?v=20260914\.2/);
-assert.ok(index.indexOf('ga-per-class-v2.js?v=20260920.5')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
-assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must load before stable bridge');
+assert.match(patchLoader,/tkb-assignment-cache-safe-v1\.js\?v=20260913\.1/);
+assert.match(patchLoader,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.3/);
+assert.match(patchLoader,/ga-per-class-v2\.js\?v=20260920\.5/);
+assert.match(patchLoader,/ga-multi-selection-bridge-v1\.js\?v=20260914\.2/);
+assert.ok(patchLoader.indexOf('ga-per-class-v2.js?v=20260920.5')<patchLoader.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
+assert.ok(patchLoader.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<patchLoader.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must load before stable bridge');
 
 // Các module nghiệp vụ đã chốt gần đây vẫn phải còn nguyên trên đường chạy chính.
 for(const required of [
@@ -91,6 +92,6 @@ for(const required of [
   'assist-p-preview-safe-v1.js?v=20260918.1',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
   'assist-p-sheets-label-safe-v1.js?v=20260912.3'
-])assert.ok(index.includes(required),`missing protected runtime module: ${required}`);
+])assert.ok(patchLoader.includes(required),`missing protected runtime module: ${required}`);
 
 console.log('OK multi report performance: cached scan, stable GA ownership, per-class apply and preview resync');
