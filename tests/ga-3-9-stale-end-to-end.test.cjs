@@ -5,7 +5,7 @@ const R=require('../ga-role-track-stale-repair-v1.js');
 const Per=require('../ga-per-class-v2.js');
 
 assert.equal(R.VERSION,'20260920.1');
-assert.equal(Per.VERSION,'20260920.2');
+assert.equal(Per.VERSION,'20260920.3');
 
 const redCell={font:{color:{argb:'FFFF0000'}}};
 const blackCell={font:{color:{argb:'FF000000'}}};
