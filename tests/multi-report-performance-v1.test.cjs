@@ -11,6 +11,9 @@ const per=fs.readFileSync('ga-per-class-v2.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const teacherFix=fs.readFileSync('teacher-fix-v2.js','utf8');
 const analysisFix=fs.readFileSync('analysis-fix-v2.js','utf8');
+const parserV2=fs.readFileSync('tkb-parser-v2.js','utf8');
+const schoolNameFix=fs.readFileSync('tkb-parser-school-name-fix-v1.js','utf8');
+const runtime=fs.readFileSync('app-runtime-v1.js','utf8');
 
 // Kiểm tra nhiều giáo viên phải chạy tuần tự nhưng nhường UI, không khóa trình duyệt bằng list.map đồng bộ.
 assert.match(multi,/b\.onclick=async\(\)=>/,'multi analyze must be async');
@@ -28,6 +31,15 @@ assert.doesNotMatch(analysisFix,/result=safeAnalyze\(ws,teacherCode,teacherName\
 assert.match(analysisFix,/lbg-analyze-now-ready/,'analysis-fix must announce whenever it replaces analyzeNow');
 assert.match(per,/addEventListener\('lbg-analyze-now-ready'/,'per-class GA must listen for late analyzeNow replacement');
 assert.doesNotMatch(per,/if\(analyzeInstalled\)return true/,'per-class GA must verify the current analyzeNow wrapper instead of trusting stale install state');
+assert.match(parserV2,/lbg-analyze-now-ready/,'parser must announce when it replaces analyzeNow');
+assert.match(parserV2,/runner=typeof window\.analyzeNow==='function'\?window\.analyzeNow:analyze/,'parser single-teacher button must use shared analyzeNow');
+assert.doesNotMatch(parserV2,/window\.result=analyze\(ws,code,name\)/,'parser must never bypass GA wrapper');
+assert.match(schoolNameFix,/lbg-analyze-now-ready/,'school-name fix must announce when it replaces analyzeNow');
+assert.match(schoolNameFix,/runner=typeof window\.analyzeNow==='function'\?window\.analyzeNow:analyze/,'school-name fix button must use shared analyzeNow');
+assert.doesNotMatch(schoolNameFix,/window\.result=analyze\(ws,code,name\)/,'school-name fix must never bypass GA wrapper');
+assert.match(runtime,/tkb-parser-v2\.js\?v=20260920\.1/,'runtime must bust cache for parser hook fix');
+assert.match(runtime,/tkb-parser-school-name-fix-v1\.js\?v=20260920\.1/,'runtime must bust cache for school-name hook fix');
+assert.match(index,/app-runtime-v1\.js\?v=20260920\.1/,'root must bust cache for updated runtime');
 
 // Nút xanh dùng chung cho 1 giáo viên và nhiều giáo viên.
 assert.equal(MultiGa.VERSION,'20260920.1');
