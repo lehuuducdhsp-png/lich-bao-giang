@@ -43,7 +43,7 @@ assert.equal(outA.applied+outB.applied,2);
 assert.equal(valuesA['2|Sáng|THUY PHUONG|TRU SO CHINH 25 DA LE'],'2');
 assert.equal(valuesB['3|Chiều|THUY DUONG|PHAN HIEU 158 KHUC THUA DU'],'5');
 
-assert.equal(Multi.VERSION,'20260920.2');
+assert.equal(Multi.VERSION,'20260920.3');
 assert.match(source,/không ghi đè GA nhập tay, chỉ tự sửa GA cũ khi lịch sử chứng minh bị trộn STEM\/KNS/);
 assert.equal(Multi.storageKey('abc','14T09','THANH'),'lbgGaManualV2:abc:14T09:THANH');
 console.log('OK GA multi apply: V4 keys, legacy/manual protection, independent multi-teacher writes');
