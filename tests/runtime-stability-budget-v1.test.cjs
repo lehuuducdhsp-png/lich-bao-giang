@@ -10,7 +10,7 @@ function listFrom(source,name,indent='      '){
   const re=new RegExp(`const ${name}=\\[([\\s\\S]*?)\\n${indent}\\];`);
   const m=source.match(re);
   assert.ok(m,`${name} must exist`);
-  return [...m[1].matchAll(/\\['([^']+\\.js)\\?v=[^']+'\\s*,\\s*'[^']+'\\]/g)].map(x=>x[1]);
+  return [...m[1].matchAll(/\['([^']+\.js)\?v=[^']+'\s*,\s*'[^']+'\]/g)].map(x=>x[1]);
 }
 function count(source,re){return (source.match(re)||[]).length}
 
