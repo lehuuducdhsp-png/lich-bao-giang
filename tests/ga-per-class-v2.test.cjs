@@ -61,7 +61,7 @@ assert.equal(plan.apply.length,0);
 assert.equal(plan.conflicts.length,1,'existing class-specific GA must be protected');
 
 
-const staleEvent={ga:2,gaSource:'previous',addresses:['A3'],classId:'2/2',classDisplay:'2/2',__lbgStaleRoleTrackManual:4,__lbgRoleTrackExpected:2};
+const staleEvent={ga:2,gaSource:'previous',addresses:['A3'],classId:'2/2',classDisplay:'2/2',__lbgStaleRoleTrackManual:4,__lbgRoleTrackExpected:2,__lbgStaleRoleTrackVerified:true};
 const staleValues={[class2Key]:'4'};
 const stalePlan=Per.planApplications([staleEvent],entries,staleValues);
 assert.equal(stalePlan.conflicts.length,0,'verified stale role-track GA must be replaceable');
@@ -70,6 +70,11 @@ assert.equal(stalePlan.apply[0].replaceExisting,true);
 const staleWrite=Per.applyPlan(stalePlan,staleValues);
 assert.equal(staleWrite.replacedCount,1);
 assert.equal(staleWrite.values[class2Key],'2','verified stale class GA must be overwritten with canonical suggestion');
+
+const unverifiedEvent={...staleEvent};delete unverifiedEvent.__lbgStaleRoleTrackVerified;
+const unverifiedPlan=Per.planApplications([unverifiedEvent],entries,staleValues);
+assert.equal(unverifiedPlan.apply.length,0,'history marker alone must never authorize storage overwrite');
+assert.equal(unverifiedPlan.conflicts.length,1);
 
 const write=Per.applyPlan(Per.planApplications([ev(1,'A1','2/1'),ev(2,'A3','2/2')],entries,{}),{});
 assert.equal(write.applied,2);
