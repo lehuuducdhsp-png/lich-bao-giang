@@ -317,7 +317,7 @@
         btn.disabled=true;btn.textContent='Đang kiểm tra…';
         try{
           const ws=typeof wb!=='undefined'&&wb?wb.getWorksheet(week?.value):null;
-          window.result=analyze(ws,code,name);window.render?.(window.result);
+          const runner=typeof window.analyzeNow==='function'?window.analyzeNow:analyze;window.result=runner(ws,code,name);window.render?.(window.result);
           const ex=document.getElementById('export');if(ex)ex.disabled=!window.result.total;
           if(typeof window.toast==='function')window.toast(`Đã kiểm tra ${window.result.total} tiết.`)
         }catch(error){console.error(error);alert('Không kiểm tra được lịch: '+(error?.message||error))}
@@ -337,7 +337,7 @@
   }
 
   const api={version:'2.1.0',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,scanAssignments,analyze,dayLabel};
-  window.LBGTkbParserV2=api;window.teachers=teachers;window.analyzeNow=analyze;
+  window.LBGTkbParserV2=api;window.teachers=teachers;window.analyzeNow=analyze;try{document.dispatchEvent(new CustomEvent('lbg-analyze-now-ready',{detail:{source:'tkb-parser-v2'}}))}catch{};
   window.colInfo=function(c){const ws=currentWs();return ws?colInfoFor(ws,c):null};
   window.LBGAllTeachers=teachers;
   installUi();
