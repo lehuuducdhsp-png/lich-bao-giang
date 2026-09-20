@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.2';
+  const VERSION='20260920.3';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -178,7 +178,7 @@
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
   const bookNow=()=>{try{return typeof wb!=='undefined'?wb:null}catch{return null}},resultNow=()=>{try{return typeof result!=='undefined'?result:null}catch{return null}},versionList=()=>{try{return typeof versions!=='undefined'&&Array.isArray(versions)?versions:[]}catch{return[]}},activeVersion=()=>{try{return typeof activeId!=='undefined'&&activeId?txt(activeId):'active'}catch{return'active'}};
   const startDateFor=ws=>{try{return typeof startDate==='function'?startDate(ws.name):null}catch{return null}},weekLikeFor=ws=>{try{return typeof weekLike==='function'?weekLike(ws):true}catch{return true}},normalizer=()=>v7()?.normalizeClass;
-  let analyzeInstalled=false,wrappedAnalyze=null,previewObserver=null,readyNotified=false;const selfHealPending=new Set();
+  let analyzeInstalled=false,wrappedAnalyze=null,previewObserver=null,readyNotified=false,analyzeLifecycleBound=false;const selfHealPending=new Set();
 
   function currentWorksheet(){const b=bookNow(),name=txt(q('week')?.value);return b&&name?b.getWorksheet?.(name):null}
   function isCurrentWorksheet(ws){return Boolean(ws&&currentWorksheet()===ws)}
@@ -201,13 +201,18 @@
     a.__lbgGaProfiles=profiles;a.gaValues=derived;return a;
   }
   function installAnalyzeOnce(){
-    if(analyzeInstalled)return true;
     const p=parser();if(!p?.__lbgAtomicTeachingV1||!engine()||!cross()||!v7()||!q('multiTeacherButton'))return false;
     let current=null;try{current=typeof analyzeNow==='function'?analyzeNow:root.analyzeNow}catch{current=root.analyzeNow}
     if(typeof current!=='function')return false;
+    if(current.__lbgGaPerClass===VERSION){wrappedAnalyze=current;analyzeInstalled=true;return true}
     const wrapper=makeAnalyzeDecorator(current,decorateReport,isCurrentWorksheet,queueVerifiedStaleSelfHeal);if(!wrapper)return false;
     try{analyzeNow=wrapper}catch{};try{root.analyzeNow=wrapper}catch{}
     wrappedAnalyze=wrapper;analyzeInstalled=true;return true;
+  }
+  function bindAnalyzeLifecycle(){
+    if(analyzeLifecycleBound||!root.document)return;
+    analyzeLifecycleBound=true;
+    root.document.addEventListener('lbg-analyze-now-ready',()=>setTimeout(()=>{installAnalyzeOnce();bindSuggestionButton()},0));
   }
   function refreshCurrentReport(a,stored){
     decorateReport(a,stored);try{if(typeof result!=='undefined'&&result===a)result=a}catch{}
@@ -373,6 +378,7 @@
   function ensureStyle(){if(q('lbgGaPerClassStyle'))return;const style=root.document.createElement('style');style.id='lbgGaPerClassStyle';style.textContent='.lbg-ga-mixed-label{display:inline-block;padding:5px 8px;border:1px dashed #d97706;border-radius:8px;background:#fff7ed;color:#9a3412;font-weight:900}.lbg-ga-main{font-weight:900;color:#0f766e}';root.document.head.appendChild(style)}
   function notifyReady(){if(readyNotified)return;readyNotified=true;try{root.document.dispatchEvent(new CustomEvent('lbg-ga-per-class-ready',{detail:{version:VERSION}}))}catch{}}
   function install(){
+    bindAnalyzeLifecycle();
     let tries=0;const tick=()=>{
       tries++;ensureStyle();const ready=installAnalyzeOnce();
       if(ready){
