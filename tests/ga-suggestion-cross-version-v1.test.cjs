@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict');
 const Cross=require('../ga-suggestion-cross-version-v1.js');
 const V7=require('../ga-suggestion-v7.js');
+assert.equal(Cross.version,'20260920.1');
 
 const ws=(name,entries=[])=>({name,entries});
 const book=worksheets=>({worksheets,getWorksheet(name){return worksheets.find(x=>x.name===name)||null}});
