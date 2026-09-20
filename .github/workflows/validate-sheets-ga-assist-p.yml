@@ -31,9 +31,9 @@ jobs:
       - name: Loader contract
         run: |
           grep -F 'app-runtime-v1.js?v=20260920.2' index.html
-          grep -F 'ga-per-class-v2.js?v=20260920.5' index.html
-          grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' index.html
-          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' index.html
+          grep -F 'ga-per-class-v2.js?v=20260920.5' patch-runtime-loader-v1.js
+          grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' patch-runtime-loader-v1.js
+          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' patch-runtime-loader-v1.js
       - name: Assist P own-column class contract
         run: |
           grep -F "const VERSION='20260918.1'" assist-p-preview-safe-v1.js
