@@ -88,9 +88,9 @@ assert.match(runtime,/preloadWindow\(items,i,lookahead\)/,'only network warming 
 assert.match(runtime,/await yieldToBrowser\(\)/,'loader must yield between bounded groups to reduce UI jank');
 assert.doesNotMatch(runtime,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'runtime optimization must not touch stored user data');
 assert.match(index,/tkb-class-typo-fix-v1\.js\?v=20260913\.2/,'class typo fix must stay loaded');
-assert.match(index,/tkb-roster-group-period-safe-v1\.js\?v=20260918\.1/,'new roster group period safety must stay loaded');
+assert.match(index,/tkb-roster-group-period-safe-v1\.js\?v=20260919\.1/,'new roster group period safety must stay loaded');
 assert.ok(index.indexOf('tkb-roster-group-period-safe-v1.js?v=20260919.1')<index.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1'),'roster group period safety must load before assignment cache');
-assert.match(index,/grouped-plus-report-safe-v1\\.js\\?v=20260919\\.1/,'grouped plus report bridge must stay loaded');
+assert.match(index,/grouped-plus-report-safe-v1\.js\?v=20260919\.1/,'grouped plus report bridge must stay loaded');
 assert.ok(index.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1')<index.indexOf('grouped-plus-report-safe-v1.js?v=20260919.1'),'grouped plus bridge must load after assignment cache');
 assert.ok(index.indexOf('grouped-plus-report-safe-v1.js?v=20260919.1')<index.indexOf('ga-per-class-v2.js?v=20260914.1'),'grouped plus bridge must load before production per-class GA');
 assert.match(index,/ga-per-class-v2\.js\?v=20260914\.1/,'per-class GA must stay loaded');
