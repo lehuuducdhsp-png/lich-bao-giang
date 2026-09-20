@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const Per=require('../ga-per-class-v2.js');
-assert.equal(Per.VERSION,'20260920.1');
+assert.equal(Per.VERSION,'20260920.2');
 
 const entries=[
   {day:5,session:'Chiều',school:'PHÚ THUẬN',className:'2/1',address:'A1'},
