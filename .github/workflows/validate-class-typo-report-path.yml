@@ -8,6 +8,7 @@ on:
       - 'analysis-fix-v2.js'
       - 'report-engine-v4.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/class-typo-report-path-safe-v1.test.cjs'
       - 'tests/tkb-class-typo-fix-v1.test.cjs'
       - '.github/workflows/validate-class-typo-report-path.yml'
