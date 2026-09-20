@@ -59,6 +59,8 @@
       if(!prev||cand.forceSelected||(!prev.forceSelected&&index>prev.index))groups.set(key,cand);
     });
 
+    const currentKeys=new Set(groups.keys());
+
     for(const source of all){
       const book=source?.book;if(!book||book===currentBook)continue;
       const stamp=createdMs(source?.created),sid=txt(source?.id)||'unknown';
@@ -68,7 +70,7 @@
         // Loại sheet của năm học/lịch tuần khác bị diễn giải bằng năm học hiện tại
         // (ví dụ 8T9 của năm trước chen giữa 7T9 và 14T9 năm nay).
         if(!start||!isAlignedWeekStart(start,selectedStart))return;
-        const key=dateKey(start);if(!key||groups.has(key))return;
+        const key=dateKey(start);if(!key||currentKeys.has(key))return;
         const cand={ws,start,key,index,stamp,sid,forceCurrent:false,forceSelected:false};
         const prev=groups.get(key);
         if(!prev||stamp>prev.stamp||(stamp===prev.stamp&&index>prev.index))groups.set(key,cand);
