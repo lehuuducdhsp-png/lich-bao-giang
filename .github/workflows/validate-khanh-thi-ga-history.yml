@@ -6,6 +6,7 @@ on:
       - 'ga-per-class-v2.js'
       - 'ga-per-class-history-safe-v1.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/ga-khanh-thi-history-safe-v1.test.cjs'
       - '.github/workflows/validate-khanh-thi-ga-history.yml'
 
