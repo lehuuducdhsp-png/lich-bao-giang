@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const Per=require('../ga-per-class-v2.js');
-assert.equal(Per.VERSION,'20260920.3');
+assert.equal(Per.VERSION,'20260920.4');
 
 const entries=[
   {day:5,session:'Chiều',school:'PHÚ THUẬN',className:'2/1',address:'A1'},
@@ -75,6 +75,15 @@ const unverifiedEvent={...staleEvent};delete unverifiedEvent.__lbgStaleRoleTrack
 const unverifiedPlan=Per.planApplications([unverifiedEvent],entries,staleValues);
 assert.equal(unverifiedPlan.apply.length,0,'history marker alone must never authorize storage overwrite');
 assert.equal(unverifiedPlan.conflicts.length,1);
+
+const backup=Per.buildRepairBackup(staleValues,stalePlan);
+assert.equal(backup.schema,1);
+assert.equal(backup.values[class2Key],'4','backup phải giữ nguyên storage trước khi sửa');
+assert.equal(backup.replacements.length,1);
+assert.equal(backup.replacements[0].from,4);
+assert.equal(backup.replacements[0].to,2);
+assert.match(Per.repairBackupKey('v1','21T9','HUỆ'),/^lbgGaRepairBackupV1:/);
+
 
 const write=Per.applyPlan(Per.planApplications([ev(1,'A1','2/1'),ev(2,'A3','2/2')],entries,{}),{});
 assert.equal(write.applied,2);
