@@ -98,6 +98,7 @@ const manualPlan=Per.planApplications(
   manualValues,V7.normalizeClass
 );
 assert.equal(manualPlan.apply.length,0);
-assert.equal(manualPlan.conflicts.length,1);
+assert.equal(manualPlan.conflicts.length,0);
+assert.equal(manualPlan.same.length,1,'GA tay không khớp mẫu cũ phải được giữ nguyên, không tạo repair');
 
 console.log('OK stale same-week cleanup: 3/9 GA2 and 2/10 GA4 -> GA1; backup created; unrelated manual GA protected');
