@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionMultiApplyV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.1';
+  const VERSION='20260920.2';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -182,7 +182,7 @@
     let box=q('lbgGaMultiApplyBox');
     if(!box){
       box=root.document.createElement('div');box.id='lbgGaMultiApplyBox';box.className='lbg-ga-multi-box';
-      box.innerHTML='<div class="lbg-ga-multi-main"><button type="button" class="lbg-ga-multi-btn" id="lbgGaMultiApplyButton">✓ Phân tích & áp dụng GA</button><span class="lbg-ga-multi-note">Dùng được cho một hoặc nhiều giáo viên; không ghi đè GA nhập tay, chỉ tự sửa GA cũ khi lịch sử chứng minh bị trộn STEM/KNS.</span></div><div class="lbg-ga-multi-status" id="lbgGaMultiApplyStatus"></div>';
+      box.innerHTML='<div class="lbg-ga-multi-main"><button type="button" class="lbg-ga-multi-btn" id="lbgGaMultiApplyButton">✓ Phân tích & áp dụng GA</button><span class="lbg-ga-multi-note">Dùng được cho một hoặc nhiều giáo viên; không ghi đè GA nhập tay, chỉ tự sửa GA cũ khi lịch sử chứng minh đúng là dữ liệu sai của thuật toán cũ.</span></div><div class="lbg-ga-multi-status" id="lbgGaMultiApplyStatus"></div>';
       const anchor=q('multiExportOptions')||q('analyze')?.closest?.('.controls');
       if(anchor)anchor.insertAdjacentElement('afterend',box);
       q('lbgGaMultiApplyButton').onclick=runBatch;
