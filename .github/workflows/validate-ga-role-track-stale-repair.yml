@@ -1,0 +1,63 @@
+name: Validate GA 3/9 STEM KNS stale repair
+
+on:
+  pull_request:
+    paths:
+      - 'ga-role-track-stale-repair-v1.js'
+      - 'ga-per-class-v2.js'
+      - 'ga-suggestion-v7.js'
+      - 'ga-group-split-stale-repair-v1.js'
+      - 'teacher-intelligence-v6.js'
+      - 'index.html'
+      - 'tests/ga-role-track-stale-repair-v1.test.cjs'
+      - 'tests/ga-per-class-v2.test.cjs'
+      - 'tests/ga-3-9-stale-end-to-end.test.cjs'
+      - 'tests/runtime-responsive-loader-v1.test.cjs'
+      - 'tests/multi-report-performance-v1.test.cjs'
+      - '.github/workflows/validate-ga-role-track-stale-repair.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check ga-role-track-stale-repair-v1.js
+          node --check ga-per-class-v2.js
+          node --check tests/ga-role-track-stale-repair-v1.test.cjs
+          node --check tests/ga-per-class-v2.test.cjs
+          node --check tests/ga-3-9-stale-end-to-end.test.cjs
+          node --check tests/runtime-responsive-loader-v1.test.cjs
+          node --check tests/multi-report-performance-v1.test.cjs
+      - name: Role-track, stale guard and end-to-end regressions
+        run: |
+          node tests/ga-role-track-stale-repair-v1.test.cjs
+          node tests/ga-per-class-v2.test.cjs
+          node tests/ga-3-9-stale-end-to-end.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/multi-report-performance-v1.test.cjs
+      - name: Loader and safety contracts
+        run: |
+          grep -F "ga-per-class-v2.js?v=20260920.1" index.html
+          grep -F "ga-role-track-stale-repair-v1.js?v=20260920.1" index.html
+          grep -F "__lbgStaleRoleTrackVerified===true" ga-per-class-v2.js
+          grep -F "common===null||common!==expected" ga-per-class-v2.js
+          grep -F "contaminated!==stored" ga-per-class-v2.js
+          grep -F "isRed(nameCell)" teacher-intelligence-v6.js
+          grep -F "role=ROLE.STEM" teacher-intelligence-v6.js
+          grep -F "if(r==='STEM')" ga-suggestion-v7.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          grouped=s.index('grouped-plus-report-safe-v1.js?v=20260919.1')
+          per=s.index('ga-per-class-v2.js?v=20260920.1')
+          split=s.index('ga-group-split-stale-repair-v1.js?v=20260914.1')
+          role=s.index('ga-role-track-stale-repair-v1.js?v=20260920.1')
+          bridge=s.index('ga-multi-selection-bridge-v1.js?v=20260914.2')
+          assert grouped < per, 'grouped-plus bridge must stay before per-class GA'
+          assert split < role < bridge, 'STEM/KNS repair must run after group-split repair and before shared GA bridge'
+          PY

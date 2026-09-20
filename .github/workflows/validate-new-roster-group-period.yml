@@ -56,6 +56,6 @@ jobs:
           b=s.index('tkb-roster-group-period-safe-v1.js?v=20260919.1')
           c=s.index('tkb-assignment-cache-safe-v1.js?v=20260913.1')
           d=s.index('grouped-plus-report-safe-v1.js?v=20260919.1')
-          e=s.index('ga-per-class-v2.js?v=20260914.1')
+          e=s.index('ga-per-class-v2.js?v=20260920.1')
           assert a < b < c < d < e, 'group continuation must run before cache; grouped plus bridge after cache and before production GA'
           PY
