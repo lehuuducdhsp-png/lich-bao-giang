@@ -87,8 +87,8 @@
       await waitForAuth();
 
       const reportCore=[
-        ['tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script'],
-        ['tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script'],
+        ['tkb-parser-v2.js?v=20260920.1','lbgTkbParserV2Script'],
+        ['tkb-parser-school-name-fix-v1.js?v=20260920.1','lbgTkbParserSchoolNameFixV1Script'],
         ['tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script'],
         ['tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script'],
         ['teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script'],
