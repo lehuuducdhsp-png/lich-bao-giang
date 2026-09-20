@@ -48,7 +48,7 @@ jobs:
           node tests/ga-suggestion-multi-apply-v1.test.cjs
           node tests/ga-multi-selection-bridge-v1.test.cjs
           node tests/multi-preview-assist-sync-v1.test.cjs
-          grep -F 'ga-per-class-v2.js?v=20260920.3' index.html
+          grep -F 'ga-per-class-v2.js?v=20260920.5' index.html
           grep -F 'ga-multi-selection-bridge-v1.js?v=20260914.2' index.html
           grep -F 'multi-preview-assist-sync-v1.js?v=20260914.1' index.html
       - name: Preserve recent business rules
