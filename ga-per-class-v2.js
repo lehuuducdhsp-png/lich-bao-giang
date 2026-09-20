@@ -113,7 +113,8 @@
     return items.every(item=>{
       const old=normalizedGa(item?.ev?.__lbgStaleRoleTrackManual);
       const expected=normalizedGa(item?.ev?.__lbgRoleTrackExpected);
-      return old!==null&&old===current&&expected!==null&&expected===ga;
+      const verified=item?.ev?.__lbgStaleRoleTrackVerified===true;
+      return verified&&old!==null&&old===current&&expected!==null&&expected===ga;
     });
   }
   function planApplications(rows,entries=[],values={},normalizer){
@@ -270,6 +271,7 @@
       ev.__lbgRoleTrackExpected=expected;
       ev.__lbgOppositeTrackEvents=opposite.map(x=>x.id||'').filter(Boolean);
       ev.__lbgStaleRoleTrackCommon=common;
+      ev.__lbgStaleRoleTrackVerified=true;
       ev.ga=expected;ev.gaSource='previous';ev.historyMismatch=false;
       repaired++;
     }
