@@ -6,6 +6,7 @@ on:
       - 'ga-group-split-history-safe-v1.js'
       - 'ga-group-split-stale-repair-v1.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/ga-group-split-history-safe-v1.test.cjs'
       - 'tests/ga-khanh-thi-history-safe-v1.test.cjs'
       - '.github/workflows/validate-ga-group-split-history.yml'
