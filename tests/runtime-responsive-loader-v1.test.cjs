@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 
 const runtime=fs.readFileSync('app-runtime-v1.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
+assert.match(index,/app-runtime-v1\.js\?v=20260920\.1/,'root must load the parser-hook runtime build');
 
 function scriptNames(blockName){
   const m=runtime.match(new RegExp(`const ${blockName}=\\[([\\s\\S]*?)\\n      \\];`));
@@ -12,8 +13,8 @@ function scriptNames(blockName){
 }
 
 const expectedCore=[
-  'tkb-parser-v2.js?v=20260906.2',
-  'tkb-parser-school-name-fix-v1.js?v=20260906.1',
+  'tkb-parser-v2.js?v=20260920.1',
+  'tkb-parser-school-name-fix-v1.js?v=20260920.1',
   'tkb-atomic-teaching-v1.js?v=20260906.1',
   'tkb-parser-bridge-v2.js?v=20260906.3',
   'teaching-plan-progress-v1.js?v=20260909.1',
