@@ -92,12 +92,12 @@ assert.match(index,/tkb-roster-group-period-safe-v1\.js\?v=20260919\.1/,'new ros
 assert.ok(index.indexOf('tkb-roster-group-period-safe-v1.js?v=20260919.1')<index.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1'),'roster group period safety must load before assignment cache');
 assert.match(index,/grouped-plus-report-safe-v1\.js\?v=20260919\.1/,'grouped plus report bridge must stay loaded');
 assert.ok(index.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1')<index.indexOf('grouped-plus-report-safe-v1.js?v=20260919.1'),'grouped plus bridge must load after assignment cache');
-assert.ok(index.indexOf('grouped-plus-report-safe-v1.js?v=20260919.1')<index.indexOf('ga-per-class-v2.js?v=20260920.3'),'grouped plus bridge must load before production per-class GA');
-assert.match(index,/ga-per-class-v2\.js\?v=20260920\.3/,'per-class GA must stay loaded');
+assert.ok(index.indexOf('grouped-plus-report-safe-v1.js?v=20260919.1')<index.indexOf('ga-per-class-v2.js?v=20260920.4'),'grouped plus bridge must load before production per-class GA');
+assert.match(index,/ga-per-class-v2\.js\?v=20260920\.4/,'per-class GA must stay loaded');
 assert.match(index,/ga-per-class-history-safe-v1\.js\?v=20260913\.1/,'Khánh Thi GA history fix must stay loaded');
-assert.match(index,/ga-role-track-stale-repair-v1\.js\?v=20260920\.2/,'STEM/KNS stale GA repair must stay loaded');
-assert.ok(index.indexOf('ga-group-split-stale-repair-v1.js?v=20260914.1')<index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.2'),'role-track repair must run after group-split stale repair');
-assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.2')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must run before shared GA bridge');
+assert.match(index,/ga-role-track-stale-repair-v1\.js\?v=20260920\.3/,'STEM/KNS stale GA repair must stay loaded');
+assert.ok(index.indexOf('ga-group-split-stale-repair-v1.js?v=20260914.1')<index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.3'),'role-track repair must run after group-split stale repair');
+assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.3')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must run before shared GA bridge');
 assert.match(index,/sheets-ga-save-safe-v1\.js\?v=20260913\.1/,'Sheets GA fix must stay loaded');
 assert.match(index,/assist-p-preview-safe-v1\.js\?v=20260918\.1/,'assistant P class fix must stay loaded');
 
