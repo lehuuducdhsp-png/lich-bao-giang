@@ -87,7 +87,7 @@ assert.equal(current.ga,2,'stale GA4 must be repaired to canonical KNS GA2');
 assert.equal(current.__lbgStaleRoleTrackManual,4);
 assert.equal(current.__lbgRoleTrackExpected,2);
 
-// ga-per-class phải tự cho phép thay đúng class-key 4 -> 2 khi event đã có marker stale.
+// Role-track repair chỉ được đánh dấu ứng viên stale, không được tự cấp quyền ghi đè storage.
 const entries=[{
   day:5,session:'Sáng',schoolName:'THỦY PHƯƠNG',
   locationKey:'THUY PHUONG|25 DA LE',className:'3/9',classRaw:'3/9',address:'AM170'
@@ -95,22 +95,14 @@ const entries=[{
 const loc=Per.locOf(entries[0]).key;
 const classKey=Per.classGaKey(5,'Sáng',loc,'3/9');
 const values={[classKey]:'4'};
-const repairedEvent={...current,addresses:['AM170'],classId:'3/9',classDisplay:'3/9'};
-const plan=Per.planApplications([repairedEvent],entries,values,v=>String(v||'').trim());
-assert.equal(plan.conflicts.length,0);
-assert.equal(plan.apply.length,1);
-assert.equal(plan.apply[0].replaceExisting,true);
-assert.equal(plan.apply[0].reason,'stale-role-track-mix');
-assert.equal(plan.apply[0].current,4);
-assert.equal(plan.apply[0].ga,2);
-
-const write=Per.applyPlan(plan,values);
-assert.equal(write.applied,1);
-assert.equal(write.replacedCount,1);
-assert.equal(write.values[classKey],'2','class-specific GA must really persist as GA2');
+const candidateEvent={...current,addresses:['AM170'],classId:'3/9',classDisplay:'3/9'};
+const candidatePlan=Per.planApplications([candidateEvent],entries,values,v=>String(v||'').trim());
+assert.equal(candidatePlan.apply.length,0,'role history marker alone must not overwrite stored class GA');
+assert.equal(candidatePlan.conflicts.length,1);
+assert.equal(candidateEvent.__lbgStaleRoleTrackVerified,undefined);
 
 // Manual GA không có marker stale vẫn được bảo vệ.
-const manualEvent={...repairedEvent,ga:2,gaSource:'previous'};
+const manualEvent={...candidateEvent,ga:2,gaSource:'previous'};
 delete manualEvent.__lbgStaleRoleTrackManual;
 delete manualEvent.__lbgRoleTrackExpected;
 const protectedPlan=Per.planApplications([manualEvent],entries,values,v=>String(v||'').trim());
