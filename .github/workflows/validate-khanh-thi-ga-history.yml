@@ -23,5 +23,5 @@ jobs:
         run: node tests/ga-khanh-thi-history-safe-v1.test.cjs
       - name: Loader contract
         run: |
-          grep -F 'ga-per-class-v2.js?v=20260920.2' index.html
+          grep -F 'ga-per-class-v2.js?v=20260920.3' index.html
           grep -F 'ga-per-class-history-safe-v1.js?v=20260913.1' index.html
