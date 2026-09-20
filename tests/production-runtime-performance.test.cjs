@@ -13,7 +13,7 @@ assert.match(production,/\.lbg-finish-test-badge\{display:none!important\}/,'pro
 assert.match(production,/function\s+applyProductionFooter\s*\(/,'footer polish should remain finite and targeted');
 assert.match(production,/requestIdleCallback/,'secondary footer polish should run at idle time when available');
 assert.match(runtime,/production-mode-v1\.js\?v=20260909\.4/,'runtime must load the observer-free production mode cache key');
-assert.match(index,/app-runtime-v1\.js\?v=20260913\.1/,'index must load the responsive runtime cache key');
+assert.match(index,/app-runtime-v1\.js\?v=20260920\.1/,'index must load the responsive runtime cache key');
 assert.match(runtime,/const LOOKAHEAD=8/,'runtime should keep a bounded preload lookahead');
 assert.match(runtime,/const YIELD_EVERY=5/,'runtime should yield periodically to keep UI responsive');
 
