@@ -35,9 +35,10 @@ assert.equal(Safe.normalizeReport(report),report,'giữ nguyên object report đ
 assert.deepEqual(report.entries.map(x=>x.className),['3/1','31','3-1']);
 
 const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const typo=index.indexOf('tkb-class-typo-fix-v1.js?v=20260913.2');
-const safe=index.indexOf('class-typo-report-path-safe-v1.js?v=20260916.1');
-const cache=index.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1');
+const patchLoader=fs.readFileSync(path.join(__dirname,'..','patch-runtime-loader-v1.js'),'utf8');
+const typo=patchLoader.indexOf('tkb-class-typo-fix-v1.js?v=20260913.2');
+const safe=patchLoader.indexOf('class-typo-report-path-safe-v1.js?v=20260916.1');
+const cache=patchLoader.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1');
 assert.ok(typo>=0&&safe>typo&&cache>safe,'lớp an toàn phải nạp sau chuẩn hóa gốc và trước assignment cache');
 
 const source=fs.readFileSync(path.join(__dirname,'..','class-typo-report-path-safe-v1.js'),'utf8');
