@@ -1,0 +1,40 @@
+name: Package canonical GA portable
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/package-ga-canonical-portable.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build clean portable ZIP
+        run: |
+          mkdir -p portable/LICH-BAO-GIANG-GA-CANONICAL
+          rsync -a ./ portable/LICH-BAO-GIANG-GA-CANONICAL/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'tests' \
+            --exclude 'recovery' \
+            --exclude '*.zip' \
+            --exclude '*.log'
+          printf '%s\n' \
+            'BẢN TEST GA CANONICAL - PR #67' \
+            'Fix gốc: storage không đi vào history; group/split cùng tuần không tăng GA.' \
+            'Mục tiêu Tuần 7T9: KNS 2/10 và 3/9 đều GA1; không còn GA2/GA4 do đếm nhiều ô.' \
+            'Cách chạy: mở CMD trong thư mục này rồi chạy: python -m http.server 8767' \
+            'Mở http://localhost:8767 và kiểm tra Tuần 01 / Phan Thị Huệ.' \
+            > portable/LICH-BAO-GIANG-GA-CANONICAL/README-TEST.txt
+          cd portable
+          zip -r ../LICH-BAO-GIANG-GA-CANONICAL-SACH.zip LICH-BAO-GIANG-GA-CANONICAL
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LICH-BAO-GIANG-GA-CANONICAL-SACH
+          path: LICH-BAO-GIANG-GA-CANONICAL-SACH.zip
+          if-no-files-found: error
+          retention-days: 7

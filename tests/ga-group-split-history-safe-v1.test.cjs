@@ -4,6 +4,8 @@ const V7=require('../ga-suggestion-v7.js');
 const Per=require('../ga-per-class-v2.js');
 const Safe=require('../ga-group-split-history-safe-v1.js');
 const Repair=require('../ga-group-split-stale-repair-v1.js');
+assert.equal(Safe.VERSION,'20260920.1');
+assert.equal(Repair.VERSION,'20260920.1');
 
 assert.equal(Safe.wholeGradeFromText('KHỐI 1 (4 LỚP) - TIẾT 4'),1);
 assert.equal(Safe.wholeGradeFromText('LỚP 1 (4 LỚP)'),1);
@@ -98,5 +100,27 @@ const protectedValues={...staleValues,[Per.classGaKey(3,'Sáng',loc,'1/1')]:'4'}
 const onePlan=Per.planApplications([current[0]],groupThenSplit.get('14T09'),protectedValues,V7.normalizeClass);
 const promotedProtected=Repair.promoteSafeLegacyConflicts(onePlan,protectedValues);
 assert.equal(promotedProtected.conflicts.length,1,'override riêng khác GA chung phải được giữ nguyên');
+
+
+// Regression: một scope có KHỐI vẫn không được tăng GA nhiều lần trong cùng tuần.
+const sameWeekScope=new Map([
+  ['7T9',[
+    {code:'HUỆ',day:2,session:'Sáng',period:1,teachingPeriod:1,locationKey:'THUY PHUONG|25 DA LE',schoolName:'THỦY PHƯƠNG',className:'KHỐI 2 (4 LỚP)',classRaw:'KHỐI 2 (4 LỚP)',address:'W1'},
+    {code:'HUỆ',day:3,session:'Chiều',period:3,teachingPeriod:3,locationKey:'THUY PHUONG|25 DA LE',schoolName:'THỦY PHƯƠNG',className:'2/10',classRaw:'2/10',address:'W2'},
+    {code:'HUỆ',day:5,session:'Sáng',period:4,teachingPeriod:4,locationKey:'THUY PHUONG|25 DA LE',schoolName:'THỦY PHƯƠNG',className:'2/10',classRaw:'2/10',address:'W3'}
+  ]]
+]);
+const sameWeekDates={'7T9':new Date(2026,8,7,12)};
+const sameWeekBook={worksheets:[{name:'7T9'}]};
+const sameWeekParser={scanAssignments:ws=>sameWeekScope.get(ws.name)||[]};
+const sameWeekWrapped=Safe.wrapBuildHistory(V7.buildHistory);
+const sameWeekHistory=sameWeekWrapped(sameWeekBook,'7T9',{
+  parser:sameWeekParser,roleResolver:()=> 'KNS',
+  startDateFor:ws=>sameWeekDates[ws.name],weekLike:()=>true
+});
+assert.equal(sameWeekHistory.byAddress.get('7T9!W1').ga,1);
+assert.equal(sameWeekHistory.byAddress.get('7T9!W2').ga,1,'group/split wrapper must preserve GA1 inside same week');
+assert.equal(sameWeekHistory.byAddress.get('7T9!W3').ga,1,'repeated 2/10 in same week must never become GA2/GA4');
+assert.equal(sameWeekHistory.byAddress.get('7T9!W3').gaSource,'same-week');
 
 console.log('OK GA group/split: KHỐI 1 = toàn bộ lớp 1; tách/gộp kế thừa GA và sửa an toàn GA1 tự lưu cũ.');

@@ -5,10 +5,11 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.3';
+  const VERSION='20260920.5';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
+  const REPAIR_BACKUP_PREFIX='lbgGaRepairBackupV1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -47,6 +48,14 @@
   function gaKey(day,session,location){return`${Number(day)}|${txt(session)}|${txt(location)}`}
   function classGaKey(day,session,location,classKey){return`${CLASS_PREFIX}|${Number(day)}|${txt(session)}|${txt(location)}|${txt(classKey)}`}
   function storageKey(version,sheet,code,prefix=GA_PREFIX){return`${prefix}:${txt(version)||'active'}:${txt(sheet)}:${txt(code)}`}
+  function repairBackupKey(version,sheet,code){return`${REPAIR_BACKUP_PREFIX}:${txt(version)||'active'}:${txt(sheet)}:${txt(code)}`}
+  function buildRepairBackup(values,plan){
+    const replacements=(plan?.apply||[]).filter(x=>x?.replaceExisting===true).map(x=>({
+      key:txt(x?.target?.key),from:normalizedGa(x?.current),to:normalizedGa(x?.ga),
+      reason:txt(x?.reason),repairReason:txt(x?.items?.[0]?.ev?.__lbgStaleRepairReason)
+    })).filter(x=>x.key&&x.from!==null&&x.to!==null);
+    return replacements.length?{schema:1,createdAt:new Date().toISOString(),values:{...(values&&typeof values==='object'?values:{})},replacements}:null;
+  }
   function rawValue(values,key){
     if(!values||typeof values!=='object'||!key||!Object.prototype.hasOwnProperty.call(values,key))return undefined;
     const raw=values[key];return raw===undefined||raw===null||txt(raw)===''?undefined:raw;
@@ -172,7 +181,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides};
+    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,REPAIR_BACKUP_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,repairBackupKey,buildRepairBackup,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,buildCanonicalHistoryAcrossSources};
   }
 
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
@@ -189,6 +198,14 @@
     return{};
   }
   function persistStoredValues(a,values){try{root.localStorage.setItem(storageKey(activeVersion(),a?.sheet,a?.code||a?.teacherName),JSON.stringify(values&&typeof values==='object'?values:{}));return true}catch{return false}}
+  function backupBeforeRepair(a,values,plan){
+    const snapshot=buildRepairBackup(values,plan);if(!snapshot)return false;
+    try{
+      const key=repairBackupKey(activeVersion(),a?.sheet,a?.code||a?.teacherName);
+      if(!root.localStorage.getItem(key))root.localStorage.setItem(key,JSON.stringify(snapshot));
+      return true;
+    }catch{return false}
+  }
   function decorateReport(a,storedOverride){
     if(!a||!Array.isArray(a.entries))return a;
     const stored={...(storedOverride&&typeof storedOverride==='object'?storedOverride:loadStoredValues(a))};
@@ -278,17 +295,28 @@
       const common=normalizedGa(inheritedRaw(values,target));
       if(common===null||common!==expected)continue;
 
-      const previous=latestPriorSameTrack(canon);if(!previous)continue;
-      const opposite=safe.interveningOpposite(canonical,canon,previous);
-      if(!opposite.length)continue;
-      const contaminated=safe.contaminationCandidate(canon.track,expected,opposite.length);
-      if(contaminated!==stored)continue;
+      let repairReason='',evidence=[];
+      const sameWeek=safe?.sameWeekLegacyCandidate?.(canonical,canon,expected)||null;
+      if(sameWeek?.candidate===stored&&Number(sameWeek?.count)>0){
+        repairReason='legacy-same-week-increment';
+        evidence=sameWeek.eventIds||[];
+      }else{
+        const previous=latestPriorSameTrack(canon);if(!previous)continue;
+        const opposite=safe.interveningOpposite(canonical,canon,previous);
+        if(!opposite.length)continue;
+        const contaminated=safe.contaminationCandidate(canon.track,expected,opposite.length);
+        if(contaminated!==stored)continue;
+        repairReason='legacy-role-track-mix';
+        evidence=opposite.map(x=>x.id||'').filter(Boolean);
+        ev.__lbgOppositeTrackEvents=evidence;
+      }
       ev.__lbgStaleRoleTrackManual=stored;
       ev.__lbgRoleTrackExpected=expected;
-      ev.__lbgOppositeTrackEvents=opposite.map(x=>x.id||'').filter(Boolean);
       ev.__lbgStaleRoleTrackCommon=common;
+      ev.__lbgStaleRepairReason=repairReason;
+      ev.__lbgStaleRepairEvidence=evidence;
       ev.__lbgStaleRoleTrackVerified=true;
-      ev.ga=expected;ev.gaSource='previous';ev.historyMismatch=false;
+      ev.ga=expected;ev.gaSource=canon.gaSource||'previous';ev.historyMismatch=false;
       repaired++;
     }
     history.__lbgVerifiedStaleClassOverrides=repaired;
@@ -298,6 +326,12 @@
     return markVerifiedStaleClassOverridesFromValues(
       history,canonical,a?.sheet,a?.entries||[],loadStoredValues(a),normalizer(),root.LBGGaRoleTrackStaleRepairV1
     );
+  }
+  function buildCanonicalHistoryAcrossSources(c,base,sources,book,selectedSheet,opts={}){
+    if(!c?.buildHistoryAcrossSources)throw new Error('Bộ phân tích GA nhiều phiên bản chưa sẵn sàng.');
+    const clean={...(opts&&typeof opts==='object'?opts:{})};
+    delete clean.manualResolver;
+    return c.buildHistoryAcrossSources(base,sources,book,selectedSheet,clean);
   }
   async function loadSources(book){
     const list=versionList(),active=activeVersion(),out=[];
@@ -313,18 +347,22 @@
     const book=bookNow(),c=cross(),base=v7(),p=parser();if(!book||!a?.sheet||!a?.entries?.length)throw new Error('Báo giảng chưa có dữ liệu để phân tích GA.');if(!c?.buildHistoryAcrossSources||!base||!p)throw new Error('Bộ phân tích GA chưa sẵn sàng.');
     const sources=await loadSources(book);
     const common={parser:p,roleResolver,startDateFor,weekLike:weekLikeFor};
-    const history=c.buildHistoryAcrossSources(base,sources,book,a.sheet,{...common,manualResolver:manualResolverFor(a,{classSpecific:true})});
-    // Pass 2: bỏ riêng GA theo lớp, vẫn giữ GA chung của địa điểm để tính mốc chuẩn.
-    // Dùng pass này chỉ để nhận diện GA lớp cũ bị tăng do STEM/KNS chen nhau; không đụng GA tay khác.
-    const canonical=c.buildHistoryAcrossSources(base,sources,book,a.sheet,{...common,manualResolver:manualResolverFor(a,{classSpecific:false})});
-    markVerifiedStaleClassOverrides(history,canonical,a);
-    return{history,canonicalHistory:canonical,rows:rowsFor(history,a)};
+
+    // NGUYÊN TẮC: history là dữ liệu tính toán thuần từ TKB/role/tuần.
+    // Tuyệt đối không đưa GA đang lưu của tuần hiện tại ngược lại làm đầu vào history,
+    // tránh vòng lặp tự xác nhận kiểu 2/10=GA4 -> history lại coi GA4 là manual.
+    const history=buildCanonicalHistoryAcrossSources(c,base,sources,book,a.sheet,common);
+
+    // Storage chỉ được dùng SAU khi canonical history đã tính xong để quyết định:
+    // giữ nguyên / self-heal stale đã chứng minh / báo xung đột.
+    markVerifiedStaleClassOverrides(history,history,a);
+    return{history,canonicalHistory:history,rows:rowsFor(history,a)};
   }
   async function repairVerifiedStaleOnly(a){
     const analyzed=await analyzeReport(a),values=loadStoredValues(a);
     const plan=verifiedStaleOnlyPlan(analyzed.rows,a?.entries||[],values,normalizer());
     const write=applyPlan(plan,values);
-    if(write.applied)persistStoredValues(a,write.values);
+    if(write.applied){backupBeforeRepair(a,values,plan);persistStoredValues(a,write.values);}
     return{...analyzed,plan,values:write.values,applied:write.applied,replacedCount:write.replacedCount||0,protectedCount:write.protectedCount||0};
   }
   function reportIdentity(a){return `${activeVersion()}|${txt(a?.sheet)}|${txt(a?.code||a?.teacherName).toUpperCase()}`}
@@ -357,10 +395,10 @@
   }
   function stateFor(ev,a){const plan=planFor([ev],a);if(plan.same.length)return{kind:'same',label:`✓ Đã có GA ${plan.same[0].ga}`,disabled:true};if(plan.conflicts.length)return{kind:'conflict',label:'⚠ Có GA lớp khác',disabled:true};if(plan.skipped.length)return{kind:'skip',label:'Không thể áp dụng',disabled:true};if(plan.apply.length){const x=plan.apply[0];return{kind:'apply',label:x.replaceExisting?`↻ Sửa GA ${x.current} → ${x.ga}`:`↘ Áp dụng GA ${x.ga}`,disabled:false}}return{kind:'skip',label:'Không thể áp dụng',disabled:true}}
   function refreshSuggestionUi(panel,rows,a){panel.querySelectorAll('[data-ga-per-class-one]').forEach(button=>{const state=stateFor(rows[Number(button.dataset.gaPerClassOne)],a);button.textContent=state.label;button.disabled=state.disabled;button.dataset.state=state.kind});const bulk=panel.querySelector('[data-ga-per-class-all]'),plan=planFor(rows,a);if(bulk){bulk.disabled=!plan.apply.length;bulk.textContent=plan.apply.length?`✓ Áp dụng tất cả GA theo lớp (${plan.apply.length} lớp)`:'✓ Không còn GA lớp trống để áp dụng'}}
-  function toastApply(out){if(typeof toast!=='function')return;if(out.applied){toast(`${out.replacedCount?`Đã sửa ${out.replacedCount} GA cũ do trộn STEM/KNS${out.applied>out.replacedCount?` và áp dụng thêm ${out.applied-out.replacedCount} GA`:''}`:`Đã áp dụng ${out.applied} GA theo lớp`} vào Lịch Báo giảng${out.blocked?` • bỏ qua ${out.blocked} mục cần kiểm tra`:''}.`);return}if(out.conflicts.length){toast('Có GA riêng của lớp khác với gợi ý nên hệ thống không ghi đè.');return}if(out.same.length){toast('GA gợi ý đã có trong Lịch Báo giảng.');return}toast('Chưa có GA theo lớp hợp lệ để áp dụng.')}
+  function toastApply(out){if(typeof toast!=='function')return;if(out.applied){toast(`${out.replacedCount?`Đã sửa ${out.replacedCount} GA cũ đã được lịch sử xác minh${out.applied>out.replacedCount?` và áp dụng thêm ${out.applied-out.replacedCount} GA`:''}`:`Đã áp dụng ${out.applied} GA theo lớp`} vào Lịch Báo giảng${out.blocked?` • bỏ qua ${out.blocked} mục cần kiểm tra`:''}.`);return}if(out.conflicts.length){toast('Có GA riêng của lớp khác với gợi ý nên hệ thống không ghi đè.');return}if(out.same.length){toast('GA gợi ý đã có trong Lịch Báo giảng.');return}toast('Chưa có GA theo lớp hợp lệ để áp dụng.')}
   function renderSuggestionPanel(panel,history,a){
     const rows=rowsFor(history,a),meta=history.crossVersion||{};
-    panel.innerHTML=`<div class="alert info"><b>GA gợi ý theo lớp:</b> đang dò <b>${meta.weekCount||1} tuần</b> từ <b>${meta.sourceCount||1} phiên bản TKB</b>. Nếu cùng một buổi có nhiều GA, hệ thống lưu GA riêng cho từng lớp; GA có nhiều lớp hơn sẽ ở đầu buổi, lớp khác GA được ghi rõ ngay sau tên lớp.</div>${rows.length?`<div class="lbg-ga-apply-toolbar"><button type="button" class="lbg-ga-apply-all" data-ga-per-class-all>✓ Áp dụng tất cả GA theo lớp</button><small>Không ghi đè GA riêng bình thường; chỉ sửa GA cũ khi lịch sử chứng minh bị trộn STEM/KNS.</small></div><div class="wrap"><table><thead><tr><th>STT</th><th>Ngày – buổi – tiết</th><th>Trường</th><th>Lớp / nhóm lớp</th><th>Giáo viên / phối hợp</th><th>Luồng</th><th>GA gợi ý & tên bài</th><th>Căn cứ</th></tr></thead><tbody>${rows.map((ev,i)=>{const lesson=titleFor(ev),collab=(ev.participants||[]).length>1,src=(ev.addresses||[]).join(', ');return`<tr><td>${i+1}</td><td>${esc(fmtDate(ev.date))}<br>${esc(ev.session)} – <b>Tiết ${esc(ev.period)}</b></td><td>${esc(ev.school)}</td><td>${esc(ev.classDisplay)}<br><small>Ô nguồn: ${esc(src)}</small></td><td>${collab?'<b style="color:#0f766e">🤝 Phối hợp</b><br>':''}${esc(participantText(ev))}</td><td><b>${esc(trackText(ev))}</b></td><td><div class="lbg-ga-main">${ev.ga==null?'Chưa xác định':`GA ${esc(ev.ga)} – ${esc(trackText(ev))}`}</div><div style="margin-top:4px;font-weight:700;color:#4b342b">${esc(lesson.title)}</div><button type="button" class="lbg-ga-apply-one" data-ga-per-class-one="${i}">Áp dụng</button></td><td>${esc(basisText(ev))}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="alert warn">Không ghép được các ô nguồn hiện tại với lịch sử TKB.</div>'}`;
+    panel.innerHTML=`<div class="alert info"><b>GA gợi ý theo lớp:</b> đang dò <b>${meta.weekCount||1} tuần</b> từ <b>${meta.sourceCount||1} phiên bản TKB</b>. Nếu cùng một buổi có nhiều GA, hệ thống lưu GA riêng cho từng lớp; GA có nhiều lớp hơn sẽ ở đầu buổi, lớp khác GA được ghi rõ ngay sau tên lớp.</div>${rows.length?`<div class="lbg-ga-apply-toolbar"><button type="button" class="lbg-ga-apply-all" data-ga-per-class-all>✓ Áp dụng tất cả GA theo lớp</button><small>Không ghi đè GA riêng bình thường; chỉ sửa GA cũ khi lịch sử chứng minh đúng là dữ liệu sai của thuật toán cũ; GA nhập tay khác vẫn được bảo vệ.</small></div><div class="wrap"><table><thead><tr><th>STT</th><th>Ngày – buổi – tiết</th><th>Trường</th><th>Lớp / nhóm lớp</th><th>Giáo viên / phối hợp</th><th>Luồng</th><th>GA gợi ý & tên bài</th><th>Căn cứ</th></tr></thead><tbody>${rows.map((ev,i)=>{const lesson=titleFor(ev),collab=(ev.participants||[]).length>1,src=(ev.addresses||[]).join(', ');return`<tr><td>${i+1}</td><td>${esc(fmtDate(ev.date))}<br>${esc(ev.session)} – <b>Tiết ${esc(ev.period)}</b></td><td>${esc(ev.school)}</td><td>${esc(ev.classDisplay)}<br><small>Ô nguồn: ${esc(src)}</small></td><td>${collab?'<b style="color:#0f766e">🤝 Phối hợp</b><br>':''}${esc(participantText(ev))}</td><td><b>${esc(trackText(ev))}</b></td><td><div class="lbg-ga-main">${ev.ga==null?'Chưa xác định':`GA ${esc(ev.ga)} – ${esc(trackText(ev))}`}</div><div style="margin-top:4px;font-weight:700;color:#4b342b">${esc(lesson.title)}</div><button type="button" class="lbg-ga-apply-one" data-ga-per-class-one="${i}">Áp dụng</button></td><td>${esc(basisText(ev))}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="alert warn">Không ghép được các ô nguồn hiện tại với lịch sử TKB.</div>'}`;
     panel.__lbgGaPerClassContext={rows,a};if(panel.dataset.gaPerClassBound!=='1'){panel.dataset.gaPerClassBound='1';panel.addEventListener('click',event=>{const button=event.target?.closest?.('[data-ga-per-class-one],[data-ga-per-class-all]');if(!button)return;const context=panel.__lbgGaPerClassContext;if(!context)return;const one=button.dataset.gaPerClassOne,selected=one!==undefined?[context.rows[Number(one)]].filter(Boolean):context.rows,out=applyRows(selected,context.a);toastApply(out);refreshSuggestionUi(panel,context.rows,context.a)})}refreshSuggestionUi(panel,rows,a);
   }
   async function runSuggestionAnalysis(){
@@ -370,8 +408,11 @@
   }
   function bindSuggestionButton(){const b=q('gaSuggestV6');if(!b||!cross()||!v7()||!parser())return false;if(b.onclick!==runSuggestionAnalysis)b.onclick=runSuggestionAnalysis;b.dataset.gaPerClass='2';return true}
   async function applyReport(a){
-    const{history,rows}=await analyzeReport(a),plan=planFor(rows,a),write=applyPlan(plan,loadStoredValues(a));
-    if(write.applied)persistStoredValues(a,write.values);
+    const{history,rows}=await analyzeReport(a),stored=loadStoredValues(a),plan=planApplications(rows,a?.entries||[],stored,normalizer()),write=applyPlan(plan,stored);
+    if(write.applied){
+      if(write.replacedCount)backupBeforeRepair(a,stored,plan);
+      persistStoredValues(a,write.values);
+    }
     decorateReport(a,write.values);
     return{history,rows,plan,values:a.gaValues,applied:write.applied,replacedCount:write.replacedCount||0,protectedCount:write.protectedCount,same:plan.same.length,conflicts:plan.conflicts.length,skipped:plan.skipped.length};
   }
@@ -390,5 +431,5 @@
     };
     tick();return true;
   }
-  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,decorateReport,analyzeReport,repairVerifiedStaleOnly,applyReport,loadStoredValues,persistStoredValues,install};
+  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,REPAIR_BACKUP_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,repairBackupKey,buildRepairBackup,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,buildCanonicalHistoryAcrossSources,decorateReport,analyzeReport,repairVerifiedStaleOnly,applyReport,loadStoredValues,persistStoredValues,backupBeforeRepair,install};
 });

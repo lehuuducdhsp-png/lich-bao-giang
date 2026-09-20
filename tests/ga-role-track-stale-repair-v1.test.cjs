@@ -4,8 +4,8 @@ const V7=require('../ga-suggestion-v7.js');
 const R=require('../ga-role-track-stale-repair-v1.js');
 const Per=require('../ga-per-class-v2.js');
 
-assert.equal(R.VERSION,'20260920.2');
-assert.equal(Per.VERSION,'20260920.3');
+assert.equal(R.VERSION,'20260920.4');
+assert.equal(Per.VERSION,'20260920.5');
 assert.equal(V7.roleTrack('STEM').track,'stem');
 assert.equal(V7.roleTrack('KNS').track,'kns');
 assert.equal(R.expectedFromPrevious('kns',{sheet:'7T9',ga:1},{sheet:'7T9'}),1,'same-week KNS must not advance');

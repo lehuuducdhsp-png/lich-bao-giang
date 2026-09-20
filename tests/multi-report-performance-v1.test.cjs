@@ -24,23 +24,23 @@ assert.doesNotMatch(multi,/setInterval\(\(\)=>\{analyze\(\);exportFiles\(\)/,'mu
 assert.match(multi,/lbg-runtime-ready/,'multi handlers must rebind from lifecycle events instead of endless polling');
 
 // Nút xanh dùng chung cho 1 giáo viên và nhiều giáo viên.
-assert.equal(MultiGa.VERSION,'20260920.1');
+assert.equal(MultiGa.VERSION,'20260920.3');
 assert.match(ga,/box\.classList\.toggle\('show',count>0\)/,'GA button must be visible for one selected teacher');
 assert.match(ga,/button\.disabled=count<1/,'GA button must enable from one teacher');
 assert.match(ga,/teachers\.length<1/,'GA batch runner must accept a single teacher');
 assert.match(ga,/Phân tích & áp dụng GA cho 1 giáo viên/,'single-teacher label must be explicit');
 assert.match(ga,/Phân tích & áp dụng GA cho \$\{count\} giáo viên/,'multi-teacher label must keep selected count');
-assert.match(ga,/không ghi đè GA nhập tay, chỉ tự sửa GA cũ khi lịch sử chứng minh bị trộn STEM\/KNS/,'GA button note must explain verified stale repair without weakening manual protection');
+assert.match(ga,/không ghi đè GA nhập tay, chỉ tự sửa GA cũ khi lịch sử chứng minh đúng là dữ liệu sai của thuật toán cũ/,'GA button note must explain verified stale repair without weakening manual protection');
 assert.match(ga,/await yieldUi\(\)/,'GA apply must yield between teachers');
 assert.match(ga,/if\(q\('teacher'\).*ensureUi\(\);\s*return;/s,'GA installer must stop polling once dependencies are ready');
 
 // Per-class GA là chủ nghiệp vụ cuối cùng; không được tranh onclick với bridge hoặc giữ luật cũ >=2 GV.
-assert.match(per,/const VERSION='20260920\.3'/);
+assert.match(per,/const VERSION='20260920\.5'/);
 assert.doesNotMatch(per,/Hãy chọn từ 2 giáo viên trở lên/,'per-class module must not keep the obsolete >=2-teacher guard');
 assert.doesNotMatch(per,/function bindMultiButton/,'per-class module must not fight the shared GA button handler');
 assert.match(per,/decorateReport\(a,write\.values\)/,'per-class batch result must be decorated before the preview consumes it');
 assert.match(per,/if\(ready\)\{[\s\S]*notifyReady\(\);return;/,'per-class installer must stop polling after successful install');
-assert.match(per,/applyReport,loadStoredValues,persistStoredValues,install/,'per-class browser API must expose the canonical batch apply path');
+assert.match(per,/applyReport,loadStoredValues,persistStoredValues,backupBeforeRepair,install/,'per-class browser API must expose canonical apply + backup path');
 
 // Bridge giữ snapshot lựa chọn thật, dùng per-class engine và đồng bộ lại preview khi đổi GV.
 assert.match(bridge,/const VERSION='20260914\.2'/);
@@ -73,20 +73,20 @@ assert.match(analysisFix,/lbg-analyze-now-ready/,'analysis-fix must announce lat
 assert.match(per,/addEventListener\('lbg-analyze-now-ready'/,'per-class GA must re-wrap after late analyzeNow replacement');
 assert.doesNotMatch(per,/if\(analyzeInstalled\)return true/,'per-class installer must verify the current wrapper instead of trusting stale state');
 assert.match(index,/tkb-assignment-cache-safe-v1\.js\?v=20260913\.1/);
-assert.match(index,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.1/);
-assert.match(index,/ga-per-class-v2\.js\?v=20260920\.3/);
+assert.match(index,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.3/);
+assert.match(index,/ga-per-class-v2\.js\?v=20260920\.5/);
 assert.match(index,/ga-multi-selection-bridge-v1\.js\?v=20260914\.2/);
-assert.ok(index.indexOf('ga-per-class-v2.js?v=20260920.3')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
-assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.2')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must load before stable bridge');
+assert.ok(index.indexOf('ga-per-class-v2.js?v=20260920.5')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
+assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must load before stable bridge');
 
 // Các module nghiệp vụ đã chốt gần đây vẫn phải còn nguyên trên đường chạy chính.
 for(const required of [
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'tkb-roster-group-period-safe-v1.js?v=20260919.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
-  'ga-per-class-v2.js?v=20260920.3',
+  'ga-per-class-v2.js?v=20260920.5',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
-  'ga-role-track-stale-repair-v1.js?v=20260920.2',
+  'ga-role-track-stale-repair-v1.js?v=20260920.4',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'assist-p-preview-safe-v1.js?v=20260918.1',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',

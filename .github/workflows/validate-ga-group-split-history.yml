@@ -30,6 +30,6 @@ jobs:
       - name: Loader contract
         run: |
           grep -F 'ga-per-class-history-safe-v1.js?v=20260913.1' index.html
-          grep -F 'ga-group-split-history-safe-v1.js?v=20260914.1' index.html
-          grep -F 'ga-group-split-stale-repair-v1.js?v=20260914.1' index.html
+          grep -F 'ga-group-split-history-safe-v1.js?v=20260920.1' index.html
+          grep -F 'ga-group-split-stale-repair-v1.js?v=20260920.1' index.html
           grep -F 'ga-multi-selection-bridge-v1.js?v=20260914.2' index.html

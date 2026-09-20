@@ -5,20 +5,21 @@
   if(root)root.LBGGaGroupSplitStaleRepairV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260914.1';
+  const VERSION='20260920.1';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').trim();
   const normalizedGa=value=>{if(value===undefined||value===null||txt(value)==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0?Math.round(n):null};
   const seqFor=track=>track==='stem'?STEM_SEQUENCE:KNS_SEQUENCE;
   const nextGa=(track,ga)=>{const seq=seqFor(track),i=seq.indexOf(Number(ga));return i<0?seq.find(x=>x>Number(ga))??seq[0]??null:seq[i+1]??null};
+  const expectedFromPrevious=(track,previous,current)=>txt(previous?.sheet)===txt(current?.sheet)?normalizedGa(previous?.ga):nextGa(track,previous?.ga);
 
   function repairHistory(history){
     if(!history||!Array.isArray(history.events))return history;
     for(const ev of history.events){
       if(!ev?.__lbgInheritedFromWholeGrade||ev?.gaSource!=='manual')continue;
       const prev=(ev.previousEvents||[]).filter(x=>x?.__lbgWholeGradeHistory&&normalizedGa(x?.ga)!==null);
-      const candidates=[...new Set(prev.map(x=>nextGa(ev.track,x.ga)).filter(x=>x!==null))];
+      const candidates=[...new Set(prev.map(x=>expectedFromPrevious(ev.track,x,ev)).filter(x=>x!==null))];
       const current=normalizedGa(ev.ga);
       if(candidates.length!==1||current===null||candidates[0]===current)continue;
       ev.__lbgStaleGroupSplitManual=current;
@@ -87,7 +88,10 @@
         const basic=per.planApplications(rows,a?.entries||[],stored,v7.normalizeClass);
         const plan=promoteSafeLegacyConflicts(basic,stored);
         const write=applyPlanWithSafeLegacy(per,plan,stored);
-        if(write.applied)per.persistStoredValues(a,write.values);
+        if(write.applied){
+          if(plan.apply.some(x=>x?.replaceExisting)&&typeof per.backupBeforeRepair==='function')per.backupBeforeRepair(a,stored,plan);
+          per.persistStoredValues(a,write.values);
+        }
         per.decorateReport(a,write.values);
         return{history,rows,plan,values:a.gaValues,applied:write.applied,protectedCount:write.protectedCount,same:plan.same.length,conflicts:plan.conflicts.length,skipped:plan.skipped.length};
       };
@@ -99,5 +103,5 @@
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
 
-  return{VERSION,normalizedGa,repairHistory,wrapBuildHistory,promoteSafeLegacyConflicts,applyPlanWithSafeLegacy,install};
+  return{VERSION,normalizedGa,expectedFromPrevious,repairHistory,wrapBuildHistory,promoteSafeLegacyConflicts,applyPlanWithSafeLegacy,install};
 });

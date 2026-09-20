@@ -5,7 +5,7 @@
   if(root)root.LBGGaRoleTrackStaleRepairV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.2';
+  const VERSION='20260920.4';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').trim();
@@ -85,6 +85,25 @@
       overlap(x.members,ev.members)&&before(previous,x)&&before(x,ev)
     );
   }
+  function sameWeekLegacyCandidate(history,ev,expected){
+    const base=normalizedGa(expected),members=Array.isArray(ev?.members)?ev.members:[];
+    if(base===null||!history?.events||!ev||!txt(ev.sheet)||!members.length)return{candidate:null,count:0,counts:[],eventIds:[]};
+    const counts=[],ids=new Set();
+    for(const member of members){
+      const prior=history.events.filter(x=>
+        x&&x!==ev&&x.track===ev.track&&txt(x.sheet)===txt(ev.sheet)&&
+        txt(x.locationKey)===txt(ev.locationKey)&&Number(x.grade)===Number(ev.grade)&&
+        (Array.isArray(x.members)?x.members:[]).includes(member)&&before(x,ev)
+      );
+      counts.push(prior.length);for(const x of prior)ids.add(x.id||'');
+    }
+    const candidates=counts.map(count=>{
+      let ga=base;for(let i=0;i<count;i++){ga=nextGa(ev.track,ga);if(ga===null)break}return ga
+    }).filter(x=>x!==null);
+    const uniq=[...new Set(candidates)];
+    const count=counts.length&&new Set(counts).size===1?counts[0]:0;
+    return{candidate:uniq.length===1&&count>0?uniq[0]:null,count,counts,eventIds:[...ids].filter(Boolean)};
+  }
   function repairHistory(history){
     if(!history||!Array.isArray(history.events))return history;
     for(const ev of history.events){
@@ -123,7 +142,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,expectedFromPrevious,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory};
+    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,expectedFromPrevious,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,sameWeekLegacyCandidate,repairHistory,wrapBuildHistory};
   }
 
   function installOnce(){
@@ -136,5 +155,5 @@
     return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,expectedFromPrevious,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,expectedFromPrevious,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,sameWeekLegacyCandidate,repairHistory,wrapBuildHistory,install};
 });
