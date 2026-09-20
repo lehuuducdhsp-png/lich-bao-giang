@@ -82,34 +82,44 @@
       if((i+1)%YIELD_EVERY===0&&i+1<items.length)await yieldToBrowser();
     }
   }
-  async function loadCore(){
-    if(state.coreReady||state.coreLoading)return;
-    state.coreLoading=true;state.coreStartedAt=performance?.now?.()??Date.now();
-    try{
-      await loadSequence(CORE_PATCHES);
-      state.coreReady=true;state.coreFinishedAt=performance?.now?.()??Date.now();
-      document.dispatchEvent(new CustomEvent('lbg-patch-core-ready',{detail:{version:VERSION}}));
-    }catch(error){state.errors.push(String(error?.message||error));console.error('Patch core:',error)}
-    finally{state.coreLoading=false}
+  let corePromise=null,runtimePromise=null;
+  function now(){return typeof performance!=='undefined'&&performance.now?performance.now():Date.now()}
+  function loadCore(){
+    if(state.coreReady)return Promise.resolve();
+    if(corePromise)return corePromise;
+    state.coreLoading=true;state.coreStartedAt=now();
+    corePromise=(async()=>{
+      try{
+        await loadSequence(CORE_PATCHES);
+        state.coreReady=true;state.coreFinishedAt=now();
+        document.dispatchEvent(new CustomEvent('lbg-patch-core-ready',{detail:{version:VERSION}}));
+      }catch(error){state.errors.push(String(error?.message||error));console.error('Patch core:',error);throw error}
+      finally{state.coreLoading=false}
+    })();
+    return corePromise;
   }
-  async function loadRuntime(){
-    if(state.runtimeReady||state.runtimeLoading)return;
-    state.runtimeLoading=true;state.runtimeStartedAt=performance?.now?.()??Date.now();
-    try{
-      if(!state.coreReady)await loadCore();
-      await loadSequence(RUNTIME_PATCHES);
-      state.runtimeReady=true;state.runtimeFinishedAt=performance?.now?.()??Date.now();
-      document.dispatchEvent(new CustomEvent('lbg-patch-runtime-ready',{detail:{version:VERSION}}));
-      armCheckin();
-    }catch(error){state.errors.push(String(error?.message||error));console.error('Patch runtime:',error)}
-    finally{state.runtimeLoading=false}
+  function loadRuntime(){
+    if(state.runtimeReady)return Promise.resolve();
+    if(runtimePromise)return runtimePromise;
+    state.runtimeLoading=true;state.runtimeStartedAt=now();
+    runtimePromise=(async()=>{
+      try{
+        await loadCore();
+        await loadSequence(RUNTIME_PATCHES);
+        state.runtimeReady=true;state.runtimeFinishedAt=now();
+        document.dispatchEvent(new CustomEvent('lbg-patch-runtime-ready',{detail:{version:VERSION}}));
+        armCheckin();
+      }catch(error){state.errors.push(String(error?.message||error));console.error('Patch runtime:',error);throw error}
+      finally{state.runtimeLoading=false}
+    })();
+    return runtimePromise;
   }
 
-  let checkinStarted=false;
+  let checkinStarted=false,checkinArmed=false;
   function armCheckin(){
-    if(checkinStarted)return;
+    if(checkinStarted||checkinArmed)return;
     const start=async()=>{
-      if(checkinStarted||!window.LBGAuth||!window.LBGAccess?.context)return false;
+      if(checkinStarted||!window.LBGAuth||!window.LBGAccess?.context)return;
       checkinStarted=true;
       try{
         await loadSequence([
@@ -120,9 +130,10 @@
         ]);
         state.checkinReady=true;
       }catch(error){state.errors.push(String(error?.message||error));console.error('Check-in loader:',error)}
-      return true;
     };
-    if(!start())document.addEventListener('lbg-access-ready',()=>start(),{once:true});
+    if(window.LBGAuth&&window.LBGAccess?.context){start();return}
+    checkinArmed=true;
+    document.addEventListener('lbg-access-ready',()=>{checkinArmed=false;start()},{once:true});
   }
 
   const coreNow=()=>Boolean(window.LBGRuntimeLoader?.reportCoreReady);
