@@ -75,8 +75,9 @@ function currentEvent(history){return history.byAddress.get('21T9!AM170')}
 // Dữ liệu thật cần sửa: GA chung THỦY PHƯƠNG = 2, nhưng class-key 3/9 còn GA4 cũ.
 const staleValues={[commonKey]:'2',[classKey]:'4'};
 let {history,canonical}=histories(staleValues);
-assert.equal(currentEvent(history).ga,4,'pass hiện hành phải tái hiện đúng GA4 cũ đang khóa lớp 3/9');
-assert.equal(currentEvent(history).gaSource,'manual');
+assert.equal(currentEvent(history).ga,2,'role-track layer phải sửa gợi ý history về GA2');
+assert.equal(currentEvent(history).__lbgStaleRoleTrackManual,4,'history phải nhớ GA4 cũ chỉ như một candidate stale');
+assert.equal(currentEvent(history).__lbgStaleRoleTrackVerified,undefined,'candidate history chưa được phép ghi storage');
 assert.equal(currentEvent(canonical).ga,2,'canonical bỏ class override nhưng giữ GA chung nên phải ra GA2');
 assert.equal(currentEvent(canonical).track,'kns');
 assert.equal(canonical.events.filter(x=>x.track==='stem').length,1,'14T9 HƯƠNG đỏ phải nằm riêng luồng STEM');
@@ -90,6 +91,7 @@ assert.equal(repairedEvent.ga,2);
 assert.equal(repairedEvent.__lbgStaleRoleTrackManual,4);
 assert.equal(repairedEvent.__lbgRoleTrackExpected,2);
 assert.equal(repairedEvent.__lbgStaleRoleTrackCommon,2);
+assert.equal(repairedEvent.__lbgStaleRoleTrackVerified,true,'chỉ core per-class sau đủ điều kiện mới cấp verified');
 
 const plan=Per.planApplications([repairedEvent],[currentEntry],staleValues,V7.normalizeClass);
 assert.equal(plan.conflicts.length,0);
@@ -131,7 +133,11 @@ assert.equal(
   Per.markVerifiedStaleClassOverridesFromValues(history,canonical,'21T9',[currentEntry],noCommon,V7.normalizeClass,R),
   0
 );
-assert.equal(currentEvent(history).ga,4,'không có GA chung xác nhận thì phải bảo vệ GA4 đang lưu');
+assert.equal(currentEvent(history).ga,2,'history có thể gợi ý GA2 nhưng chưa được quyền ghi storage');
+const noCommonPlan=Per.planApplications([currentEvent(history)],[currentEntry],noCommon,V7.normalizeClass);
+assert.equal(noCommonPlan.apply.length,0);
+assert.equal(noCommonPlan.conflicts.length,1,'thiếu GA chung phải khóa ghi đè class storage');
+assert.equal(Per.applyPlan(noCommonPlan,noCommon).values[classKey],'4');
 
 // Khóa an toàn 2: GA chung lệch canonical => không tự ghi đè.
 const wrongCommon={[commonKey]:'5',[classKey]:'4'};
@@ -140,7 +146,10 @@ assert.equal(
   Per.markVerifiedStaleClassOverridesFromValues(history,canonical,'21T9',[currentEntry],wrongCommon,V7.normalizeClass,R),
   0
 );
-assert.equal(currentEvent(history).ga,4,'GA chung không khớp thì class override phải được giữ để người dùng kiểm tra');
+const wrongCommonPlan=Per.planApplications([currentEvent(history)],[currentEntry],wrongCommon,V7.normalizeClass);
+assert.equal(wrongCommonPlan.apply.length,0);
+assert.equal(wrongCommonPlan.conflicts.length,1,'GA chung lệch canonical phải khóa ghi đè');
+assert.equal(Per.applyPlan(wrongCommonPlan,wrongCommon).values[classKey],'4');
 
 // Khóa an toàn 3: class-GA khác đúng mẫu nhiễm (ví dụ GA5) được coi là GA riêng, không sửa.
 const manualDifferent={[commonKey]:'2',[classKey]:'5'};
