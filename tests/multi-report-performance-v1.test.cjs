@@ -24,7 +24,7 @@ assert.doesNotMatch(multi,/setInterval\(\(\)=>\{analyze\(\);exportFiles\(\)/,'mu
 assert.match(multi,/lbg-runtime-ready/,'multi handlers must rebind from lifecycle events instead of endless polling');
 
 // Nút xanh dùng chung cho 1 giáo viên và nhiều giáo viên.
-assert.equal(MultiGa.VERSION,'20260920.1');
+assert.equal(MultiGa.VERSION,'20260920.2');
 assert.match(ga,/box\.classList\.toggle\('show',count>0\)/,'GA button must be visible for one selected teacher');
 assert.match(ga,/button\.disabled=count<1/,'GA button must enable from one teacher');
 assert.match(ga,/teachers\.length<1/,'GA batch runner must accept a single teacher');
