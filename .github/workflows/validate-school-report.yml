@@ -5,6 +5,7 @@ on:
     paths:
       - 'school-report-v1.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/school-report-v1.test.cjs'
       - '.github/workflows/validate-school-report.yml'
 
