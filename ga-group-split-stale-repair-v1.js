@@ -88,7 +88,10 @@
         const basic=per.planApplications(rows,a?.entries||[],stored,v7.normalizeClass);
         const plan=promoteSafeLegacyConflicts(basic,stored);
         const write=applyPlanWithSafeLegacy(per,plan,stored);
-        if(write.applied)per.persistStoredValues(a,write.values);
+        if(write.applied){
+          if(plan.apply.some(x=>x?.replaceExisting)&&typeof per.backupBeforeRepair==='function')per.backupBeforeRepair(a,stored,plan);
+          per.persistStoredValues(a,write.values);
+        }
         per.decorateReport(a,write.values);
         return{history,rows,plan,values:a.gaValues,applied:write.applied,protectedCount:write.protectedCount,same:plan.same.length,conflicts:plan.conflicts.length,skipped:plan.skipped.length};
       };
