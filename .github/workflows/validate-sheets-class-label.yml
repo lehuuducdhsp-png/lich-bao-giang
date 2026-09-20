@@ -7,6 +7,7 @@ on:
       - 'sheets-sync-security-v1.js'
       - 'app-runtime-v1.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/sheets-class-label-preserve.test.cjs'
       - '.github/workflows/validate-sheets-class-label.yml'
   workflow_dispatch:
@@ -30,7 +31,7 @@ jobs:
           node --check tests/sheets-class-label-preserve.test.cjs
       - name: Check localhost cache-bust chain
         run: |
-          grep -Fq "app-runtime-v1.js?v=20260920.1" index.html
+          grep -Fq "app-runtime-v1.js?v=20260920.2" index.html
           grep -Fq "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
           grep -Fq "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
       - name: Run Sheets label regression
