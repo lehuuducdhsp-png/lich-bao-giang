@@ -4,14 +4,19 @@ const V7=require('../ga-suggestion-v7.js');
 const R=require('../ga-role-track-stale-repair-v1.js');
 const Per=require('../ga-per-class-v2.js');
 
-assert.equal(R.VERSION,'20260920.1');
+assert.equal(R.VERSION,'20260920.2');
 assert.equal(Per.VERSION,'20260920.3');
 
 const redCell={font:{color:{argb:'FFFF0000'}}};
 const blackCell={font:{color:{argb:'FF000000'}}};
 const sheets=[{name:'7T9'},{name:'14T9'},{name:'21T9'}];
 const entriesBySheet={
-  '7T9':[{
+  '7T9':[
+  {
+    code:'HUỆ',teacherName:'Phan Thị Huệ',day:2,session:'Sáng',period:4,teachingPeriod:4,
+    locationKey:'THUY PHUONG|25 DA LE',locationLabel:'THỦY PHƯƠNG\nTrụ sở chính: 25 DẠ LÊ',
+    schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM150',row:150,col:39
+  },{
     code:'HUỆ',teacherName:'Phan Thị Huệ',day:5,session:'Sáng',period:4,teachingPeriod:4,
     locationKey:'THUY PHUONG|25 DA LE',locationLabel:'THỦY PHƯƠNG\nTrụ sở chính: 25 DẠ LÊ',
     schoolName:'THỦY PHƯƠNG',className:'3/9',classRaw:'3/9',address:'AM176',row:176,col:39
@@ -33,13 +38,13 @@ const starts={
   '21T9':new Date(2026,8,21,12)
 };
 const sheetCells={
-  '7T9':{'AM176':blackCell},
+  '7T9':{'AM150':blackCell,'AM176':blackCell},
   '14T9':{'AM170':redCell},
   '21T9':{'AM170':blackCell}
 };
 for(const ws of sheets){
   ws.getCell=(row,col)=>{
-    const address=row===170&&col===39?'AM170':row===176&&col===39?'AM176':'';
+    const address=row===170&&col===39?'AM170':row===176&&col===39?'AM176':row===150&&col===39?'AM150':'';
     return sheetCells[ws.name]?.[address]||blackCell;
   };
 }
@@ -80,6 +85,8 @@ assert.equal(currentEvent(history).__lbgStaleRoleTrackManual,4,'history phải n
 assert.equal(currentEvent(history).__lbgStaleRoleTrackVerified,undefined,'candidate history chưa được phép ghi storage');
 assert.equal(currentEvent(canonical).ga,2,'canonical bỏ class override nhưng giữ GA chung nên phải ra GA2');
 assert.equal(currentEvent(canonical).track,'kns');
+assert.equal(canonical.byAddress.get('7T9!AM150').ga,1);
+assert.equal(canonical.byAddress.get('7T9!AM176').ga,1,'all 7T9 KNS events for 3/9 must remain GA1');
 assert.equal(canonical.events.filter(x=>x.track==='stem').length,1,'14T9 HƯƠNG đỏ phải nằm riêng luồng STEM');
 
 const repaired=Per.markVerifiedStaleClassOverridesFromValues(
