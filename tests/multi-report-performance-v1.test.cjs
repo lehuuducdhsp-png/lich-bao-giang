@@ -40,7 +40,7 @@ assert.doesNotMatch(per,/Hãy chọn từ 2 giáo viên trở lên/,'per-class m
 assert.doesNotMatch(per,/function bindMultiButton/,'per-class module must not fight the shared GA button handler');
 assert.match(per,/decorateReport\(a,write\.values\)/,'per-class batch result must be decorated before the preview consumes it');
 assert.match(per,/if\(ready\)\{[\s\S]*notifyReady\(\);return;/,'per-class installer must stop polling after successful install');
-assert.match(per,/applyReport,loadStoredValues,persistStoredValues,install/,'per-class browser API must expose the canonical batch apply path');
+assert.match(per,/applyReport,loadStoredValues,persistStoredValues,backupBeforeRepair,install/,'per-class browser API must expose canonical apply + backup path');
 
 // Bridge giữ snapshot lựa chọn thật, dùng per-class engine và đồng bộ lại preview khi đổi GV.
 assert.match(bridge,/const VERSION='20260914\.2'/);
