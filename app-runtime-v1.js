@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260920.1';
+  const VERSION='20260920.2';
   const LOOKAHEAD=8;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -98,6 +98,9 @@
       ];
       preloadWindow(reportCore,0,reportCore.length);
       await loadSequence(reportCore);
+      window.LBGRuntimeLoader.reportCoreReady=true;
+      window.LBGRuntimeLoader.reportCoreFinishedAt=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
+      document.dispatchEvent(new CustomEvent('lbg-report-core-ready',{detail:{version:VERSION}}));
 
       const modules=[
         ['sheets-sync-security-v1.js?v=20260909.2','lbgSheetsSyncSecurityV1Script'],
