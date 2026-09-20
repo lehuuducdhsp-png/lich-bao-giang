@@ -21,7 +21,7 @@ assert.match(source,/LBGAssistPWebFooterSafe\?\.patchFooter/,'multi preview must
 assert.match(source,/multiPreviewSelect/,'switching the viewed teacher must resync P immediately');
 assert.match(source,/lbgGaMultiApplyButton/,'rerender after batch GA must resync P');
 
-const index=fs.readFileSync('index.html','utf8');
-assert.match(index,/assist-p-web-footer-safe-v1\.js\?v=20260912\.1[\s\S]*multi-preview-assist-sync-v1\.js\?v=20260914\.1/,'P multi-preview sync must load after both P preview/footer helpers');
+const patchLoader=fs.readFileSync('patch-runtime-loader-v1.js','utf8');
+assert.match(patchLoader,/assist-p-web-footer-safe-v1\.js\?v=20260912\.1[\s\S]*multi-preview-assist-sync-v1\.js\?v=20260914\.1/,'P multi-preview sync must load after both P preview/footer helpers');
 
 console.log('OK multi preview P sync: current viewed teacher gets its own P rows/footer without changing hidden selection');
