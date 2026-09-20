@@ -22,7 +22,7 @@ assert.doesNotMatch(warmup,/\bfetch\s*\(/,'warmup must not fetch or upload user 
 const criticalBlock=(warmup.match(/const critical=\[([\s\S]*?)\];/)||[])[1]||'';
 const criticalCount=(criticalBlock.match(/\.js\?v=/g)||[]).length;
 assert.ok(criticalCount>0&&criticalCount<=16,`direct preload set must stay bounded (got ${criticalCount})`);
-assert.match(criticalBlock,/app-runtime-v1\.js\?v=20260913\.1/,'current responsive runtime must be warmed');
+assert.match(criticalBlock,/app-runtime-v1\.js\?v=20260920\.1/,'current responsive runtime must be warmed');
 assert.match(criticalBlock,/assist-p-preview-safe-v1\.js\?v=20260913\.5/,'warmup must use current P preview version');
 assert.match(criticalBlock,/ga-per-class-history-safe-v1\.js\?v=20260913\.1/,'current GA history safety layer must be warmed');
 assert.doesNotMatch(criticalBlock,/assist-p-preview-safe-v1\.js\?v=20260911\.1/,'stale P preview must not be downloaded');
