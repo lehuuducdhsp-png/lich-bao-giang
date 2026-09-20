@@ -61,3 +61,73 @@ assert.equal(c24.ga,2,'2/4 đã có GA1 tuần trước nên 16/9 phải gợi �
 assert.match(V7.basisText(c25),/GA gần nhất/);
 assert.match(V7.basisText(c24),/GA gần nhất/);
 console.log('OK GA cross-version: THUỶ LƯƠNG note-in-site normalized; Hoài Thanh 2/5 & 2/4 advance GA1 -> GA2');
+
+// Ca thực tế HUỆ 3/9: workbook hiện tại đã chứa đủ 7T9 / 14T9 / 21T9.
+// Một phiên bản lưu sau đó có 7T9 cũ sai (2 lần KNS cho 3/9). Trước đây bản lưu sau
+// có thể đè 7T9 của workbook đang mở, khiến 10/9 thành GA2 và 24/9 nhảy lên GA4.
+const hueStarts={
+  '7T9':new Date(2026,8,7,12),
+  '8T9':new Date(2026,8,8,12), // lịch năm học khác, lệch nhịp tuần hiện tại
+  '14T9':new Date(2026,8,14,12),
+  '21T9':new Date(2026,8,21,12)
+};
+const hueEntry=(code,day,address)=>({
+  code,teacherName:code==='HƯƠNG'?'Phan Thị Quý Hương':'Phan Thị Huệ',
+  day,session:'Sáng',period:5,teachingPeriod:5,
+  schoolName:'THỦY PHƯƠNG',schoolKey:'THUY PHUONG',
+  locationKey:'THUY PHUONG|25 DA LE',locationLabel:'THỦY PHƯƠNG\nTrụ sở chính: 25 DẠ LÊ',
+  classRaw:'3/9',className:'3/9',address
+});
+const currentHue7=ws('7T9',[hueEntry('HUỆ',5,'AM176')]);
+const currentHue14=ws('14T9',[hueEntry('HƯƠNG',5,'AM170')]);
+const currentHue21=ws('21T9',[hueEntry('HUỆ',5,'AM170')]);
+
+// Bản stale 7T9 có thêm một lượt KNS giả/cũ cho cùng 3/9. Nếu bản này thắng,
+// chuỗi KNS sẽ thành GA1 -> GA2 ngay trong 7T9, và 21T9 sẽ bị đẩy thành GA4.
+const staleHue7=ws('7T9',[
+  hueEntry('HUỆ',3,'OLD-HUE-1'),
+  hueEntry('HUỆ',5,'OLD-HUE-2')
+]);
+// Sheet 8T9 mô phỏng workbook năm học khác: không được chen vào lịch tuần 7 ngày của 2026-2027.
+const foreign8=ws('8T9',[{
+  code:'KHÁC',teacherName:'Giáo viên khác',day:5,session:'Sáng',period:5,teachingPeriod:5,
+  schoolName:'THỦY PHƯƠNG',schoolKey:'THUY PHUONG',
+  locationKey:'THUY PHUONG|25 DA LE',locationLabel:'THỦY PHƯƠNG\nTrụ sở chính: 25 DẠ LÊ',
+  classRaw:'4/1',className:'4/1',address:'FOREIGN-8T9'
+}]);
+
+const currentHueBook=book([currentHue7,currentHue14,currentHue21]);
+const hueSources=[
+  {id:'active-current',created:'2026-09-20T07:00:00Z',book:currentHueBook},
+  {id:'later-stale',created:'2026-09-20T08:00:00Z',book:book([staleHue7,foreign8])}
+];
+const hueOpts={
+  parser:{scanAssignments(s){return s.entries||[]}},
+  roleResolver(ws,code){return String(code).toUpperCase()==='HƯƠNG'?'STEM':'KNS'},
+  startDateFor(s){return hueStarts[s.name]||null},
+  weekLike(){return true}
+};
+
+const huePicked=Cross.selectWeekSheets(hueSources,currentHueBook,'21T9',hueOpts);
+assert.deepEqual(huePicked.worksheets.map(x=>x.name),['7T9','14T9','21T9'],
+  'lịch sử phải chỉ theo nhịp tuần hiện tại; 8T9 của năm học khác không được chen vào');
+assert.equal(huePicked.worksheets[0],currentHue7,
+  '7T9 trong workbook đang mở phải thắng mọi bản 7T9 cũ dù bản cũ có timestamp muộn hơn');
+
+const hueHistory=Cross.buildHistoryAcrossSources(V7,hueSources,currentHueBook,'21T9',hueOpts);
+const hue7=hueHistory.byAddress.get('7T9!AM176');
+const hue14=hueHistory.byAddress.get('14T9!AM170');
+const hue21=hueHistory.byAddress.get('21T9!AM170');
+assert.ok(hue7&&hue14&&hue21,'phải ghép được đủ 3 mốc thật của lớp 3/9');
+assert.equal(hue7.track,'kns');
+assert.equal(hue7.ga,1,'7T9 HUỆ – KNS phải là GA1');
+assert.equal(hue14.track,'stem');
+assert.equal(hue14.ga,3,'14T9 HƯƠNG đỏ – STEM phải là GA3 độc lập');
+assert.equal(hue21.track,'kns');
+assert.equal(hue21.ga,2,'21T9 HUỆ – KNS phải tiếp GA1 -> GA2, tuyệt đối không bị STEM đẩy thành GA4');
+assert.equal(hue21.previousEvents.length,1);
+assert.equal(hue21.previousEvents[0],hue7,'mốc KNS gần nhất của 3/9 phải là 7T9 GA1');
+assert.match(V7.basisText(hue21),/GA 1/,'căn cứ phải nói mốc gần nhất là GA1');
+assert.match(V7.basisText(hue21),/GA 2/,'căn cứ phải kết luận lần KNS kế tiếp là GA2');
+
+console.log('OK HUỆ 3/9: current workbook authoritative; KNS GA1 -> STEM GA3 riêng -> KNS GA2; stale 7T9 không còn đẩy thành GA4');
