@@ -22,6 +22,9 @@ assert.match(multi,/if\(s\.value===next\)return/,'hidden single-teacher select m
 assert.match(multi,/lbg-multi-selection-change/,'multi selection must expose one stable batched change event');
 assert.doesNotMatch(multi,/setInterval\(\(\)=>\{analyze\(\);exportFiles\(\)/,'multi module must not permanently rebind handlers every 1.2 seconds');
 assert.match(multi,/lbg-runtime-ready/,'multi handlers must rebind from lifecycle events instead of endless polling');
+assert.match(analysisFix,/runner=typeof analyzeNow==='function'\?analyzeNow:safeAnalyze/,'single-teacher analyze must enter the shared analyzeNow hook');
+assert.match(analysisFix,/result=runner\(ws,teacherCode,teacherName\)/,'single-teacher result must come from the shared runner');
+assert.doesNotMatch(analysisFix,/result=safeAnalyze\(ws,teacherCode,teacherName\)/,'single-teacher path must not bypass per-class GA/self-heal');
 
 // Nút xanh dùng chung cho 1 giáo viên và nhiều giáo viên.
 assert.equal(MultiGa.VERSION,'20260920.1');
@@ -63,8 +66,8 @@ assert.match(cacheSource,/__lbgAtomicTeachingV1/,'cache must wait for atomic sem
 assert.match(cacheSource,/__lbgClassTypoFixV1/,'cache must wait for class typo normalization');
 
 // Cache-bust chain for the updated browser modules.
-assert.match(index,/teacher-fix-v2\.js\?v=20260913\.1/);
-assert.match(teacherFix,/analysis-fix-v2\.js\?v=20260913\.1/);
+assert.match(index,/teacher-fix-v2\.js\?v=20260920\.1/);
+assert.match(teacherFix,/analysis-fix-v2\.js\?v=20260920\.1/);
 assert.match(analysisFix,/multi-teacher-v5\.js\?v=20260913\.1/);
 assert.match(index,/tkb-assignment-cache-safe-v1\.js\?v=20260913\.1/);
 assert.match(index,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.1/);
