@@ -63,8 +63,8 @@ assert.match(cacheSource,/__lbgAtomicTeachingV1/,'cache must wait for atomic sem
 assert.match(cacheSource,/__lbgClassTypoFixV1/,'cache must wait for class typo normalization');
 
 // Cache-bust chain for the updated browser modules.
-assert.match(index,/teacher-fix-v2\.js\?v=20260920\.1/);
-assert.match(teacherFix,/analysis-fix-v2\.js\?v=20260920\.1/);
+assert.match(index,/teacher-fix-v2\.js\?v=20260920\.2/);
+assert.match(teacherFix,/analysis-fix-v2\.js\?v=20260920\.2/);
 assert.match(analysisFix,/multi-teacher-v5\.js\?v=20260913\.1/);
 assert.match(analysisFix,/runner=typeof analyzeNow==='function'\?analyzeNow:safeAnalyze/,'single-teacher analyze must use shared analyzeNow hook');
 assert.match(analysisFix,/result=runner\(ws,teacherCode,teacherName\)/,'single-teacher result must come from shared runner');
@@ -73,20 +73,20 @@ assert.match(analysisFix,/lbg-analyze-now-ready/,'analysis-fix must announce lat
 assert.match(per,/addEventListener\('lbg-analyze-now-ready'/,'per-class GA must re-wrap after late analyzeNow replacement');
 assert.doesNotMatch(per,/if\(analyzeInstalled\)return true/,'per-class installer must verify the current wrapper instead of trusting stale state');
 assert.match(index,/tkb-assignment-cache-safe-v1\.js\?v=20260913\.1/);
-assert.match(index,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.1/);
-assert.match(index,/ga-per-class-v2\.js\?v=20260920\.3/);
+assert.match(index,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.2/);
+assert.match(index,/ga-per-class-v2\.js\?v=20260920\.5/);
 assert.match(index,/ga-multi-selection-bridge-v1\.js\?v=20260914\.2/);
-assert.ok(index.indexOf('ga-per-class-v2.js?v=20260920.3')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
-assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.2')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must load before stable bridge');
+assert.ok(index.indexOf('ga-per-class-v2.js?v=20260920.5')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
+assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must load before stable bridge');
 
 // Các module nghiệp vụ đã chốt gần đây vẫn phải còn nguyên trên đường chạy chính.
 for(const required of [
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'tkb-roster-group-period-safe-v1.js?v=20260919.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
-  'ga-per-class-v2.js?v=20260920.3',
+  'ga-per-class-v2.js?v=20260920.5',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
-  'ga-role-track-stale-repair-v1.js?v=20260920.2',
+  'ga-role-track-stale-repair-v1.js?v=20260920.4',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'assist-p-preview-safe-v1.js?v=20260918.1',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
