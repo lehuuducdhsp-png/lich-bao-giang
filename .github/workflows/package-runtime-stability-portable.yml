@@ -1,0 +1,40 @@
+name: Package runtime stability portable
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/package-runtime-stability-portable.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build clean portable ZIP
+        run: |
+          mkdir -p portable/LICH-BAO-GIANG-RUNTIME-ON-DINH
+          rsync -a ./ portable/LICH-BAO-GIANG-RUNTIME-ON-DINH/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'tests' \
+            --exclude 'recovery' \
+            --exclude '*.zip' \
+            --exclude '*.log'
+          printf '%s\n' \
+            'BẢN TEST ỔN ĐỊNH RUNTIME - PR #68' \
+            'Không đổi nghiệp vụ GA, tiết gộp, Sheets hay dữ liệu.' \
+            'Mục tiêu: nạp patch theo lifecycle, giảm race/polling khi khởi động.' \
+            'Cách chạy: mở CMD trong thư mục này rồi chạy: python -m http.server 8768' \
+            'Mở http://localhost:8768 và kiểm tra các chức năng bạn thường dùng.' \
+            > portable/LICH-BAO-GIANG-RUNTIME-ON-DINH/README-TEST.txt
+          cd portable
+          zip -r ../LICH-BAO-GIANG-RUNTIME-ON-DINH-SACH.zip LICH-BAO-GIANG-RUNTIME-ON-DINH
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LICH-BAO-GIANG-RUNTIME-ON-DINH-SACH
+          path: LICH-BAO-GIANG-RUNTIME-ON-DINH-SACH.zip
+          if-no-files-found: error
+          retention-days: 7
