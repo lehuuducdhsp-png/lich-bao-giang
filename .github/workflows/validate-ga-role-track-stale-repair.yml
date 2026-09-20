@@ -55,8 +55,8 @@ jobs:
           node tests/multi-report-performance-v1.test.cjs
       - name: Loader and safety contracts
         run: |
-          grep -F "ga-per-class-v2.js?v=20260920.5" index.html
-          grep -F "ga-role-track-stale-repair-v1.js?v=20260920.4" index.html
+          grep -F "ga-per-class-v2.js?v=20260920.5" patch-runtime-loader-v1.js
+          grep -F "ga-role-track-stale-repair-v1.js?v=20260920.4" patch-runtime-loader-v1.js
           grep -F "__lbgStaleRoleTrackVerified===true" ga-per-class-v2.js
           grep -F "common===null||common!==expected" ga-per-class-v2.js
           grep -F "delete clean.manualResolver" ga-per-class-v2.js
