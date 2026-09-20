@@ -4,10 +4,12 @@ const V7=require('../ga-suggestion-v7.js');
 const R=require('../ga-role-track-stale-repair-v1.js');
 const Per=require('../ga-per-class-v2.js');
 
-assert.equal(R.VERSION,'20260920.1');
+assert.equal(R.VERSION,'20260920.2');
 assert.equal(Per.VERSION,'20260920.3');
 assert.equal(V7.roleTrack('STEM').track,'stem');
 assert.equal(V7.roleTrack('KNS').track,'kns');
+assert.equal(R.expectedFromPrevious('kns',{sheet:'7T9',ga:1},{sheet:'7T9'}),1,'same-week KNS must not advance');
+assert.equal(R.expectedFromPrevious('kns',{sheet:'7T9',ga:1},{sheet:'21T9'}),2,'next KNS week advances GA1 → GA2');
 
 // Ca thực tế lớp 3/9 tại THỦY PHƯƠNG:
 // 7T9 HUỆ (KNS) -> 14T9 HƯƠNG đỏ (STEM) -> 21T9 HUỆ (KNS).

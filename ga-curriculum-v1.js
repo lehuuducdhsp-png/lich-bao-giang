@@ -4,7 +4,7 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.LBGGaCurriculumV1=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
-  const VERSION='20260909.2';
+  const VERSION='20260920.1';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const KNS_SET=new Set(KNS_SEQUENCE),STEM_SET=new Set(STEM_SEQUENCE);
@@ -59,8 +59,9 @@
       if(manual!=null&&isGaFor(cat,manual)){event.ga=manual;event.gaSource='manual-anchor'}
       else{
         if(manual!=null)event.anchorInvalid=true;
-        const candidates=memberStates.map(x=>nextGa(cat,x.state.ga)),valid=candidates.filter(x=>x!=null),seq=sequence(cat);
-        event.ga=valid.length?valid.reduce((best,x)=>seq.indexOf(x)>seq.indexOf(best)?x:best,valid[0]):null;event.gaSource=event.ga==null?'missing':'actual-history';event.historyMismatch=new Set(candidates.map(String)).size>1
+        const candidates=memberStates.map(x=>{const prev=x.state.events[x.state.events.length-1]||null;return prev&&txt(prev.sheet)===txt(event.sheet)?x.state.ga:nextGa(cat,x.state.ga)}),valid=candidates.filter(x=>x!=null),seq=sequence(cat);
+        const sameWeek=memberStates.some(x=>x.state.events.length)&&memberStates.every(x=>{const prev=x.state.events[x.state.events.length-1]||null;return !prev||txt(prev.sheet)===txt(event.sheet)});
+        event.ga=valid.length?valid.reduce((best,x)=>seq.indexOf(x)>seq.indexOf(best)?x:best,valid[0]):null;event.gaSource=event.ga==null?'missing':sameWeek?'same-week':'actual-history';event.historyMismatch=new Set(candidates.map(String)).size>1
       }
       for(const item of memberStates){const prev=item.state.events[item.state.events.length-1]||null;event.previousByClass.push({member:item.member,key:item.key,previous:prev})}
       for(const item of memberStates){if(event.ga!=null)item.state.ga=event.ga;item.state.events.push(event)}

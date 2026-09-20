@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionV7=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260909.1';
+  const VERSION='20260920.1';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -68,9 +68,10 @@
       else if(manual.length>1){ev.ga=null;ev.gaSource='conflict';ev.historyMismatch=true;warnings.push(`Mâu thuẫn GA đã nhập tại ${ev.dateKey}, ${ev.school}, ${ev.classDisplay}.`)}
       else if(!prior.length){ev.ga=seq[0]??null;ev.gaSource='first'}
       else{
-        const candidates=prior.map(x=>nextGa(ev.track,x.ga)).filter(x=>x!==null),uniq=[...new Set(candidates)];
+        const candidates=prior.map(x=>txt(x?.event?.sheet)===txt(ev.sheet)?Number(x.ga):nextGa(ev.track,x.ga)).filter(x=>x!==null&&Number.isFinite(Number(x))),uniq=[...new Set(candidates.map(Number))];
         const knownMembers=new Set(prior.map(x=>x.member));ev.partialHistory=knownMembers.size<ev.members.length;
-        if(uniq.length===1){ev.ga=uniq[0];ev.gaSource='previous'}else{ev.ga=null;ev.gaSource='conflict';ev.historyMismatch=true;warnings.push(`Lịch sử GA các lớp trong nhóm không đồng nhất tại ${ev.dateKey}, ${ev.school}.`)}
+        const sameWeek=prior.length>0&&prior.every(x=>txt(x?.event?.sheet)===txt(ev.sheet));
+        if(uniq.length===1){ev.ga=uniq[0];ev.gaSource=sameWeek?'same-week':'previous'}else{ev.ga=null;ev.gaSource='conflict';ev.historyMismatch=true;warnings.push(`Lịch sử GA các lớp trong nhóm không đồng nhất tại ${ev.dateKey}, ${ev.school}.`)}
       }
       if(ev.ga!==null)for(const member of ev.members)states.set([ev.locationKey,ev.grade,ev.track,member].join('|'),{member,ga:ev.ga,event:ev});
       for(const address of ev.addresses)byAddress.set(`${ev.sheet}!${address}`,ev);
@@ -93,6 +94,7 @@
     if(ev.gaSource==='conflict')return'Lịch sử hoặc mốc GA đang mâu thuẫn — cần xác nhận trước khi dùng.';
     if(ev.gaSource==='first')return`Chưa có lần dạy ${trackText(ev)} trước đó của đúng lớp/nhóm lớp tại điểm dạy này trong dữ liệu từ tuần đầu; dùng GA đầu chuỗi.`;
     const prev=(ev.previousEvents||[]).sort((a,b)=>b.date-a.date)[0];if(!prev)return'Dò theo lần dạy thực tế gần nhất.';
+    if(ev.gaSource==='same-week')return`Cùng tuần ${ev.sheet} với lần dạy ${trackText(ev)} trước của đúng lớp/nhóm lớp; giữ nguyên GA ${ev.ga} cho cả tuần.`;
     const extra=ev.partialHistory?' Một phần lớp trong nhóm chưa có lịch sử riêng, nên lấy mốc từ các lớp đã có dữ liệu.':'';
     return`GA gần nhất của đúng lớp/nhóm lớp: ${fmtDate(prev.date)} • ${prev.session} • Tiết ${prev.period} • GA ${prev.ga}. Sự kiện hiện tại là lần dạy ${trackText(ev)} kế tiếp → GA ${ev.ga}.${extra}`;
   }

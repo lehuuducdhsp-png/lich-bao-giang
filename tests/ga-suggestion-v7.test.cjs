@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const V=require('../ga-suggestion-v7.js');
-assert.equal(V.version,'20260909.1');
+assert.equal(V.version,'20260920.1');
 assert.deepEqual(V.KNS_SEQUENCE,[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34]);
 assert.deepEqual(V.STEM_SEQUENCE,[3,6,13,16,20,23,27,32,35]);
 
@@ -42,9 +42,39 @@ assert.equal(class46.track,'kns');
 assert.equal(class46.ga,1,'different class 4/6 does not inherit GA from 4/1+4/2+4/3+4/4');
 
 const secondKns=history.byAddress.get('7T9!M176');
-assert.equal(secondKns.ga,2,'next actual KNS event for same class group advances to GA 2, not GA 3/STEM');
+assert.equal(secondKns.ga,1,'all KNS events for the same class/group inside week 7T9 must stay GA 1');
 
 const nextWeek=history.byAddress.get('14T9!E200');
-assert.equal(nextWeek.ga,4,'next real KNS event advances along KNS sequence 1 → 2 → 4');
+assert.equal(nextWeek.ga,2,'first KNS week after 7T9 advances GA 1 → GA 2');
 assert.match(V.basisText(nextWeek),/GA gần nhất/);
+
+// Ca nghiệp vụ thực tế HUỆ lớp 3/9:
+// 7T9 KNS giữ GA1 trong cả tuần; 14T9 STEM là luồng riêng GA3;
+// 21T9 KNS mới chuyển sang GA2.
+const h7={name:'7T9',entries:[
+  {code:'HUỆ',teacherName:'Phan Thị Huệ',day:2,session:'Sáng',period:5,teachingPeriod:5,locationKey:'THUY_PHUONG|25_DA_LE',locationLabel:'THỦY PHƯƠNG - 25 DẠ LÊ',classRaw:'3/9',className:'3/9',address:'AM150'},
+  {code:'HUỆ',teacherName:'Phan Thị Huệ',day:5,session:'Sáng',period:5,teachingPeriod:5,locationKey:'THUY_PHUONG|25_DA_LE',locationLabel:'THỦY PHƯƠNG - 25 DẠ LÊ',classRaw:'3/9',className:'3/9',address:'AM170'}
+]};
+const h14={name:'14T9',entries:[
+  {code:'HƯƠNG',teacherName:'Phan Thị Quý Hương',day:5,session:'Sáng',period:5,teachingPeriod:5,locationKey:'THUY_PHUONG|25_DA_LE',locationLabel:'THỦY PHƯƠNG - 25 DẠ LÊ',classRaw:'3/9',className:'3/9',address:'AM170'}
+]};
+const h21={name:'21T9',entries:[
+  {code:'HUỆ',teacherName:'Phan Thị Huệ',day:5,session:'Sáng',period:5,teachingPeriod:5,locationKey:'THUY_PHUONG|25_DA_LE',locationLabel:'THỦY PHƯƠNG - 25 DẠ LÊ',classRaw:'3/9',className:'3/9',address:'AM170'}
+]};
+const hBook={worksheets:[h7,h14,h21]};
+const hStarts={'7T9':new Date(2026,8,7,12),'14T9':new Date(2026,8,14,12),'21T9':new Date(2026,8,21,12)};
+const hRoles={'HUỆ':'KNS','HƯƠNG':'STEM'};
+const hHistory=V.buildHistory(hBook,'21T9',{
+  parser:{scanAssignments(ws){return ws.entries}},
+  roleResolver(_ws,code){return hRoles[code]||'KNS'},
+  startDateFor(ws){return hStarts[ws.name]},
+  weekLike(){return true}
+});
+assert.equal(hHistory.byAddress.get('7T9!AM150').ga,1);
+assert.equal(hHistory.byAddress.get('7T9!AM170').ga,1,'10/9 KNS 3/9 must still be GA1');
+assert.equal(hHistory.byAddress.get('14T9!AM170').track,'stem');
+assert.equal(hHistory.byAddress.get('14T9!AM170').ga,3,'STEM keeps its independent GA3 sequence');
+assert.equal(hHistory.byAddress.get('21T9!AM170').track,'kns');
+assert.equal(hHistory.byAddress.get('21T9!AM170').ga,2,'21T9 HUỆ 3/9 KNS must be GA2, never GA4');
+assert.match(V.basisText(hHistory.byAddress.get('7T9!AM170')),/giữ nguyên GA 1/);
 console.log('OK GA suggestion V7: actual-period grouping, collaboration, separate KNS/STEM progress, class-specific nearest GA');

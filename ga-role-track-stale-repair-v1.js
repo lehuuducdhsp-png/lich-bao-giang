@@ -5,13 +5,14 @@
   if(root)root.LBGGaRoleTrackStaleRepairV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.1';
+  const VERSION='20260920.2';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').trim();
   const normalizedGa=value=>{if(value===undefined||value===null||txt(value)==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0?Math.round(n):null};
   const seqFor=track=>track==='stem'?STEM_SEQUENCE:KNS_SEQUENCE;
   const nextGa=(track,ga)=>{const seq=seqFor(track),i=seq.indexOf(Number(ga));return i<0?seq.find(x=>x>Number(ga))??seq[0]??null:seq[i+1]??null};
+  const expectedFromPrevious=(track,previous,current)=>txt(previous?.sheet)===txt(current?.sheet)?normalizedGa(previous?.ga):nextGa(track,previous?.ga);
   const overlap=(a,b)=>{const set=new Set(Array.isArray(a)?a:[]);return(Array.isArray(b)?b:[]).some(x=>set.has(x))};
   function rgb(cell){
     try{
@@ -91,7 +92,7 @@
       const current=normalizedGa(ev.ga);if(current===null)continue;
       const prev=(ev.previousEvents||[]).filter(x=>x?.track===ev.track&&normalizedGa(x?.ga)!==null).sort((a,b)=>before(a,b)?1:-1);
       if(!prev.length)continue;
-      const expectedSet=[...new Set(prev.map(x=>nextGa(ev.track,x.ga)).filter(x=>x!==null))];
+      const expectedSet=[...new Set(prev.map(x=>expectedFromPrevious(ev.track,x,ev)).filter(x=>x!==null))];
       if(expectedSet.length!==1)continue;
       const expected=expectedSet[0];if(expected===current)continue;
       const previous=prev[0],opposite=interveningOpposite(history,ev,previous);
@@ -122,7 +123,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory};
+    return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,expectedFromPrevious,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory};
   }
 
   function installOnce(){
@@ -135,5 +136,5 @@
     return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,expectedFromPrevious,rgb,isRedCell,summaryRole,workbookRole,roleFor,contaminationCandidate,interveningOpposite,repairHistory,wrapBuildHistory,install};
 });
