@@ -11,6 +11,9 @@ on:
       - 'tkb-assignment-cache-safe-v1.js'
       - 'teacher-fix-v2.js'
       - 'analysis-fix-v2.js'
+      - 'tkb-parser-v2.js'
+      - 'tkb-parser-school-name-fix-v1.js'
+      - 'app-runtime-v1.js'
       - 'index.html'
       - 'tests/multi-report-performance-v1.test.cjs'
       - 'tests/ga-suggestion-multi-apply-v1.test.cjs'
@@ -39,6 +42,9 @@ jobs:
           node --check tkb-assignment-cache-safe-v1.js
           node --check teacher-fix-v2.js
           node --check analysis-fix-v2.js
+          node --check tkb-parser-v2.js
+          node --check tkb-parser-school-name-fix-v1.js
+          node --check app-runtime-v1.js
           node --check tests/multi-report-performance-v1.test.cjs
           node --check tests/ga-multi-selection-bridge-v1.test.cjs
           node --check tests/multi-preview-assist-sync-v1.test.cjs
