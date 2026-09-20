@@ -1,0 +1,32 @@
+name: Validate runtime stability budget
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'app-runtime-v1.js'
+      - 'patch-runtime-loader-v1.js'
+      - '*.js'
+      - 'tests/runtime-stability-budget-v1.test.cjs'
+      - 'tests/production-runtime-performance.test.cjs'
+      - 'tests/runtime-responsive-loader-v1.test.cjs'
+      - '.github/workflows/validate-runtime-stability-budget.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check app-runtime-v1.js
+          node --check patch-runtime-loader-v1.js
+          node --check tests/runtime-stability-budget-v1.test.cjs
+      - name: Runtime stability budget
+        run: |
+          node tests/runtime-stability-budget-v1.test.cjs
+          node tests/production-runtime-performance.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
