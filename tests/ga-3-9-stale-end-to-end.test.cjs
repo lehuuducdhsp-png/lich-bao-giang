@@ -5,7 +5,7 @@ const R=require('../ga-role-track-stale-repair-v1.js');
 const Per=require('../ga-per-class-v2.js');
 
 assert.equal(R.VERSION,'20260920.1');
-assert.equal(Per.VERSION,'20260920.1');
+assert.equal(Per.VERSION,'20260920.2');
 
 const redCell={font:{color:{argb:'FFFF0000'}}};
 const blackCell={font:{color:{argb:'FF000000'}}};
@@ -99,6 +99,18 @@ assert.equal(plan.apply.length,1);
 assert.equal(plan.apply[0].replaceExisting,true);
 assert.equal(plan.apply[0].current,4);
 assert.equal(plan.apply[0].ga,2);
+
+const otherEntry={...currentEntry,className:'4/10',classRaw:'4/10',address:'AN170'};
+const otherEvent={...repairedEvent,id:'other',addresses:['AN170'],classId:'4/10',classDisplay:'4/10',ga:3,gaSource:'previous'};
+delete otherEvent.__lbgStaleRoleTrackManual;
+delete otherEvent.__lbgRoleTrackExpected;
+delete otherEvent.__lbgStaleRoleTrackCommon;
+delete otherEvent.__lbgStaleRoleTrackVerified;
+const broadPlan=Per.planApplications([repairedEvent,otherEvent],[currentEntry,otherEntry],staleValues,V7.normalizeClass);
+assert.equal(broadPlan.apply.length,2,'kế hoạch thông thường có thể vừa sửa stale vừa điền lớp khác');
+const selfHealPlan=Per.verifiedStaleOnlyPlan([repairedEvent,otherEvent],[currentEntry,otherEntry],staleValues,V7.normalizeClass);
+assert.equal(selfHealPlan.apply.length,1,'self-heal chỉ được sửa stale đã verified, không tự điền GA trống');
+assert.equal(selfHealPlan.apply[0].target.classKey,'3/9');
 
 const write=Per.applyPlan(plan,staleValues);
 assert.equal(write.applied,1);

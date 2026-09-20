@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.1';
+  const VERSION='20260920.2';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -154,20 +154,31 @@
     }
     return{values:out,applied,protectedCount,replacedCount};
   }
-  function makeAnalyzeDecorator(original,decorate,isCurrent){
+  function verifiedStaleOnlyPlan(rows,entries=[],values={},normalizer){
+    const verified=(Array.isArray(rows)?rows:[]).filter(ev=>ev?.__lbgStaleRoleTrackVerified===true);
+    const plan=planApplications(verified,entries,values,normalizer);
+    return{...plan,apply:(plan.apply||[]).filter(item=>item?.replaceExisting===true&&item?.reason==='stale-role-track-mix')};
+  }
+  function makeAnalyzeDecorator(original,decorate,isCurrent,after){
     if(typeof original!=='function'||typeof decorate!=='function')return null;
-    const wrapper=function(ws,...args){const value=original(ws,...args);return typeof isCurrent==='function'&&!isCurrent(ws)?value:decorate(value)};
+    const wrapper=function(ws,...args){
+      const value=original(ws,...args);
+      if(typeof isCurrent==='function'&&!isCurrent(ws))return value;
+      const decorated=decorate(value);
+      if(typeof after==='function'){try{after(decorated,ws)}catch{}}
+      return decorated;
+    };
     wrapper.__lbgGaPerClass=VERSION;wrapper.__lbgOriginalAnalyze=original;return wrapper;
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides};
+    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides};
   }
 
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
   const bookNow=()=>{try{return typeof wb!=='undefined'?wb:null}catch{return null}},resultNow=()=>{try{return typeof result!=='undefined'?result:null}catch{return null}},versionList=()=>{try{return typeof versions!=='undefined'&&Array.isArray(versions)?versions:[]}catch{return[]}},activeVersion=()=>{try{return typeof activeId!=='undefined'&&activeId?txt(activeId):'active'}catch{return'active'}};
   const startDateFor=ws=>{try{return typeof startDate==='function'?startDate(ws.name):null}catch{return null}},weekLikeFor=ws=>{try{return typeof weekLike==='function'?weekLike(ws):true}catch{return true}},normalizer=()=>v7()?.normalizeClass;
-  let analyzeInstalled=false,wrappedAnalyze=null,previewObserver=null,readyNotified=false;
+  let analyzeInstalled=false,wrappedAnalyze=null,previewObserver=null,readyNotified=false;const selfHealPending=new Set();
 
   function currentWorksheet(){const b=bookNow(),name=txt(q('week')?.value);return b&&name?b.getWorksheet?.(name):null}
   function isCurrentWorksheet(ws){return Boolean(ws&&currentWorksheet()===ws)}
@@ -194,7 +205,7 @@
     const p=parser();if(!p?.__lbgAtomicTeachingV1||!engine()||!cross()||!v7()||!q('multiTeacherButton'))return false;
     let current=null;try{current=typeof analyzeNow==='function'?analyzeNow:root.analyzeNow}catch{current=root.analyzeNow}
     if(typeof current!=='function')return false;
-    const wrapper=makeAnalyzeDecorator(current,decorateReport,isCurrentWorksheet);if(!wrapper)return false;
+    const wrapper=makeAnalyzeDecorator(current,decorateReport,isCurrentWorksheet,queueVerifiedStaleSelfHeal);if(!wrapper)return false;
     try{analyzeNow=wrapper}catch{};try{root.analyzeNow=wrapper}catch{}
     wrappedAnalyze=wrapper;analyzeInstalled=true;return true;
   }
@@ -304,6 +315,31 @@
     markVerifiedStaleClassOverrides(history,canonical,a);
     return{history,canonicalHistory:canonical,rows:rowsFor(history,a)};
   }
+  async function repairVerifiedStaleOnly(a){
+    const analyzed=await analyzeReport(a),values=loadStoredValues(a);
+    const plan=verifiedStaleOnlyPlan(analyzed.rows,a?.entries||[],values,normalizer());
+    const write=applyPlan(plan,values);
+    if(write.applied)persistStoredValues(a,write.values);
+    return{...analyzed,plan,values:write.values,applied:write.applied,replacedCount:write.replacedCount||0,protectedCount:write.protectedCount||0};
+  }
+  function reportIdentity(a){return `${activeVersion()}|${txt(a?.sheet)}|${txt(a?.code||a?.teacherName).toUpperCase()}`}
+  function sameReport(a,b){return Boolean(a&&b&&txt(a?.sheet)===txt(b?.sheet)&&txt(a?.code||a?.teacherName).toUpperCase()===txt(b?.code||b?.teacherName).toUpperCase())}
+  function queueVerifiedStaleSelfHeal(a){
+    if(!a?.sheet||!Array.isArray(a?.entries)||!a.entries.length)return false;
+    const key=reportIdentity(a);if(!key||selfHealPending.has(key))return false;
+    selfHealPending.add(key);
+    setTimeout(async()=>{
+      try{
+        const out=await repairVerifiedStaleOnly(a);
+        if(!out.applied)return;
+        decorateReport(a,out.values);
+        const now=resultNow();
+        if(sameReport(now,a))refreshCurrentReport(now,out.values);
+      }catch(error){console.error('GA verified stale self-heal:',error)}
+      finally{selfHealPending.delete(key)}
+    },0);
+    return true;
+  }
   function titleFor(ev){const x=root.LBGTeachingPlanProgressV1?.titleFor?.(ev?.grade,ev?.track,ev?.ga);return x?.kind==='lesson'?x:{title:ev?.ga==null?'Chưa xác định GA':'Chưa có tên bài trong kế hoạch'}}
   function fmtDate(d){return d instanceof Date&&!Number.isNaN(d.getTime())?d.toLocaleDateString('vi-VN'):'—'}
   function trackText(ev){return ev?.track==='stem'?'STEM':'Kỹ năng sống'}
@@ -348,5 +384,5 @@
     };
     tick();return true;
   }
-  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,decorateReport,analyzeReport,applyReport,loadStoredValues,persistStoredValues,install};
+  return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,decorateReport,analyzeReport,repairVerifiedStaleOnly,applyReport,loadStoredValues,persistStoredValues,install};
 });
