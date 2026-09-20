@@ -42,7 +42,7 @@ jobs:
           node tests/multi-report-performance-v1.test.cjs
       - name: Loader and safety contracts
         run: |
-          grep -F "ga-per-class-v2.js?v=20260920.3" index.html
+          grep -F "ga-per-class-v2.js?v=20260920.4" index.html
           grep -F "ga-role-track-stale-repair-v1.js?v=20260920.1" index.html
           grep -F "__lbgStaleRoleTrackVerified===true" ga-per-class-v2.js
           grep -F "common===null||common!==expected" ga-per-class-v2.js
@@ -54,7 +54,7 @@ jobs:
           from pathlib import Path
           s=Path('index.html').read_text()
           grouped=s.index('grouped-plus-report-safe-v1.js?v=20260919.1')
-          per=s.index('ga-per-class-v2.js?v=20260920.3')
+          per=s.index('ga-per-class-v2.js?v=20260920.4')
           split=s.index('ga-group-split-stale-repair-v1.js?v=20260914.1')
           role=s.index('ga-role-track-stale-repair-v1.js?v=20260920.1')
           bridge=s.index('ga-multi-selection-bridge-v1.js?v=20260914.2')
