@@ -30,7 +30,7 @@ assert.match(ga,/button\.disabled=count<1/,'GA button must enable from one teach
 assert.match(ga,/teachers\.length<1/,'GA batch runner must accept a single teacher');
 assert.match(ga,/Phân tích & áp dụng GA cho 1 giáo viên/,'single-teacher label must be explicit');
 assert.match(ga,/Phân tích & áp dụng GA cho \$\{count\} giáo viên/,'multi-teacher label must keep selected count');
-assert.match(ga,/không ghi đè GA nhập tay, chỉ tự sửa GA cũ khi lịch sử chứng minh bị trộn STEM\/KNS/,'GA button note must explain verified stale repair without weakening manual protection');
+assert.match(ga,/không ghi đè GA nhập tay, chỉ tự sửa GA cũ khi lịch sử chứng minh đúng là dữ liệu sai của thuật toán cũ/,'GA button note must explain verified stale repair without weakening manual protection');
 assert.match(ga,/await yieldUi\(\)/,'GA apply must yield between teachers');
 assert.match(ga,/if\(q\('teacher'\).*ensureUi\(\);\s*return;/s,'GA installer must stop polling once dependencies are ready');
 
