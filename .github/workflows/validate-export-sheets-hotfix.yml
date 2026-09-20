@@ -13,6 +13,7 @@ on:
       - 'startup-warmup-v2.js'
       - 'tkb-class-typo-fix-v1.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/report-export-hotfix-v2.test.cjs'
       - 'tests/report-atomic-display-v1.test.cjs'
       - 'tests/sheets-owner-v3.test.cjs'
@@ -71,11 +72,11 @@ jobs:
           grep -F "sheets-sync-owner-v3.js?v=20260909.2" sheets-sync-security-v1.js
           grep -F "sheets-sync-security-v1.js?v=20260909.2" app-runtime-v1.js
           grep -F "production-mode-v1.js?v=20260909.4" app-runtime-v1.js
-          grep -F "app-runtime-v1.js?v=20260920.1" index.html
+          grep -F "app-runtime-v1.js?v=20260920.2" index.html
           grep -F "startup-warmup-v2.js?v=20260913.2" index.html
-          grep -F "tkb-class-typo-fix-v1.js?v=20260913.2" index.html
-          grep -F "ga-per-class-history-safe-v1.js?v=20260913.1" index.html
-          grep -F "assist-p-preview-safe-v1.js?v=20260918.1" index.html
+          grep -F "tkb-class-typo-fix-v1.js?v=20260913.2" patch-runtime-loader-v1.js
+          grep -F "ga-per-class-history-safe-v1.js?v=20260913.1" patch-runtime-loader-v1.js
+          grep -F "assist-p-preview-safe-v1.js?v=20260918.1" patch-runtime-loader-v1.js
           grep -F "{cache:'default'}" index.html
           ! grep -F "cache:'no-store'" index.html
           grep -F "functions/v1/google-sheets-owner" sheets-sync-owner-v3.js

@@ -6,6 +6,7 @@ on:
       - 'ga-per-class-v2.js'
       - 'ga-per-class-history-safe-v1.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/ga-khanh-thi-history-safe-v1.test.cjs'
       - '.github/workflows/validate-khanh-thi-ga-history.yml'
 
@@ -23,5 +24,5 @@ jobs:
         run: node tests/ga-khanh-thi-history-safe-v1.test.cjs
       - name: Loader contract
         run: |
-          grep -F 'ga-per-class-v2.js?v=20260920.5' index.html
-          grep -F 'ga-per-class-history-safe-v1.js?v=20260913.1' index.html
+          grep -F 'ga-per-class-v2.js?v=20260920.5' patch-runtime-loader-v1.js
+          grep -F 'ga-per-class-history-safe-v1.js?v=20260913.1' patch-runtime-loader-v1.js

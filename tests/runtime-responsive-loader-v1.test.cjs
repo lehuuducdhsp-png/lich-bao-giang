@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 
 const runtime=fs.readFileSync('app-runtime-v1.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
+const patches=fs.readFileSync('patch-runtime-loader-v1.js','utf8');
 
 function scriptNames(blockName){
   const m=runtime.match(new RegExp(`const ${blockName}=\\[([\\s\\S]*?)\\n      \\];`));
@@ -87,18 +88,53 @@ assert.doesNotMatch(runtime,/Promise\.all\s*\(/,'performance optimization must n
 assert.match(runtime,/preloadWindow\(items,i,lookahead\)/,'only network warming may run ahead');
 assert.match(runtime,/await yieldToBrowser\(\)/,'loader must yield between bounded groups to reduce UI jank');
 assert.doesNotMatch(runtime,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'runtime optimization must not touch stored user data');
-assert.match(index,/tkb-class-typo-fix-v1\.js\?v=20260913\.2/,'class typo fix must stay loaded');
-assert.match(index,/tkb-roster-group-period-safe-v1\.js\?v=20260919\.1/,'new roster group period safety must stay loaded');
-assert.ok(index.indexOf('tkb-roster-group-period-safe-v1.js?v=20260919.1')<index.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1'),'roster group period safety must load before assignment cache');
-assert.match(index,/grouped-plus-report-safe-v1\.js\?v=20260919\.1/,'grouped plus report bridge must stay loaded');
-assert.ok(index.indexOf('tkb-assignment-cache-safe-v1.js?v=20260913.1')<index.indexOf('grouped-plus-report-safe-v1.js?v=20260919.1'),'grouped plus bridge must load after assignment cache');
-assert.ok(index.indexOf('grouped-plus-report-safe-v1.js?v=20260919.1')<index.indexOf('ga-per-class-v2.js?v=20260920.5'),'grouped plus bridge must load before production per-class GA');
-assert.match(index,/ga-per-class-v2\.js\?v=20260920\.5/,'per-class GA must stay loaded');
-assert.match(index,/ga-per-class-history-safe-v1\.js\?v=20260913\.1/,'Khánh Thi GA history fix must stay loaded');
-assert.match(index,/ga-role-track-stale-repair-v1\.js\?v=20260920\.4/,'STEM/KNS stale GA repair must stay loaded');
-assert.ok(index.indexOf('ga-group-split-stale-repair-v1.js?v=20260920.1')<index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4'),'role-track repair must run after group-split stale repair');
-assert.ok(index.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<index.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must run before shared GA bridge');
-assert.match(index,/sheets-ga-save-safe-v1\.js\?v=20260913\.1/,'Sheets GA fix must stay loaded');
-assert.match(index,/assist-p-preview-safe-v1\.js\?v=20260918\.1/,'assistant P class fix must stay loaded');
+function patchNames(blockName){
+  const m=patches.match(new RegExp(`const ${blockName}=\\[([\\s\\S]*?)\\n  \\];`));
+  assert.ok(m,`${blockName} list must exist`);
+  return [...m[1].matchAll(/\['([^']+\.js\?v=[^']+)'\s*,\s*'[^']+'\]/g)].map(x=>x[1]);
+}
+const expectedCorePatches=[
+  'tkb-class-typo-fix-v1.js?v=20260913.2',
+  'class-typo-report-path-safe-v1.js?v=20260916.1',
+  'tkb-roster-group-period-safe-v1.js?v=20260919.1',
+  'tkb-assignment-cache-safe-v1.js?v=20260913.1',
+  'grouped-plus-report-safe-v1.js?v=20260919.1',
+  'ga-per-class-history-safe-v1.js?v=20260913.1',
+  'ga-group-split-history-safe-v1.js?v=20260920.1',
+  'ga-group-split-stale-repair-v1.js?v=20260920.1',
+  'ga-role-track-stale-repair-v1.js?v=20260920.4'
+];
+const expectedRuntimePatches=[
+  'ga-suggestion-multi-apply-v1.js?v=20260920.3',
+  'ga-per-class-v2.js?v=20260920.5',
+  'ga-multi-selection-bridge-v1.js?v=20260914.2',
+  'sheets-ga-save-safe-v1.js?v=20260913.1',
+  'report-branding-v1.js?v=20260909.1',
+  'assist-p-preview-safe-v1.js?v=20260918.1',
+  'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
+  'assist-p-web-footer-safe-v1.js?v=20260912.1',
+  'multi-preview-assist-sync-v1.js?v=20260914.1',
+  'assist-p-excel-export-parity-v1.js?v=20260918.1',
+  'assist-p-export-safe-v1.js?v=20260912.1',
+  'school-report-v1.js?v=20260914.3',
+  'assist-p-sheets-label-safe-v1.js?v=20260912.3',
+  'assist-p-sheets-location-safe-v1.js?v=20260912.1',
+  'monthly-excel-polish-safe-v1.js?v=20260912.1'
+];
+assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
+assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
+assert.match(index,/app-runtime-v1\.js\?v=20260920\.2/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20260920\.1/);
+assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
+assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
+assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');
+assert.match(patches,/lbg-runtime-ready/,'UI patches must wait for full runtime');
+assert.match(patches,/await loadCore\(\)/,'runtime patches must await core patches');
+assert.match(patches,/if\(corePromise\)return corePromise/,'concurrent core requests must share one promise');
+assert.match(patches,/if\(runtimePromise\)return runtimePromise/,'concurrent runtime requests must share one promise');
+assert.doesNotMatch(patches,/setInterval\s*\(/,'patch loader must be lifecycle-driven, not poll continuously');
+assert.doesNotMatch(patches,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'loader refactor must not touch stored user data');
+assert.ok(expectedRuntimePatches.indexOf('ga-per-class-v2.js?v=20260920.5')<expectedRuntimePatches.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'per-class GA must load before shared bridge');
+assert.ok(expectedCorePatches.indexOf('ga-group-split-stale-repair-v1.js?v=20260920.1')<expectedCorePatches.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4'),'role-track repair must load after group-split repair');
 
-console.log(`OK responsive loader: ${expectedCore.length} report-core + ${expectedModules.length} modules preserve exact execution order`);
+console.log(`OK responsive loader: ${expectedCore.length} report-core + ${expectedModules.length} modules + staged patches preserve exact execution order`);

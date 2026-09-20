@@ -2,12 +2,12 @@
 const fs=require('fs');
 const assert=require('assert');
 const src=fs.readFileSync('report-branding-v1.js','utf8');
-const index=fs.readFileSync('index.html','utf8');
+const patchLoader=fs.readFileSync('patch-runtime-loader-v1.js','utf8');
 assert.match(src,/Trung tâm giáo dục kỹ năng sống Hoàn Năng/,'Phải có đúng tên trung tâm.');
 assert.match(src,/lbg-report-brand-logo/,'Phải có vùng logo trên bản xem trước.');
 assert.match(src,/brandWorksheet/,'Phải có xử lý chèn nhận diện vào file Excel.');
 assert.match(src,/^'use strict';/,'Module phải là JavaScript hợp lệ.');
 assert.match(src,/LICH_BAO_GIANG_/,'Chỉ can thiệp file lịch báo giảng, không đụng các file Excel khác.');
 assert.match(src,/\.zip\$/,'Phải xử lý cả chế độ xuất ZIP nhiều giáo viên.');
-assert.match(index,/report-branding-v1\.js\?v=20260909\.1/,'Index phải nạp module nhận diện mới.');
+assert.match(patchLoader,/report-branding-v1\.js\?v=20260909\.1/,'Patch loader phải nạp module nhận diện mới.');
 console.log('OK report branding: logo + tên Hoàn Năng cho preview và file xuất');
