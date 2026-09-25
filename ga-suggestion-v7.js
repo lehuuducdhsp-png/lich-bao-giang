@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionV7=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.1';
+  const VERSION='20260925.1';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -16,15 +16,20 @@
   const nextGa=(track,ga)=>{const seq=seqFor(track),i=seq.indexOf(Number(ga));return i<0?seq.find(x=>x>Number(ga))??seq[0]??null:seq[i+1]??null};
   const dateKey=d=>d instanceof Date&&!Number.isNaN(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
 
+  function classOnly(value){
+    const raw=txt(value).replace(/\s+/g,' ').trim();if(!raw)return'';
+    const m=raw.match(/^([1-5]\s*\/\s*[A-ZÀ-Ỹ0-9]{1,4})\s*(?:[-–—]\s*)?P(?:HÒNG|HONG)?\.?\s*.+$/i);
+    return m?m[1].replace(/\s/g,'').toUpperCase():raw;
+  }
   function gradesOf(...values){
     const out=[],add=n=>{n=Number(n);if(n>=1&&n<=5&&!out.includes(n))out.push(n)};
-    for(const value of values){const raw=txt(value);if(!raw)continue;let m;const a=/KHỐI\s*([1-5])/gi;while((m=a.exec(raw)))add(m[1]);const b=/(?:^|[^0-9])([1-5])\s*\/\s*\d+/g;while((m=b.exec(raw)))add(m[1]);const c=/LỚP\s*([1-5])(?:\b|\s*\/)/gi;while((m=c.exec(raw)))add(m[1])}
+    for(const value of values){const raw=classOnly(value);if(!raw)continue;let m;const a=/KHỐI\s*([1-5])/gi;while((m=a.exec(raw)))add(m[1]);const b=/(?:^|[^0-9])([1-5])\s*\/\s*[A-ZÀ-Ỹ0-9]{1,4}(?=$|[^A-ZÀ-Ỹ0-9])/gi;while((m=b.exec(raw)))add(m[1]);const c=/LỚP\s*([1-5])(?:\b|\s*\/)/gi;while((m=c.exec(raw)))add(m[1])}
     return out;
   }
-  function normalizeClass(v){return fold(v).replace(/\s*-\s*TIẾT\s*[1-5]\b/g,'').replace(/\s+/g,' ').trim()}
+  function normalizeClass(v){return fold(classOnly(v)).replace(/\s*-\s*TIẾT\s*[1-5]\b/g,'').replace(/\s+/g,' ').trim()}
   function classMembers(v,grade){
-    const raw=txt(v),out=[],seen=new Set();let m;const re=/([1-5])\s*\/\s*(\d+)/g;
-    while((m=re.exec(raw))){const k=`${Number(m[1])}/${Number(m[2])}`;if(!seen.has(k)){seen.add(k);out.push(k)}}
+    const raw=classOnly(v),out=[],seen=new Set();let m;const re=/([1-5])\s*\/\s*([A-ZÀ-Ỹ0-9]{1,4})(?=$|[^A-ZÀ-Ỹ0-9])/gi;
+    while((m=re.exec(raw))){const k=`${Number(m[1])}/${String(m[2]).toUpperCase()}`;if(!seen.has(k)){seen.add(k);out.push(k)}}
     if(out.length)return out;
     const base=normalizeClass(raw);return base?[`G${Number(grade)}:${base}`]:[`G${Number(grade)}:CHƯA-XÁC-ĐỊNH`];
   }
@@ -109,5 +114,5 @@
   }
   function bind(){const b=root.document?.getElementById('gaSuggestV6');if(!b||!root.LBGTkbParserV2||!root.LBGTeacherIntelligenceV6)return false;if(b.dataset.gaV7==='1')return true;b.dataset.gaV7='1';b.onclick=run;b.textContent='💡 Phân tích giáo án gợi ý';return true}
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>240)clearInterval(timer)},100);bind();return true}
-  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,buildHistory,basisText,install};
+  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,buildHistory,basisText,install};
 });
