@@ -1,9 +1,16 @@
 'use strict';
 const assert=require('node:assert/strict');
 const V=require('../ga-suggestion-v7.js');
-assert.equal(V.version,'20260920.1');
+assert.equal(V.version,'20260925.1');
 assert.deepEqual(V.KNS_SEQUENCE,[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34]);
 assert.deepEqual(V.STEM_SEQUENCE,[3,6,13,16,20,23,27,32,35]);
+
+assert.equal(V.classOnly('1/B - P 1.5'),'1/B','phần trước là lớp, phần P phía sau chỉ là phòng');
+assert.equal(V.classOnly('2/A - P 2/2'),'2/A','phòng có dạng 2/2 không được nhận nhầm thành lớp');
+assert.deepEqual(V.gradesOf('1/B'),[1],'lớp chữ 1/B phải nhận đúng khối 1');
+assert.deepEqual(V.gradesOf('2/A - P 2/2'),[2],'chỉ lớp 2/A quyết định khối, không dùng phòng P 2/2');
+assert.deepEqual(V.classMembers('2/A - P 2/2',2),['2/A'],'room suffix không được tạo member 2/2 giả');
+assert.equal(V.normalizeClass('1/B - P 1.5'),'1/B','khóa lớp dùng cho GA phải loại phòng');
 
 const ws1={name:'7T9',entries:[
   {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:4,locationKey:'THUY_PHUONG',locationLabel:'THỦY PHƯƠNG',classRaw:'4/1+4/2+4/3+4/4 - TIẾT 4',className:'4/1+4/2+4/3+4/4',address:'E176'},
@@ -77,4 +84,26 @@ assert.equal(hHistory.byAddress.get('14T9!AM170').ga,3,'STEM keeps its independe
 assert.equal(hHistory.byAddress.get('21T9!AM170').track,'kns');
 assert.equal(hHistory.byAddress.get('21T9!AM170').ga,2,'21T9 HUỆ 3/9 KNS must be GA2, never GA4');
 assert.match(V.basisText(hHistory.byAddress.get('7T9!AM170')),/giữ nguyên GA 1/);
+
+
+const l7={name:'7T9',entries:[
+  {code:'HẰNG',teacherName:'Hằng',day:4,session:'Chiều',period:1,teachingPeriod:1,locationKey:'LE_LOI',locationLabel:'LÊ LỢI',classRaw:'1/B - P 1.5',className:'1/B',address:'D250'},
+  {code:'HẰNG',teacherName:'Hằng',day:4,session:'Chiều',period:2,teachingPeriod:2,locationKey:'LE_LOI',locationLabel:'LÊ LỢI',classRaw:'1/C - P 1.1',className:'1/C',address:'E250'}
+]};
+const l14={name:'14T9',entries:[
+  {code:'HẰNG',teacherName:'Hằng',day:4,session:'Chiều',period:1,teachingPeriod:1,locationKey:'LE_LOI',locationLabel:'LÊ LỢI',classRaw:'1/B - P 4.2',className:'1/B',address:'D250'}
+]};
+const lBook={worksheets:[l7,l14]};
+const lStarts={'7T9':new Date(2026,8,7,12),'14T9':new Date(2026,8,14,12)};
+const lHistory=V.buildHistory(lBook,'14T9',{
+  parser:{scanAssignments(ws){return ws.entries}},
+  roleResolver(){return'KNS'},
+  startDateFor(ws){return lStarts[ws.name]},
+  weekLike(){return true}
+});
+assert.equal(lHistory.byAddress.get('7T9!D250').classDisplay,'1/B - P 1.5');
+assert.equal(lHistory.byAddress.get('7T9!D250').ga,1,'lần đầu lớp 1/B là GA1');
+assert.equal(lHistory.byAddress.get('7T9!E250').ga,1,'lớp 1/C có tiến trình riêng');
+assert.equal(lHistory.byAddress.get('14T9!D250').ga,2,'cùng lớp 1/B đổi phòng vẫn phải nối lịch sử và tăng GA');
+assert.equal(lHistory.byAddress.get('14T9!D250').classId,'1/B','room không được nằm trong classId');
 console.log('OK GA suggestion V7: actual-period grouping, collaboration, separate KNS/STEM progress, class-specific nearest GA');
