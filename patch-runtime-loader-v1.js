@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260920.1';
+  const VERSION='20260925.2';
   const LOOKAHEAD=6;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -33,7 +33,7 @@
     ['ga-per-class-v2.js?v=20260920.5','lbgGaPerClassV2Script'],
     ['ga-multi-selection-bridge-v1.js?v=20260914.2','lbgGaMultiSelectionBridgeV1Script'],
     ['sheets-ga-save-safe-v1.js?v=20260913.1','lbgSheetsGaSaveSafeV1Script'],
-    ['report-branding-v1.js?v=20260909.1','lbgReportBrandingV1Script'],
+    ['report-branding-v1.js?v=20260925.2','lbgReportBrandingV1Script'],
     ['assist-p-preview-safe-v1.js?v=20260918.1','lbgAssistPPreviewSafeV1Script'],
     ['assist-p-summary-monthly-safe-v1.js?v=20260912.1','lbgAssistPSummaryMonthlySafeV1Script'],
     ['assist-p-web-footer-safe-v1.js?v=20260912.1','lbgAssistPWebFooterSafeV1Script'],

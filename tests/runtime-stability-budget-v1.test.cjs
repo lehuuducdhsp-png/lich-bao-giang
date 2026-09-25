@@ -43,7 +43,7 @@ assert.ok(intervals<=31,`runtime interval budget exceeded: ${intervals}/31`);
 assert.ok(bodyObservers<=40,`document.body observer budget exceeded: ${bodyObservers}/40`);
 
 assert.match(index,/app-runtime-v1\.js\?v=20260920\.2/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20260920\.1/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20260925\.2/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'bootstrap must not inline heavy patches');
 assert.doesNotMatch(patches,/setInterval\s*\(/,'patch loader itself must not add polling');
 
