@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260920.2';
+  const VERSION='20260925.3';
   const LOOKAHEAD=8;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -87,13 +87,13 @@
       await waitForAuth();
 
       const reportCore=[
-        ['tkb-parser-v2.js?v=20260906.2','lbgTkbParserV2Script'],
+        ['tkb-parser-v2.js?v=20260925.1','lbgTkbParserV2Script'],
         ['tkb-parser-school-name-fix-v1.js?v=20260906.1','lbgTkbParserSchoolNameFixV1Script'],
         ['tkb-atomic-teaching-v1.js?v=20260906.1','lbgTkbAtomicTeachingV1Script'],
         ['tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script'],
         ['teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script'],
         ['conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script'],
-        ['ga-suggestion-v7.js?v=20260920.1','lbgGaSuggestionV7Script'],
+        ['ga-suggestion-v7.js?v=20260925.1','lbgGaSuggestionV7Script'],
         ['ga-suggestion-cross-version-v1.js?v=20260912.4','lbgGaSuggestionCrossVersionV1Script']
       ];
       preloadWindow(reportCore,0,reportCore.length);
