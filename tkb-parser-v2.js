@@ -203,30 +203,57 @@
     return{...school,...site,locationLabel,locationKey,notes:blockNotes(ws,siteMerge,schoolMerge)}
   }
 
+  function roomText(v){
+    const value=txt(v).replace(/\s+/g,' ').trim();
+    return /^(?:[-–—]\s*)?P(?:HÒNG|HONG)?\.?\s*\S+/i.test(value)?value.replace(/^[-–—]\s*/,''):'';
+  }
+  function singleClassRoom(raw){
+    const source=txt(raw).replace(/\s+/g,' ').trim();
+    const m=source.match(/^([1-5]\s*\/\s*[A-ZÀ-Ỹ0-9]{1,4})(?:\s*(?:[-–—]\s*)?(P(?:HÒNG|HONG)?\.?\s*.+))?$/i);
+    if(!m)return null;
+    return{classText:m[1].replace(/\s/g,'').toUpperCase(),roomRaw:txt(m[2])}
+  }
   function classMeta(raw){
-    const classRaw=txt(raw).replace(/\s+/g,' ').trim();
-    let m=classRaw.match(/KHỐI\s*(\d+)\s*\(\s*(\d+)\s*LỚP\s*\)(?:\s*-\s*TIẾT\s*(\d+))?/i);
-    if(m)return{classRaw,classType:'combined',classCount:Number(m[2]),classDisplay:`KHỐI ${m[1]} (${m[2]} LỚP)`,groupNote:m[3]?`TIẾT ${m[3]}`:''};
-    if(/^\d{1,2}\s*\/\s*\d{1,2}$/.test(classRaw))return{classRaw,classType:'single',classCount:1,classDisplay:classRaw.replace(/\s/g,''),groupNote:''};
-    if(/[+&]/.test(classRaw)){
-      const parts=classRaw.split(/\s*(?:\+|&)\s*/).map(txt).filter(Boolean);
-      return{classRaw,classType:'combined-explicit',classCount:parts.length||1,classDisplay:parts.join(' + '),groupNote:''}
+    const sourceRaw=txt(raw).replace(/\s+/g,' ').trim();
+    let m=sourceRaw.match(/KHỐI\s*(\d+)\s*\(\s*(\d+)\s*LỚP\s*\)(?:\s*-\s*TIẾT\s*(\d+))?/i);
+    if(m)return{classRaw:sourceRaw,classSourceRaw:sourceRaw,roomRaw:'',classType:'combined',classCount:Number(m[2]),classDisplay:`KHỐI ${m[1]} (${m[2]} LỚP)`,groupNote:m[3]?`TIẾT ${m[3]}`:''};
+    const single=singleClassRoom(sourceRaw);
+    if(single)return{classRaw:single.classText,classSourceRaw:sourceRaw,roomRaw:single.roomRaw,classType:'single',classCount:1,classDisplay:single.classText,groupNote:''};
+    if(/[+&]/.test(sourceRaw)){
+      const parts=sourceRaw.split(/\s*(?:\+|&)\s*/).map(txt).filter(Boolean);
+      return{classRaw:sourceRaw,classSourceRaw:sourceRaw,roomRaw:'',classType:'combined-explicit',classCount:parts.length||1,classDisplay:parts.join(' + '),groupNote:''}
     }
-    return{classRaw,classType:'unknown',classCount:1,classDisplay:classRaw,groupNote:''}
+    return{classRaw:sourceRaw,classSourceRaw:sourceRaw,roomRaw:roomText(sourceRaw),classType:'unknown',classCount:1,classDisplay:sourceRaw,groupNote:''}
   }
   function isNoteText(v){return /^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(txt(v))}
+  function classNeighborAt(ws,row,col,roomRaw=''){
+    const current=colInfoFor(ws,col);if(!current)return null;
+    const candidates=timetableColumns(ws).filter(c=>{
+      if(c===col||Math.abs(c-col)>3)return false;
+      const x=colInfoFor(ws,c);return x&&Number(x.day)===Number(current.day)&&txt(x.session)===txt(current.session)&&Number(x.period)===Number(current.period)
+    }).sort((a,b)=>Math.abs(a-col)-Math.abs(b-col)||a-b);
+    for(const c of candidates){
+      const v=txt(masterText(ws,row,c)).replace(/\s+/g,' ').trim();if(!v||resolveTeacherCode(ws,v))continue;
+      const meta=classMeta(v);
+      if(meta.classType==='single')return{...meta,roomRaw:meta.roomRaw||roomRaw,classSourceRaw:meta.classSourceRaw||v}
+    }
+    return null
+  }
   function classAt(ws,row,col){
     let fallback='';
     const floor=Math.max(buildHeader(ws).headerRow+1,row-8);
     for(let r=row-1;r>=floor;r--){
       const v=txt(masterText(ws,r,col)).replace(/\s+/g,' ').trim();if(!v)continue;
-      if(resolveTeacherCode(ws,v)){
-        return classMeta(fallback)
-      }
+      if(resolveTeacherCode(ws,v))return classMeta(fallback);
       const up=v.toUpperCase();
       if(blocked.has(up)||/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI)$/i.test(v)||isNoteText(v))continue;
       const meta=classMeta(v);
       if(meta.classType!=='unknown')return meta;
+      const room=roomText(v);
+      if(room){
+        const nearby=classNeighborAt(ws,r,col,room);
+        if(nearby)return nearby
+      }
       if(!fallback&&v.length<=100)fallback=v
     }
     return classMeta(fallback)
@@ -255,7 +282,7 @@
         school:loc.schoolName,schoolName:loc.schoolName,schoolNote:loc.schoolNote,
         siteRaw:loc.siteRaw,siteType:loc.siteType,siteName:loc.siteName,siteDisplay:loc.siteDisplay,
         locationLabel:loc.locationLabel,locationKey:loc.locationKey,locationNotes:loc.notes,
-        className:cm.classDisplay,classRaw:cm.classRaw,classType:cm.classType,classCount:cm.classCount,groupNote:cm.groupNote,
+        className:cm.classDisplay,classRaw:cm.classRaw,classSourceRaw:cm.classSourceRaw,roomRaw:cm.roomRaw,classType:cm.classType,classCount:cm.classCount,groupNote:cm.groupNote,
         code:resolved.code,sourceCode,resolution:resolved.mapping,teacherName:nameMap.get(resolved.code)||resolved.code,
         address:cell.address,row:r,col:c,makeUp:isBlue(cell)
       })
@@ -336,7 +363,7 @@
     }catch(error){console.error('Parser V2: không làm mới được danh sách giáo viên',error)}
   }
 
-  const api={version:'2.1.0',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,scanAssignments,analyze,dayLabel};
+  const api={version:'2.2.0',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,roomText,singleClassRoom,scanAssignments,analyze,dayLabel};
   window.LBGTkbParserV2=api;window.teachers=teachers;window.analyzeNow=analyze;
   window.colInfo=function(c){const ws=currentWs();return ws?colInfoFor(ws,c):null};
   window.LBGAllTeachers=teachers;
