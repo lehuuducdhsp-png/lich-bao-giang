@@ -1,0 +1,39 @@
+name: Validate class-room GA parsing
+
+on:
+  pull_request:
+    paths:
+      - 'tkb-parser-v2.js'
+      - 'ga-suggestion-v7.js'
+      - 'app-runtime-v1.js'
+      - 'index.html'
+      - 'tests/tkb-class-room-ga.test.cjs'
+      - 'tests/ga-suggestion-v7.test.cjs'
+      - '.github/workflows/validate-class-room-ga.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check tkb-parser-v2.js
+          node --check ga-suggestion-v7.js
+          node --check tests/tkb-class-room-ga.test.cjs
+          node --check tests/ga-suggestion-v7.test.cjs
+      - name: Class vs room regressions
+        run: |
+          node tests/tkb-class-room-ga.test.cjs
+          node tests/ga-suggestion-v7.test.cjs
+      - name: Runtime cache contract
+        run: |
+          grep -F 'tkb-parser-v2.js?v=20260925.1' app-runtime-v1.js
+          grep -F 'ga-suggestion-v7.js?v=20260925.1' app-runtime-v1.js
+          grep -F 'app-runtime-v1.js?v=20260925.3' index.html
