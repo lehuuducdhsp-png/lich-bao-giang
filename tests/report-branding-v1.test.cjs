@@ -9,5 +9,8 @@ assert.match(src,/brandWorksheet/,'Phải có xử lý chèn nhận diện vào 
 assert.match(src,/^'use strict';/,'Module phải là JavaScript hợp lệ.');
 assert.match(src,/LICH_BAO_GIANG_/,'Chỉ can thiệp file lịch báo giảng, không đụng các file Excel khác.');
 assert.match(src,/\.zip\$/,'Phải xử lý cả chế độ xuất ZIP nhiều giáo viên.');
-assert.match(patchLoader,/report-branding-v1\.js\?v=20260909\.1/,'Patch loader phải nạp module nhận diện mới.');
+assert.match(src,/originalMerges/,'Phải lưu các vùng gộp gốc trước khi chèn header.');
+assert.match(src,/unMergeCells/,'Phải tháo merge cũ an toàn trước spliceRows.');
+assert.match(src,/shiftRange\(range,3\)/,'Phải khôi phục merge gốc dịch xuống đúng 3 hàng.');
+assert.match(patchLoader,/report-branding-v1\.js\?v=20260925\.1/,'Patch loader phải nạp đúng bản sửa merge mới.');
 console.log('OK report branding: logo + tên Hoàn Năng cho preview và file xuất');
