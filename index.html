@@ -34,7 +34,7 @@ window.LBG_CHECKIN_ENABLED=true;
       .primary{background:#f4a261!important;color:#4c3429!important;border-color:#f4a261!important}
     </style>`;
     html=html.replace('</head>',early+'</head>');
-    const runtime=`<script src="app-runtime-v1.js?v=20260920.2"><\/script><script src="patch-runtime-loader-v1.js?v=20260925.2"><\/script>`;
+    const runtime=`<script src="app-runtime-v1.js?v=20260925.3"><\/script><script src="patch-runtime-loader-v1.js?v=20260925.2"><\/script>`;
     html=html.replace('</body>',runtime+'</body>');
     document.open();document.write(html);document.close();
   }catch(error){
