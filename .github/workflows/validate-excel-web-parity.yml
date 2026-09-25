@@ -39,7 +39,7 @@ jobs:
           PY
       - name: Preserve recent report contracts
         run: |
-          grep -F 'report-branding-v1.js?v=20260909.1' patch-runtime-loader-v1.js
+          grep -F 'report-branding-v1.js?v=20260925.1' patch-runtime-loader-v1.js
           grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' patch-runtime-loader-v1.js
           grep -F 'ga-group-split-stale-repair-v1.js?v=20260920.1' patch-runtime-loader-v1.js
           grep -F 'ga-multi-selection-bridge-v1.js?v=20260914.2' patch-runtime-loader-v1.js

@@ -5,6 +5,7 @@ on:
     paths:
       - 'report-branding-v1.js'
       - 'index.html'
+      - 'patch-runtime-loader-v1.js'
       - 'tests/report-branding-v1.test.cjs'
       - '.github/workflows/validate-report-branding.yml'
 
