@@ -2,8 +2,8 @@
 const assert=require('node:assert/strict');
 const api=require('../school-report-v1.js');
 
-assert.equal(api.VERSION,'20260914.3');
-assert.deepEqual(api.MODES,{class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp'});
+assert.equal(api.VERSION,'20260927.1');
+assert.deepEqual(api.MODES,{class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'});
 assert.deepEqual(api.layoutSpec(),{headerRow:4,morningStart:5,afternoonStart:10,footerRow:15,periods:5},'web và Excel phải chỉ có đúng 5 hàng tiết mỗi buổi, không còn hàng Tiết dư');
 
 const mainA={day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'PHÚ BÌNH',siteDisplay:'Cơ sở 1: PHÚ HẬU CŨ',teacherName:'Diệu Tâm',code:'TÂM',className:'5/4',classType:'single',address:'A1'};
@@ -32,9 +32,12 @@ assert.equal(api.teacherCodeText(mainA),'TÂM');
 assert.equal(api.displayEntry(mainA,'class'),'5/4');
 assert.equal(api.displayEntry(mainA,'teacher'),'TÂM');
 assert.equal(api.displayEntry(mainA,'teacher-class'),'TÂM - 5/4');
+assert.equal(api.displayEntry({...mainA,ga:2},'teacher-class-ga'),'TÂM - 5/4 - GA 2');
+assert.equal(api.displayEntry(mainA,'teacher-class-ga'),'TÂM - 5/4 - GA —','chưa xác định GA phải hiển thị rõ, không tự bịa số');
 assert.equal(api.displayEntry(assistKnown,'class'),'1/1 (P)');
 assert.equal(api.displayEntry(assistKnown,'teacher'),'THANH (P)');
 assert.equal(api.displayEntry(assistKnown,'teacher-class'),'THANH - 1/1 (P)');
+assert.equal(api.displayEntry({...assistKnown,ga:3},'teacher-class-ga'),'THANH - 1/1 - GA 3 (P)');
 assert.equal(api.displayEntry(assistUnknown,'class'),'Lớp không xác định (P)');
 assert.equal(api.displayEntry(assistUnknown,'teacher-class'),'ĐỨC - Lớp không xác định (P)');
 assert.doesNotMatch(api.displayEntry(mainA,'teacher-class'),/Diệu Tâm/,'lịch trường không dùng họ tên giáo viên');
