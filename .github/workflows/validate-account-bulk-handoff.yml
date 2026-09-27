@@ -1,0 +1,32 @@
+name: Validate account bulk handoff
+
+on:
+  pull_request:
+    paths:
+      - 'account-bulk-handoff-v1.js'
+      - 'patch-runtime-loader-v1.js'
+      - 'tests/account-bulk-handoff-v1.test.cjs'
+      - 'tests/runtime-responsive-loader-v1.test.cjs'
+      - '.github/workflows/validate-account-bulk-handoff.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check account-bulk-handoff-v1.js
+          node --check tests/account-bulk-handoff-v1.test.cjs
+      - name: Account handoff regression
+        run: node tests/account-bulk-handoff-v1.test.cjs
+      - name: Runtime contract
+        run: |
+          grep -F "account-bulk-handoff-v1.js?v=20260927.1" patch-runtime-loader-v1.js
+          node tests/runtime-responsive-loader-v1.test.cjs
