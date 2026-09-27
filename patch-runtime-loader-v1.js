@@ -41,6 +41,7 @@
     ['assist-p-excel-export-parity-v1.js?v=20260918.1','lbgAssistPExcelExportParityV1Script'],
     ['assist-p-export-safe-v1.js?v=20260912.1','lbgAssistPExportSafeV1Script'],
     ['school-report-v1.js?v=20260927.1','lbgSchoolReportV1Script'],
+    ['account-bulk-handoff-v1.js?v=20260927.1','lbgAccountBulkHandoffV1Script'],
     ['assist-p-sheets-label-safe-v1.js?v=20260912.3','lbgAssistPSheetsLabelSafeV1Script'],
     ['assist-p-sheets-location-safe-v1.js?v=20260912.1','lbgAssistPSheetsLocationSafeV1Script'],
     ['monthly-excel-polish-safe-v1.js?v=20260912.1','lbgMonthlyExcelPolishSafeV1Script']
