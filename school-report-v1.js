@@ -5,8 +5,8 @@
   if(root)root.LBGSchoolReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260914.3';
-  const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp'};
+  const VERSION='20260927.1';
+  const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'};
   const TARGET_SEP='::LBG_SITE::';
   const PERIODS=5;
   const LAYOUT=Object.freeze({headerRow:4,morningStart:5,afternoonStart:10,footerRow:15,periods:PERIODS});
@@ -24,10 +24,19 @@
     return note&&!base.toUpperCase().includes(note.toUpperCase())?`${base} - ${note}`:base;
   }
   function teacherCodeText(e){return txt(e?.code)||'GV?'}
+  function gaText(e){
+    const raw=e?.gaDisplay??e?.ga;
+    if(raw===null||raw===undefined||txt(raw)==='')return'GA —';
+    const n=Number(raw);return Number.isFinite(n)?`GA ${Math.round(n)}`:`GA ${txt(raw)}`;
+  }
   function displayEntry(e,mode='teacher-class'){
     const teacher=teacherCodeText(e),cls=classText(e),assist=Boolean(e?.isAssist);
     if(mode==='class')return assist?(/\(P\)\s*$/i.test(cls)?cls:`${cls} (P)`):cls;
     if(mode==='teacher')return assist?`${teacher} (P)`:teacher;
+    if(mode==='teacher-class-ga'){
+      const base=`${teacher} - ${cls} - ${gaText(e)}`;
+      return assist?`${base} (P)`:base;
+    }
     return assist?`${teacher} - ${/\(P\)\s*$/i.test(cls)?cls:`${cls} (P)`}`:`${teacher} - ${cls}`;
   }
   function schoolKey(e){return fold(e?.schoolName||e?.school)}
@@ -92,6 +101,68 @@
     assistCache.set(ws,out);return out;
   }
   function allEvents(ws){return[...mainEvents(ws),...assistEvents(ws)]}
+  function activeVersion(){try{return typeof activeId!=='undefined'&&activeId?txt(activeId):'active'}catch{return'active'}}
+  function startDateFor(ws){try{return typeof startDate==='function'?startDate(ws.name):null}catch{return null}}
+  function weekLikeFor(ws){try{return typeof weekLike==='function'?weekLike(ws):true}catch{return true}}
+  function roleResolver(ws,code,e){
+    const fallback=(sheet,c)=>root.LBGTeacherIntelligenceV6?.summaryRoles?.(sheet)?.get?.(txt(c).toUpperCase())?.role||'KNS';
+    try{
+      const safe=root.LBGGaRoleTrackStaleRepairV1;
+      if(safe?.roleFor)return safe.roleFor(ws,code,e,fallback,book(),root.LBGTeacherIntelligenceV6);
+    }catch{}
+    return fallback(ws,code);
+  }
+  function storedGaForEntry(ws,e){
+    const pc=root.LBGGaPerClassV2,v7=root.LBGGaSuggestionV7;if(!pc||!ws||!e||e.isAssist)return null;
+    const code=txt(e.code),version=activeVersion();if(!code)return null;
+    let values={};
+    try{
+      const key=pc.storageKey?.(version,ws.name,code,pc.GA_PREFIX);
+      const legacy=pc.storageKey?.(version,ws.name,code,pc.LEGACY_GA_PREFIX);
+      const current=key?JSON.parse(root.localStorage?.getItem?.(key)||'null'):null;
+      const old=legacy?JSON.parse(root.localStorage?.getItem?.(legacy)||'null'):null;
+      values=current&&typeof current==='object'?current:(old&&typeof old==='object'?old:{});
+    }catch{values={}}
+    const normalizer=v7?.normalizeClass,classKey=pc.entryClassKey?.(e,normalizer),locs=[txt(e.locationKey),txt(e.locationLabel),txt(e.school),txt(e.schoolName)].filter(Boolean);
+    for(const loc of locs){
+      if(classKey&&pc.classGaKey){
+        const k=pc.classGaKey(Number(e.day),txt(e.session),loc,classKey),raw=values[k];
+        if(raw!==undefined&&raw!==null&&txt(raw)!==''){const n=Number(raw);if(Number.isFinite(n)&&n>=0)return Math.round(n)}
+      }
+      if(pc.gaKey){
+        const k=pc.gaKey(Number(e.day),txt(e.session),loc),raw=values[k];
+        if(raw!==undefined&&raw!==null&&txt(raw)!==''){const n=Number(raw);if(Number.isFinite(n)&&n>=0)return Math.round(n)}
+      }
+    }
+    return null;
+  }
+  function canonicalGaHistory(ws){
+    const v7=root.LBGGaSuggestionV7,parser=root.LBGTkbParserV2,b=book();
+    if(!v7?.buildHistory||!parser?.scanAssignments||!b||!ws)return null;
+    try{return v7.buildHistory(b,ws.name,{parser,roleResolver,startDateFor,weekLike:weekLikeFor})}catch(error){console.warn('LBG school GA:',error);return null}
+  }
+  function gaJoinKey(e){
+    const v7=root.LBGGaSuggestionV7,cls=typeof v7?.normalizeClass==='function'?v7.normalizeClass(e?.classRaw||e?.className):fold(e?.classRaw||e?.className);
+    return[Number(e?.day),txt(e?.session),Number(e?.teachingPeriod??e?.period),txt(e?.locationKey),txt(cls)].join('|');
+  }
+  function attachGa(ws,entries){
+    const history=canonicalGaHistory(ws),main=[];
+    for(const e of entries||[]){
+      if(e?.isAssist){main.push({...e,ga:null});continue}
+      const stored=storedGaForEntry(ws,e),ev=history?.byAddress?.get?.(`${ws.name}!${txt(e?.address)}`),ga=stored!==null?stored:(ev?.ga??null);
+      main.push({...e,ga});
+    }
+    const byKey=new Map();
+    for(const e of main){
+      if(e.isAssist||e.ga===null||e.ga===undefined||txt(e.ga)==='')continue;
+      const key=gaJoinKey(e);if(!byKey.has(key))byKey.set(key,new Set());byKey.get(key).add(String(e.ga));
+    }
+    return main.map(e=>{
+      if(!e.isAssist)return e;
+      const values=[...(byKey.get(gaJoinKey(e))||[])];
+      return values.length===1?{...e,ga:Number.isFinite(Number(values[0]))?Number(values[0]):values[0]}:values.length>1?{...e,gaDisplay:'?'}:e;
+    });
+  }
   function daysFor(ws,events){
     try{const days=root.LBGReportEngineV4?.daysForWorksheet?.(ws);if(Array.isArray(days)&&days.length)return days.map(Number)}catch{}
     return(events||[]).some(e=>Number(e?.day)===8)?[2,3,4,5,6,7,8]:[2,3,4,5,6,7];
@@ -106,7 +177,7 @@
   function ensureCard(){
     if(q('lbgSchoolReportCard'))return q('lbgSchoolReportCard');
     const anchor=q('previewCard')||[...root.document.querySelectorAll('section.card')].find(x=>/Kiểm tra và lập báo giảng/i.test(txt(x.textContent)));if(!anchor?.parentNode)return null;
-    style();const card=root.document.createElement('section');card.id='lbgSchoolReportCard';card.className='card';card.innerHTML=`<div class="head"><div><h3>Lịch báo giảng theo trường</h3><p>Mỗi cơ sở/điểm dạy được tách riêng; trong lịch chỉ dùng mã GV.</p></div><span class="badge" id="lbgSchoolBadge">3 chế độ</span></div><div id="lbgSchoolPermission" class="lbg-school-note">Đang kiểm tra quyền xem lịch toàn trường…</div><div class="lbg-school-controls"><label>Trường / cơ sở<select id="lbgSchoolSelect" disabled><option value="">Chưa có dữ liệu</option></select></label><label>Cách hiển thị<select id="lbgSchoolMode" disabled><option value="class">Lớp</option><option value="teacher">Giáo viên</option><option value="teacher-class" selected>Giáo viên - lớp</option></select></label><button class="btn primary" id="lbgSchoolCheck" disabled>✓ Kiểm tra</button><button class="btn outline" id="lbgSchoolExport" disabled>⇩ Xuất Excel</button></div><div id="lbgSchoolSummary"></div><div id="lbgSchoolPreview" class="lbg-school-preview"><div class="lbg-school-empty">Chọn trường/cơ sở và nhấn Kiểm tra.</div></div>`;
+    style();const card=root.document.createElement('section');card.id='lbgSchoolReportCard';card.className='card';card.innerHTML=`<div class="head"><div><h3>Lịch báo giảng theo trường</h3><p>Mỗi cơ sở/điểm dạy được tách riêng; trong lịch chỉ dùng mã GV.</p></div><span class="badge" id="lbgSchoolBadge">4 chế độ</span></div><div id="lbgSchoolPermission" class="lbg-school-note">Đang kiểm tra quyền xem lịch toàn trường…</div><div class="lbg-school-controls"><label>Trường / cơ sở<select id="lbgSchoolSelect" disabled><option value="">Chưa có dữ liệu</option></select></label><label>Cách hiển thị<select id="lbgSchoolMode" disabled><option value="class">Lớp</option><option value="teacher">Giáo viên</option><option value="teacher-class" selected>Giáo viên - lớp</option><option value="teacher-class-ga">Giáo viên - lớp - GA</option></select></label><button class="btn primary" id="lbgSchoolCheck" disabled>✓ Kiểm tra</button><button class="btn outline" id="lbgSchoolExport" disabled>⇩ Xuất Excel</button></div><div id="lbgSchoolSummary"></div><div id="lbgSchoolPreview" class="lbg-school-preview"><div class="lbg-school-empty">Chọn trường/cơ sở và nhấn Kiểm tra.</div></div>`;
     anchor.parentNode.insertBefore(card,anchor);bind();return card;
   }
   function bind(){
@@ -123,14 +194,14 @@
     if(!ws){note.textContent='Hãy mở TKB và chọn tuần trước.';select.innerHTML='<option value="">Chưa có tuần</option>';setEnabled(false);return}
     try{
       const events=mainEvents(ws),targets=collectSchoolSiteOptions(events),old=select.value;select.innerHTML=targets.length?targets.map(x=>`<option value="${esc(x.key)}">${esc(x.label)}</option>`).join(''):'<option value="">Không tìm thấy trường/cơ sở</option>';if(old&&targets.some(x=>x.key===old))select.value=old;
-      note.textContent='Mỗi cơ sở/điểm dạy được xuất riêng. Chế độ Giáo viên và Giáo viên - lớp chỉ hiện mã GV (THANH, THAOR2, ĐỨC, TÂM…). Trợ (P) chỉ quét khi bấm Kiểm tra để tránh làm chậm trang.';setEnabled(Boolean(targets.length));
+      note.textContent='Mỗi cơ sở/điểm dạy được xuất riêng. Chế độ Giáo viên, Giáo viên - lớp và Giáo viên - lớp - GA chỉ hiện mã GV (THANH, THAOR2, ĐỨC, TÂM…). Trợ (P) chỉ quét khi bấm Kiểm tra để tránh làm chậm trang.';setEnabled(Boolean(targets.length));
     }catch(error){note.textContent='Chưa đọc được dữ liệu trường: '+(error?.message||String(error));setEnabled(false)}
   }
   function makeData(){
     if(!canWholeSchool())throw new Error('Tài khoản này không có quyền xem lịch toàn trường.');const ws=currentWs();if(!ws)throw new Error('Hãy chọn tuần trước.');
     const key=txt(q('lbgSchoolSelect')?.value),mode=txt(q('lbgSchoolMode')?.value)||'teacher-class';if(!key)throw new Error('Hãy chọn trường/cơ sở.');
     const target=collectSchoolSiteOptions(mainEvents(ws)).find(x=>x.key===key);if(!target)throw new Error('Không tìm thấy trường/cơ sở đang chọn trong TKB.');
-    const all=allEvents(ws),entries=filterBySchoolSite(all,key),main=entries.filter(e=>!e.isAssist),assist=entries.filter(e=>e.isAssist),days=daysFor(ws,entries);
+    const rawEvents=allEvents(ws),all=mode==='teacher-class-ga'?attachGa(ws,rawEvents):rawEvents,entries=filterBySchoolSite(all,key),main=entries.filter(e=>!e.isAssist),assist=entries.filter(e=>e.isAssist),days=daysFor(ws,entries);
     return{ws,school:target.school,site:target.site,label:target.label,key,mode,entries,main,assist,days,slots:buildSlots(entries,mode)};
   }
   function renderSessionRows(d,session){
@@ -174,5 +245,5 @@
   function install(){
     if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,canWholeSchool,refresh,renderCurrent,addExcelSheet};
   }
-  return{VERSION,MODES,layoutSpec,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,install};
+  return{VERSION,MODES,layoutSpec,classText,teacherCodeText,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,gaJoinKey,attachGa,install};
 });
