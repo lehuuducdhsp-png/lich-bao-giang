@@ -10,6 +10,7 @@ on:
       - 'index.html'
       - 'patch-runtime-loader-v1.js'
       - 'tests/report-pay-rules-v1.test.cjs'
+      - 'tests/monthly-plus-double-count.test.cjs'
       - '.github/workflows/validate-report-pay-rules.yml'
 
 permissions:
@@ -30,11 +31,14 @@ jobs:
           node --check monthly-calendar-v3.js
           node --check app-runtime-v1.js
           node --check tests/report-pay-rules-v1.test.cjs
+          node --check tests/monthly-plus-double-count.test.cjs
       - name: Check runtime contract
         run: |
           grep -Fq "report-pay-rules-v1.js?v=20260908.1" app-runtime-v1.js
           grep -Fq "report-engine-v4.js?v=20260908.1" app-runtime-v1.js
-          grep -Fq "monthly-calendar-v3.js?v=20260908.1" app-runtime-v1.js
-          grep -Fq "app-runtime-v1.js?v=20260925.3" index.html
+          grep -Fq "monthly-calendar-v3.js?v=20260927.1" app-runtime-v1.js
+          grep -Fq "app-runtime-v1.js?v=20260927.1" index.html
       - name: Run report/pay regression
-        run: node tests/report-pay-rules-v1.test.cjs
+        run: |
+          node tests/report-pay-rules-v1.test.cjs
+          node tests/monthly-plus-double-count.test.cjs
