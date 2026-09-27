@@ -53,7 +53,7 @@ const expectedModules=[
   'ui-nav-dedupe-fix-v1.js?v=20260808.5',
   'dashboard-finish-v1.js?v=20260808.8',
   'checkin-history-order-v1.js?v=20260810.1',
-  'monthly-calendar-v3.js?v=20260908.1',
+  'monthly-calendar-v3.js?v=20260927.1',
   'final-visual-fix-v1.js?v=20260808.11',
   'section-order-fix-v1.js?v=20260808.13',
   'typography-polish-v1.js?v=20260808.14',
@@ -123,7 +123,7 @@ const expectedRuntimePatches=[
 ];
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
-assert.match(index,/app-runtime-v1\.js\?v=20260925\.3/);
+assert.match(index,/app-runtime-v1\.js\?v=20260927\.1/);
 assert.match(index,/patch-runtime-loader-v1\.js\?v=20260925\.2/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');

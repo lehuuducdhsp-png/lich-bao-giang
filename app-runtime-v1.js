@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260925.3';
+  const VERSION='20260927.1';
   const LOOKAHEAD=8;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -132,7 +132,7 @@
         ['ui-nav-dedupe-fix-v1.js?v=20260808.5','lbgUiNavDedupeFixV1'],
         ['dashboard-finish-v1.js?v=20260808.8','lbgDashboardFinishV1'],
         ['checkin-history-order-v1.js?v=20260810.1','lbgCheckinHistoryOrderV1'],
-        ['monthly-calendar-v3.js?v=20260908.1','lbgMonthlyCalendarV3Script'],
+        ['monthly-calendar-v3.js?v=20260927.1','lbgMonthlyCalendarV3Script'],
         ['final-visual-fix-v1.js?v=20260808.11','lbgFinalVisualFixV1Script'],
         ['section-order-fix-v1.js?v=20260808.13','lbgSectionOrderFixV1Script'],
         ['typography-polish-v1.js?v=20260808.14','lbgTypographyPolishV1Script'],

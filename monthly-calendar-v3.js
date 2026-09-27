@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260908.1';
+  const VERSION='20260927.1';
   const PREFIX='lbgMonthlyCalendarV3';
   const UNKNOWN_SCHOOL='⚠ CHƯA XÁC ĐỊNH TRƯỜNG';
   const S={built:null,teacherKey:'',teacherSig:'',teachers:[],contextSig:'',timer:null};
@@ -18,6 +18,14 @@
   const yearOfMonth=m=>Number(m)>=8?yearStart():yearStart()+1;
   const dedupe=a=>[...new Set(a.filter(Boolean))];
   const reportRules=()=>window.LBGReportPayRulesV1;
+
+  function isReportOnlyPlus(report,entry){
+    const address=raw(entry?.address),source=raw(entry?.sourceCode).toUpperCase();
+    if(entry?.reportOnlyPlus===true||entry?.isPlus===true||/\+$/.test(source))return true;
+    const grouped=Array.isArray(report?.__lbgGroupedPlusEntries)?report.__lbgGroupedPlusEntries:[];
+    return Boolean(address&&grouped.some(x=>raw(x)===address));
+  }
+  function mainEntries(report){return(Array.isArray(report?.entries)?report.entries:[]).filter(entry=>!isReportOnlyPlus(report,entry))}
 
   function workbookSignature(){
     const book=wbNow();
@@ -129,7 +137,7 @@
       const allowedDays=seg.dates.map(d=>d.getDay()===0?8:d.getDay()+1);
       plusByWeek.set(seg.key,reportRules()?.scanPlus(item.ws,teacher.code,{allowedDays})||0);
       for(const w of a.warnings||[])warnings.push(`${item.ws.name}: ${w}`);
-      for(const e of a.entries||[]){
+      for(const e of mainEntries(a)){
         const day=Number(e.day),off=day===8?6:day-2;
         if(off<0||off>6){warnings.push(`${item.ws.name}: ngày không hợp lệ tại ${e.address||'ô nguồn'}.`);continue}
         const d=addDays(seg.start,off);
@@ -252,6 +260,6 @@
   }
 
   if(window.LBGMonthlyV3?.destroy)try{window.LBGMonthlyV3.destroy()}catch{}
-  window.LBGMonthlyV3={version:VERSION,destroy(){if(S.timer)clearInterval(S.timer);S.timer=null;q('monthCardFixed')?.remove()},rebuild(){if(!q('monthCardFixed'))inject()}};
+  window.LBGMonthlyV3={version:VERSION,isReportOnlyPlus,mainEntries,destroy(){if(S.timer)clearInterval(S.timer);S.timer=null;q('monthCardFixed')?.remove()},rebuild(){if(!q('monthCardFixed'))inject()}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(inject,0),{once:true});else setTimeout(inject,0);
 })();
