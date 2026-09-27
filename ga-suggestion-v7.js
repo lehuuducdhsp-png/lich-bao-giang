@@ -38,6 +38,21 @@
   function locationKey(e){return txt(e?.locationKey)||`${fold(e?.schoolName||e?.school)}|${fold(e?.siteDisplay||e?.siteName)}`}
   function schoolLabel(e){return txt(e?.locationLabel||e?.schoolName||e?.school)||'Chưa xác định'}
   function classLabel(e){return txt(e?.classRaw||e?.className)||'Chưa xác định'}
+  const QUANG_TRUNG_GA_START='2026-09-21';
+  function weekStart(ws,opts={}){
+    let d=null;try{d=opts.startDateFor?opts.startDateFor(ws):null}catch{}
+    if(d instanceof Date&&!Number.isNaN(d.getTime()))return d;
+    const m=txt(ws?.name).match(/^(\d{1,2})T(\d{1,2})$/i);
+    if(m){const x=new Date(2026,Number(m[2])-1,Number(m[1]),12);if(!Number.isNaN(x.getTime()))return x}
+    return null;
+  }
+  function isGaEligibleEntry(ws,e,opts={}){
+    const school=fold(e?.schoolName||e?.school||txt(e?.locationLabel).split(/\n/)[0]);
+    if(school!=='QUANG TRUNG')return true;
+    const start=weekStart(ws,opts);
+    if(!(start instanceof Date)||Number.isNaN(start.getTime()))return false;
+    return dateKey(start)>=QUANG_TRUNG_GA_START;
+  }
   function eventDate(ws,e,opts={}){let start=null;try{start=opts.startDateFor?opts.startDateFor(ws):null}catch{}if(!(start instanceof Date)||Number.isNaN(start.getTime()))return null;const day=Number(e?.day),off=day===8?6:day-2;if(off<0||off>6)return null;const d=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);d.setDate(d.getDate()+off);return d}
   function orderedSheets(book,selectedSheet,opts={}){
     const rows=(book?.worksheets||[]).map((ws,index)=>{let start=null;try{start=opts.startDateFor?opts.startDateFor(ws):null}catch{}return{ws,index,start}}).filter(x=>opts.weekLike?opts.weekLike(x.ws):true);
@@ -51,6 +66,7 @@
     for(const ws of sheets){
       let entries=[];try{entries=parser.scanAssignments(ws)||[]}catch(error){warnings.push(`${ws.name}: ${error?.message||error}`);continue}
       for(const e of entries){
+        if(!isGaEligibleEntry(ws,e,opts))continue;
         const code=txt(e?.code).toUpperCase();if(!code||/\+$/.test(code))continue;
         let role='KNS';try{role=roleResolver?.(ws,code,e)||'KNS'}catch{}
         const rt=roleTrack(role),date=eventDate(ws,e,opts),dk=dateKey(date),period=actualPeriod(e),loc=locationKey(e),grades=gradesOf(e?.classRaw,e?.className);if(!dk||!period||!loc||!grades.length)continue;
@@ -114,5 +130,5 @@
   }
   function bind(){const b=root.document?.getElementById('gaSuggestV6');if(!b||!root.LBGTkbParserV2||!root.LBGTeacherIntelligenceV6)return false;if(b.dataset.gaV7==='1')return true;b.dataset.gaV7='1';b.onclick=run;b.textContent='💡 Phân tích giáo án gợi ý';return true}
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>240)clearInterval(timer)},100);bind();return true}
-  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,buildHistory,basisText,install};
+  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,QUANG_TRUNG_GA_START,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,weekStart,isGaEligibleEntry,buildHistory,basisText,install};
 });
