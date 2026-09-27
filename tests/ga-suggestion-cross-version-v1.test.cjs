@@ -60,4 +60,26 @@ assert.equal(c25.ga,2,'2/5 đã có GA1 tuần trước nên 16/9 phải gợi �
 assert.equal(c24.ga,2,'2/4 đã có GA1 tuần trước nên 16/9 phải gợi ý GA2');
 assert.match(V7.basisText(c25),/GA gần nhất/);
 assert.match(V7.basisText(c24),/GA gần nhất/);
+
+
+const q14=ws('14T9',[
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',schoolKey:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'Q14'}
+]);
+const q21=ws('21T9',[
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',schoolKey:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'Q21'}
+]);
+const qStarts={'14T9':new Date(2026,8,14,12),'21T9':new Date(2026,8,21,12)};
+const qSources=[
+  {id:'old-14',created:'2026-09-15T08:00:00Z',book:book([q14])},
+  {id:'active-21',created:'2026-09-21T08:00:00Z',book:book([q21])}
+];
+const qHistory=Cross.buildHistoryAcrossSources(V7,qSources,qSources[1].book,'21T9',{
+  parser:{scanAssignments(s){return s.entries||[]}},
+  roleResolver(){return'KNS'},
+  startDateFor(s){return qStarts[s.name]||null},
+  weekLike(){return true}
+});
+assert.equal(qHistory.byAddress.get('14T9!Q14'),undefined,'cross-version cũng phải bỏ QUANG TRUNG 14T9');
+assert.equal(qHistory.byAddress.get('21T9!Q21').ga,1,'dù phiên bản cũ có 14T9, QUANG TRUNG 21T9 vẫn phải bắt đầu GA1');
+
 console.log('OK GA cross-version: THUỶ LƯƠNG note-in-site normalized; Hoài Thanh 2/5 & 2/4 advance GA1 -> GA2');
