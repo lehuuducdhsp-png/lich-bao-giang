@@ -117,6 +117,7 @@ const expectedRuntimePatches=[
   'assist-p-excel-export-parity-v1.js?v=20260918.1',
   'assist-p-export-safe-v1.js?v=20260912.1',
   'school-report-v1.js?v=20260927.1',
+  'account-bulk-handoff-v1.js?v=20260927.1',
   'assist-p-sheets-label-safe-v1.js?v=20260912.3',
   'assist-p-sheets-location-safe-v1.js?v=20260912.1',
   'monthly-excel-polish-safe-v1.js?v=20260912.1'
