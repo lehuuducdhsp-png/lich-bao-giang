@@ -5,7 +5,7 @@
   if(root)root.LBGSchoolReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260927.1';
+  const VERSION='20260929.2';
   const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'};
   const TARGET_SEP='::LBG_SITE::';
   const PERIODS=5;
@@ -270,7 +270,7 @@
     try{const d=currentData&&currentData.key===txt(q('lbgSchoolSelect')?.value)&&currentData.mode===txt(q('lbgSchoolMode')?.value)?currentData:makeData();if(!root.ExcelJS||!root.saveAs)throw new Error('Thư viện xuất Excel chưa sẵn sàng.');const out=new root.ExcelJS.Workbook();addExcelSheet(out,d);const buf=await out.xlsx.writeBuffer();root.saveAs(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`LBG_TRUONG_${safeFile(d.school)}${d.site?`_${safeFile(d.site)}`:''}_${safeFile(d.ws.name)}_${safeFile(d.mode)}.xlsx`);if(typeof root.toast==='function')root.toast(`Đã xuất LBG ${d.label} • ${MODES[d.mode]||d.mode}.`)}catch(error){console.error(error);root.alert?.('Không xuất được LBG theo trường: '+(error?.message||String(error)))}finally{exportBusy=false;if(button){button.disabled=false;button.textContent=old||'⇩ Xuất Excel'}}
   }
   function install(){
-    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,canWholeSchool,refresh,renderCurrent,addExcelSheet,loadDailyReport};
+    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,storedGaForEntry,canonicalGaHistory,gaJoinKey,attachGa,canWholeSchool,refresh,renderCurrent,addExcelSheet,loadDailyReport};
   }
   return{VERSION,MODES,layoutSpec,classText,teacherCodeText,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,gaJoinKey,attachGa,loadDailyReport,install};
 });
