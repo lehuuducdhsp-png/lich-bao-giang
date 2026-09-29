@@ -2,14 +2,31 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.3');
+assert.equal(D.VERSION,'20260929.5');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
 assert.equal(D.formatDateTitle(date),'Thứ Ba, ngày 29/09/2026');
+
+const weekStart=new Date(2026,8,28,12);
+const sixDays=D.weekDates(weekStart,false);
+assert.deepEqual(sixDays.map(x=>[x.day,x.dateKey]),[
+  [2,'2026-09-28'],[3,'2026-09-29'],[4,'2026-09-30'],[5,'2026-10-01'],[6,'2026-10-02'],[7,'2026-10-03']
+],'Theo tuần mặc định phải tạo Thứ Hai đến Thứ Bảy');
+const sevenDays=D.weekDates(weekStart,true);
+assert.equal(sevenDays.length,7);
+assert.deepEqual([sevenDays[6].day,sevenDays[6].dateKey],[8,'2026-10-04'],'chỉ thêm Chủ Nhật khi TKB có dạy Chủ Nhật');
+assert.equal(D.sheetNameForDate(2,sixDays[0].date),'T2 28-09');
+assert.equal(D.sheetNameForDate(8,sevenDays[6].date),'CN 04-10');
 assert.deepEqual(D.DAILY_LAYOUT,{teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12},
   'bố cục phải là GV dọc + 5 tiết sáng + 5 tiết chiều + tổng ngày');
 const dailySource=require('fs').readFileSync('daily-report-v1.js','utf8');
+assert.match(dailySource,/Theo tuần/,'giao diện phải có chế độ Theo tuần');
+assert.match(dailySource,/LBG_THEO_TUAN_/,'phải có file Excel nguyên tuần');
+assert.match(dailySource,/for\(const day of d\.days\)addExcelSheet/,'Excel tuần phải tạo mỗi ngày một worksheet');
+assert.match(dailySource,/\.lbg-daily-controls \[hidden\]\{display:none!important\}/,'Ngày/Tuần không dùng phải ẩn thật để tiết kiệm chiều ngang');
+assert.match(dailySource,/grid-template-columns:minmax\(110px/,'desktop phải dùng lưới điều khiển gọn');
+assert.match(dailySource,/max-content max-content/,'Xem lịch và Xuất Excel phải nằm cạnh nhau khi đủ rộng');
 assert.match(dailySource,/BUỔI SÁNG/,'web phải có nhóm cột BUỔI SÁNG');
 assert.match(dailySource,/BUỔI CHIỀU/,'web phải có nhóm cột BUỔI CHIỀU');
 assert.match(dailySource,/B4:F4/,'Excel phải gộp 5 cột cho buổi sáng');
@@ -84,4 +101,4 @@ const summaryEvents=[
 ];
 assert.deepEqual(D.summarizeTeacher(summaryEvents,'TÂM',3),{main:1,plus:1,assist:1,total:3});
 
-console.log('OK daily report: GV rows, morning/afternoon colors, managed Khối/nhóm, GA/room and totals');
+console.log('OK daily report: day/week modes, one worksheet per day, GV rows, colors, managed groups, GA/room and totals');
