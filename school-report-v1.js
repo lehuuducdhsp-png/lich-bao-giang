@@ -17,6 +17,7 @@
   const safeFile=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'TRUONG';
   const mainCache=new WeakMap(),assistCache=new WeakMap();
   let installed=false,currentData=null,exportBusy=false;
+  let dailyLoadPromise=null;
 
   function layoutSpec(){return{...LAYOUT}}
   function classText(e){
@@ -169,6 +170,32 @@
   }
   const dayLabel=d=>Number(d)===8?'Chủ nhật':`Thứ ${Number(d)}`;
 
+  function loadDailyReport(){
+    if(root.LBGDailyReportV1){
+      try{root.LBGDailyReportV1.install?.();q('lbgDailyReportCard')?.scrollIntoView?.({behavior:'smooth',block:'start'})}catch{}
+      return Promise.resolve(root.LBGDailyReportV1);
+    }
+    if(dailyLoadPromise)return dailyLoadPromise;
+    dailyLoadPromise=new Promise((resolve,reject)=>{
+      const existing=q('lbgDailyReportV1ScriptLazy');
+      if(existing){
+        existing.addEventListener('load',()=>resolve(root.LBGDailyReportV1||null),{once:true});
+        existing.addEventListener('error',()=>reject(new Error('Không tải được Lịch báo giảng theo ngày.')),{once:true});
+        return;
+      }
+      const script=root.document.createElement('script');
+      script.id='lbgDailyReportV1ScriptLazy';script.src='daily-report-v1.js?v=20260929.2';script.async=false;
+      script.onload=()=>{try{root.LBGDailyReportV1?.install?.();q('lbgDailyReportCard')?.scrollIntoView?.({behavior:'smooth',block:'start'})}catch{}resolve(root.LBGDailyReportV1||null)};
+      script.onerror=()=>{dailyLoadPromise=null;reject(new Error('Không tải được Lịch báo giảng theo ngày.'))};
+      root.document.body.appendChild(script);
+    });
+    return dailyLoadPromise;
+  }
+  async function openDailyReport(){
+    const button=q('lbgDailyReportLaunch'),old=button?.textContent;if(button){button.disabled=true;button.textContent='Đang mở…'}
+    try{await loadDailyReport()}catch(error){root.alert?.(error?.message||String(error))}
+    finally{if(button){button.disabled=false;button.textContent=old||'📅 Lịch theo ngày'}}
+  }
   function style(){
     if(q('lbgSchoolReportCss'))return;const s=root.document.createElement('style');s.id='lbgSchoolReportCss';s.textContent=`
       #lbgSchoolReportCard{margin-top:18px}.lbg-school-controls{display:grid;grid-template-columns:minmax(280px,1.45fr) minmax(190px,.8fr) auto auto;gap:10px;align-items:end;margin-top:12px}.lbg-school-controls label{display:grid;gap:5px;font-size:12px;font-weight:800}.lbg-school-controls select{width:100%;padding:10px 11px;border:1px solid #eadfd8;border-radius:11px;background:#fff;color:#4b342b}.lbg-school-note{margin-top:10px;padding:9px 11px;border:1px solid #bfdbfe;border-radius:11px;background:#eff6ff;color:#1e40af;font-size:12px}.lbg-school-summary{margin:12px 0;padding:9px 11px;border:1px solid #d1fae5;border-radius:11px;background:#ecfdf5;color:#166534;font-size:12px}.lbg-school-preview .sheet{min-width:1020px}.lbg-school-preview .title{text-align:center}.lbg-school-preview .title h2,.lbg-school-preview .title h3{margin:3px 0}.lbg-school-preview table{width:100%;border-collapse:collapse;font-family:"Times New Roman",serif}.lbg-school-preview th,.lbg-school-preview td{border:1px solid #666;padding:6px;text-align:center;vertical-align:middle}.lbg-school-preview th,.lbg-school-preview .session,.lbg-school-preview .period-head{background:#f6c9ae;font-weight:800}.lbg-school-preview td{background:#dff5e4;min-width:120px}.lbg-school-preview .slot-line{display:block;margin:2px 0}.lbg-school-preview .slot-assist{color:#9a5b36;font-weight:800}.lbg-school-preview .foot{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;background:#b9e6a5;border:1px solid #666;border-top:0;font-family:"Times New Roman",serif;font-weight:800}.lbg-school-preview .wrap{overflow:auto}.lbg-school-empty{padding:18px;border:1px dashed #d8c2b5;border-radius:12px;text-align:center;color:#806b61;background:#fffaf7}@media(max-width:900px){.lbg-school-controls{grid-template-columns:1fr 1fr}.lbg-school-controls button{width:100%}}@media(max-width:620px){.lbg-school-controls{grid-template-columns:1fr}}
@@ -177,11 +204,11 @@
   function ensureCard(){
     if(q('lbgSchoolReportCard'))return q('lbgSchoolReportCard');
     const anchor=q('previewCard')||[...root.document.querySelectorAll('section.card')].find(x=>/Kiểm tra và lập báo giảng/i.test(txt(x.textContent)));if(!anchor?.parentNode)return null;
-    style();const card=root.document.createElement('section');card.id='lbgSchoolReportCard';card.className='card';card.innerHTML=`<div class="head"><div><h3>Lịch báo giảng theo trường</h3><p>Mỗi cơ sở/điểm dạy được tách riêng; trong lịch chỉ dùng mã GV.</p></div><span class="badge" id="lbgSchoolBadge">4 chế độ</span></div><div id="lbgSchoolPermission" class="lbg-school-note">Đang kiểm tra quyền xem lịch toàn trường…</div><div class="lbg-school-controls"><label>Trường / cơ sở<select id="lbgSchoolSelect" disabled><option value="">Chưa có dữ liệu</option></select></label><label>Cách hiển thị<select id="lbgSchoolMode" disabled><option value="class">Lớp</option><option value="teacher">Giáo viên</option><option value="teacher-class" selected>Giáo viên - lớp</option><option value="teacher-class-ga">Giáo viên - lớp - GA</option></select></label><button class="btn primary" id="lbgSchoolCheck" disabled>✓ Kiểm tra</button><button class="btn outline" id="lbgSchoolExport" disabled>⇩ Xuất Excel</button></div><div id="lbgSchoolSummary"></div><div id="lbgSchoolPreview" class="lbg-school-preview"><div class="lbg-school-empty">Chọn trường/cơ sở và nhấn Kiểm tra.</div></div>`;
+    style();const card=root.document.createElement('section');card.id='lbgSchoolReportCard';card.className='card';card.innerHTML=`<div class="head"><div><h3>Lịch báo giảng theo trường</h3><p>Mỗi cơ sở/điểm dạy được tách riêng; trong lịch chỉ dùng mã GV.</p></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn outline mini" id="lbgDailyReportLaunch" type="button">📅 Lịch theo ngày</button><span class="badge" id="lbgSchoolBadge">4 chế độ</span></div></div><div id="lbgSchoolPermission" class="lbg-school-note">Đang kiểm tra quyền xem lịch toàn trường…</div><div class="lbg-school-controls"><label>Trường / cơ sở<select id="lbgSchoolSelect" disabled><option value="">Chưa có dữ liệu</option></select></label><label>Cách hiển thị<select id="lbgSchoolMode" disabled><option value="class">Lớp</option><option value="teacher">Giáo viên</option><option value="teacher-class" selected>Giáo viên - lớp</option><option value="teacher-class-ga">Giáo viên - lớp - GA</option></select></label><button class="btn primary" id="lbgSchoolCheck" disabled>✓ Kiểm tra</button><button class="btn outline" id="lbgSchoolExport" disabled>⇩ Xuất Excel</button></div><div id="lbgSchoolSummary"></div><div id="lbgSchoolPreview" class="lbg-school-preview"><div class="lbg-school-empty">Chọn trường/cơ sở và nhấn Kiểm tra.</div></div>`;
     anchor.parentNode.insertBefore(card,anchor);bind();return card;
   }
   function bind(){
-    q('lbgSchoolCheck')?.addEventListener('click',renderCurrent);q('lbgSchoolExport')?.addEventListener('click',exportCurrent);
+    q('lbgSchoolCheck')?.addEventListener('click',renderCurrent);q('lbgSchoolExport')?.addEventListener('click',exportCurrent);q('lbgDailyReportLaunch')?.addEventListener('click',openDailyReport);
     q('lbgSchoolSelect')?.addEventListener('change',()=>{currentData=null;q('lbgSchoolExport').disabled=true});
     q('lbgSchoolMode')?.addEventListener('change',()=>{if(currentData)renderCurrent()});
     q('week')?.addEventListener('change',()=>{currentData=null;setTimeout(refresh,0)});
@@ -243,7 +270,7 @@
     try{const d=currentData&&currentData.key===txt(q('lbgSchoolSelect')?.value)&&currentData.mode===txt(q('lbgSchoolMode')?.value)?currentData:makeData();if(!root.ExcelJS||!root.saveAs)throw new Error('Thư viện xuất Excel chưa sẵn sàng.');const out=new root.ExcelJS.Workbook();addExcelSheet(out,d);const buf=await out.xlsx.writeBuffer();root.saveAs(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`LBG_TRUONG_${safeFile(d.school)}${d.site?`_${safeFile(d.site)}`:''}_${safeFile(d.ws.name)}_${safeFile(d.mode)}.xlsx`);if(typeof root.toast==='function')root.toast(`Đã xuất LBG ${d.label} • ${MODES[d.mode]||d.mode}.`)}catch(error){console.error(error);root.alert?.('Không xuất được LBG theo trường: '+(error?.message||String(error)))}finally{exportBusy=false;if(button){button.disabled=false;button.textContent=old||'⇩ Xuất Excel'}}
   }
   function install(){
-    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,canWholeSchool,refresh,renderCurrent,addExcelSheet};
+    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,canWholeSchool,refresh,renderCurrent,addExcelSheet,loadDailyReport};
   }
-  return{VERSION,MODES,layoutSpec,classText,teacherCodeText,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,gaJoinKey,attachGa,install};
+  return{VERSION,MODES,layoutSpec,classText,teacherCodeText,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,gaJoinKey,attachGa,loadDailyReport,install};
 });
