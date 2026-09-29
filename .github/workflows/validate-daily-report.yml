@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'daily-report-v1.js'
+      - 'school-report-v1.js'
       - 'patch-runtime-loader-v1.js'
       - 'tests/daily-report-v1.test.cjs'
       - 'tests/runtime-responsive-loader-v1.test.cjs'
@@ -28,5 +29,6 @@ jobs:
         run: node tests/daily-report-v1.test.cjs
       - name: Runtime contract
         run: |
-          grep -F "daily-report-v1.js?v=20260929.2" patch-runtime-loader-v1.js
+          grep -F "daily-report-v1.js?v=20260929.2" school-report-v1.js
+          if grep -F "daily-report-v1.js?v=20260929.2" patch-runtime-loader-v1.js; then echo "Daily report must stay lazy"; exit 1; fi
           node tests/runtime-responsive-loader-v1.test.cjs
