@@ -49,17 +49,15 @@ assert.deepEqual(
   ['TÂM','ĐỨC'],
   'chọn giáo viên phải giữ đúng danh sách người dùng chọn'
 );
+const group={id:'g1',name:'KHỐI A',members:[{teacher_code:'TÂM'},{teacher_code:'ĐỨC'},{teacher_code:'KHÔNG-CÓ'}]};
 assert.deepEqual(
-  D.resolveScopeCodes('grade',{teachers,events,day:3,grade:3}).sort(),
-  ['LINH','THANH'],
-  'Khối 3 chỉ chọn GV thực sự dạy khối 3 trong ngày'
-);
-const group={id:'g1',members:[{teacher_code:'TÂM'},{teacher_code:'ĐỨC'},{teacher_code:'KHÔNG-CÓ'}]};
-assert.deepEqual(
-  D.resolveScopeCodes('group',{teachers,events,day:3,group}),
+  D.resolveScopeCodes('group',{teachers,group}),
   ['TÂM','ĐỨC'],
-  'nhóm phải giao với danh sách GV khả dụng trong tuần'
+  'khối / nhóm phải lấy đúng thành viên đã quản lý và giao với GV khả dụng trong tuần'
 );
+assert.doesNotMatch(dailySource,/<option value="grade">/,'không được tạo scope Khối lớp giả');
+assert.doesNotMatch(dailySource,/\[1,2,3,4,5\]\.map/,'không được hard-code Khối 1–5');
+assert.match(dailySource,/report_picker_groups/,'khối / nhóm phải lấy từ dữ liệu quản lý hiện có');
 
 const slots=D.buildDailySlots(events,['TÂM','THANH','LINH'],3);
 assert.equal(slots.get('TÂM|Sáng|1').length,1);
@@ -81,4 +79,4 @@ const summaryEvents=[
 ];
 assert.deepEqual(D.summarizeTeacher(summaryEvents,'TÂM',3),{main:1,plus:1,assist:1,total:3});
 
-console.log('OK daily report: GV rows, T1-T5 morning/afternoon columns, two session colors, scopes, GA/room and totals');
+console.log('OK daily report: GV rows, morning/afternoon colors, managed Khối/nhóm, GA/room and totals');
