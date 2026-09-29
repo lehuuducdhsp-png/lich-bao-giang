@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.5';
+  const VERSION='20260929.12';
   const PERIODS=5;
   const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -14,7 +14,7 @@
   const q=id=>root.document?.getElementById(id)||null;
   const safeFile=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'NGAY';
   const dayNames={2:'Thứ Hai',3:'Thứ Ba',4:'Thứ Tư',5:'Thứ Năm',6:'Thứ Sáu',7:'Thứ Bảy',8:'Chủ Nhật'};
-  let installed=false,currentData=null,groups=[],groupsLoaded=false,exportBusy=false;
+  let installed=false,currentData=null,groups=[],groupsLoaded=false,exportBusy=false,pngExportBusy=false,pngModulePromise=null;
   const manualSelected=new Set(),rawEventCache=new WeakMap();
 
   function dateFromKey(value){
@@ -188,13 +188,23 @@
     const rows=eventsForTeacherDay(events,code,day);
     return{main:rows.filter(e=>!e.isAssist&&!e.isPlus).length,plus:rows.filter(e=>e.isPlus).length,assist:rows.filter(e=>e.isAssist).length,total:rows.length};
   }
-  function canView(){const a=root.LBGAccess;return Boolean(a&&(a.isOwner?.()||a.canReviewAllReports?.()))}
+  function authOwner(){try{return Boolean(root.LBGAuth?.isOwner?.())}catch{return false}}
+  function accessReady(){return Boolean(root.LBGAccess?.context)}
+  function canView(){
+    const a=root.LBGAccess;
+    if(accessReady())return Boolean(a?.isOwner?.()||a?.canReviewAllReports?.());
+    return authOwner()
+  }
+  function setControlsEnabled(enabled){
+    for(const id of ['lbgDailyRangeMode','lbgDailyDate','lbgDailyWeek','lbgDailyScope','lbgDailyScopeTarget','lbgDailyMode','lbgDailyView'])if(q(id))q(id).disabled=!enabled;
+    if(!enabled){if(q('lbgDailyExport'))q('lbgDailyExport').disabled=true;setPngEnabled(false,'Đang chờ xác nhận quyền xem lịch.')}
+  }
 
   async function loadGroups(){
     if(groupsLoaded)return groups;
-    const api=root.LBGAuth;if(!api?.client)return[];
+    const api=root.LBGAuth;if(!api?.client||!api?.profile)return[];
     try{const {data,error}=await api.client.rpc('report_picker_groups');if(error)throw error;groups=Array.isArray(data)?data:[];groups.sort((a,b)=>txt(a?.name).localeCompare(txt(b?.name),'vi'));groupsLoaded=true;return groups}
-    catch(error){console.warn('LBG daily groups:',error);groups=[];groupsLoaded=true;return[]}
+    catch(error){console.warn('LBG daily groups:',error);groups=[];groupsLoaded=false;return[]}
   }
   function defaultDate(){
     const today=new Date(),b=book();
@@ -204,7 +214,7 @@
   function ensureStyle(){
     if(q('lbgDailyReportCss'))return;
     const s=root.document.createElement('style');s.id='lbgDailyReportCss';s.textContent=`
-      #lbgDailyReportCard{margin-top:18px}.lbg-daily-controls{display:grid;grid-template-columns:minmax(110px,.55fr) minmax(150px,.8fr) minmax(118px,.58fr) minmax(150px,.78fr) minmax(105px,.5fr) max-content max-content;gap:8px;align-items:end;margin-top:12px}
+      #lbgDailyReportCard{margin-top:18px}.lbg-daily-controls{display:grid;grid-template-columns:minmax(110px,.55fr) minmax(150px,.8fr) minmax(118px,.58fr) minmax(150px,.78fr) minmax(105px,.5fr) max-content max-content max-content;gap:8px;align-items:end;margin-top:12px}
       .lbg-daily-controls [hidden]{display:none!important}.lbg-daily-controls label{display:grid;gap:5px;font-size:12px;font-weight:800;min-width:0}.lbg-daily-controls input,.lbg-daily-controls select{width:100%;min-width:0;padding:10px 9px;border:1px solid #eadfd8;border-radius:11px;background:#fff;color:#4b342b}.lbg-daily-controls button{white-space:nowrap;padding-left:13px;padding-right:13px}
       .lbg-daily-picker{margin-top:10px;padding:10px;border:1px solid #eadfd8;border-radius:12px;background:#fffaf7}.lbg-daily-picker-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.lbg-daily-picker-head input{min-width:220px;flex:1;padding:8px 10px;border:1px solid #eadfd8;border-radius:10px}
       .lbg-daily-teachers{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;max-height:150px;overflow:auto}.lbg-daily-teacher{display:inline-flex;gap:6px;align-items:center;padding:6px 9px;border:1px solid #eadfd8;border-radius:999px;background:#fff;font-size:12px}.lbg-daily-teacher small{color:#806b61}.lbg-daily-note{margin-top:10px;padding:9px 11px;border:1px solid #bfdbfe;border-radius:11px;background:#eff6ff;color:#1e40af;font-size:12px}
@@ -227,6 +237,7 @@
         <label>Hiển thị<select id="lbgDailyMode"><option value="full">Đầy đủ</option><option value="compact">Gọn</option></select></label>
         <button class="btn primary" id="lbgDailyView">✓ Xem lịch</button>
         <button class="btn outline" id="lbgDailyExport" disabled>⇩ Xuất Excel</button>
+        <button class="btn outline" id="lbgDailyExportPng" disabled title="Giai đoạn 1: xuất PNG cho Theo ngày">🖼 Xuất PNG</button>
       </div>
       <div id="lbgDailyTeacherPicker" class="lbg-daily-picker"></div>
       <div id="lbgDailySummary"></div>
@@ -320,13 +331,13 @@
       if(d.range==='week'){
         const totals=d.days.reduce((acc,x)=>{const t=dailyTotals(x);acc.main+=t.main;acc.plus+=t.plus;acc.assist+=t.assist;return acc},{main:0,plus:0,assist:0});
         if(summary)summary.innerHTML=`<div class="lbg-daily-summary"><b>Tuần ${esc(d.ws.name)}</b> • ${d.days.length} ngày • ${esc(d.scopeTarget)} • ${d.teachers.length} giáo viên • ${totals.main} chính${totals.plus?` • ${totals.plus} Cộng (+)`:''}${totals.assist?` • ${totals.assist} Trợ (P)`:''}</div>`;
-        renderWeekDay(d,d.days[0]?.day);q('lbgDailyExport').disabled=!d.days.length;return
+        renderWeekDay(d,d.days[0]?.day);q('lbgDailyExport').disabled=!d.days.length;setPngEnabled(Boolean(d.days.length),'Xuất cả tuần thành 1 file ZIP, mỗi ngày 1 ảnh PNG.');return
       }
       const totals=dailyTotals(d);
       if(summary)summary.innerHTML=`<div class="lbg-daily-summary"><b>${esc(formatDateTitle(d.date))}</b> • Tuần ${esc(d.ws.name)} • ${esc(d.scopeTarget)} • ${d.teachers.length} giáo viên • ${totals.main} chính${totals.plus?` • ${totals.plus} Cộng (+)`:''}${totals.assist?` • ${totals.assist} Trợ (P)`:''}</div>`;
       preview.innerHTML=`<div class="lbg-daily-title"><h2>LỊCH BÁO GIẢNG THEO NGÀY</h2><p><b>${esc(formatDateTitle(d.date))}</b> • ${esc(d.scopeTarget)}</p></div>${tableHtml(d)}`;
-      q('lbgDailyExport').disabled=false;
-    }catch(error){currentData=null;q('lbgDailyExport').disabled=true;if(summary)summary.innerHTML='';preview.innerHTML=`<div class="lbg-daily-empty">${esc(error?.message||String(error))}</div>`}
+      q('lbgDailyExport').disabled=false;setPngEnabled(true,'Xuất toàn bộ bảng ngày hiện tại thành 1 ảnh PNG, không phụ thuộc phần đang cuộn.');
+    }catch(error){currentData=null;q('lbgDailyExport').disabled=true;setPngEnabled(false,'Chọn và xem lịch Theo ngày trước khi xuất PNG.');if(summary)summary.innerHTML='';preview.innerHTML=`<div class="lbg-daily-empty">${esc(error?.message||String(error))}</div>`}
   }
   function excelCellText(list,mode){return(list||[]).map(e=>eventLines(e,mode).join('\n')).join('\n\n')||'—'}
   function styleCell(cell,fill,bold=false,size=11){cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};cell.font={name:'Times New Roman',size,bold};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};cell.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}}}
@@ -381,6 +392,69 @@
       if(typeof root.toast==='function')root.toast(`Đã xuất lịch ${formatDateTitle(d.date)}.`);
     }catch(error){root.alert?.('Không xuất được lịch theo ngày/tuần: '+(error?.message||String(error)))}finally{exportBusy=false;if(b){b.disabled=false;b.textContent=old||'⇩ Xuất Excel'}}
   }
+  function setPngEnabled(enabled,title=''){
+    const b=q('lbgDailyExportPng');if(!b)return;b.disabled=!enabled;if(title)b.title=title
+  }
+  function loadPngExporter(){
+    if(root.LBGDailyPngExportV1)return Promise.resolve(root.LBGDailyPngExportV1);
+    if(pngModulePromise)return pngModulePromise;
+    pngModulePromise=new Promise((resolve,reject)=>{
+      const existing=q('lbgDailyPngExportV1Script');
+      const done=()=>root.LBGDailyPngExportV1?resolve(root.LBGDailyPngExportV1):reject(new Error('Bộ xuất PNG chưa khởi tạo được.'));
+      if(existing){
+        existing.addEventListener('load',done,{once:true});
+        existing.addEventListener('error',()=>reject(new Error('Không tải được bộ xuất PNG.')),{once:true});
+        return
+      }
+      const script=root.document.createElement('script');
+      script.id='lbgDailyPngExportV1Script';
+      script.src='daily-png-export-v1.js?v=20260929.6';
+      script.async=true;
+      script.onload=done;
+      script.onerror=()=>{pngModulePromise=null;reject(new Error('Không tải được bộ xuất PNG.'))};
+      root.document.body.appendChild(script)
+    });
+    return pngModulePromise
+  }
+  function pngDayNode(d){
+    const node=root.document.createElement('div');
+    node.className='lbg-png-day-source';
+    node.innerHTML=`<div class="lbg-daily-title"><h2>LỊCH BÁO GIẢNG THEO NGÀY</h2><p><b>${esc(formatDateTitle(d.date))}</b> • Tuần ${esc(d.ws.name)} • ${esc(d.scopeTarget)}</p></div>${tableHtml(d)}`;
+    return node
+  }
+  async function exportCurrentPng(){
+    if(pngExportBusy)return;
+    const b=q('lbgDailyExportPng'),old=b?.textContent;pngExportBusy=true;if(b){b.disabled=true;b.textContent='Đang tạo PNG…'}
+    try{
+      const d=currentData||makeData(),exporter=await loadPngExporter(),options={width:1800,preferredScale:2.5};
+      if(d.range==='week'){
+        if(!d.days?.length)throw new Error('Tuần này chưa có ngày để xuất PNG.');
+        const zip=await exporter.createZip();
+        for(let i=0;i<d.days.length;i++){
+          const day=d.days[i];if(b)b.textContent=`Đang tạo ${i+1}/${d.days.length}…`;
+          const result=await exporter.renderBlob(pngDayNode(day),options);
+          zip.file(`${safeFile(sheetNameForDate(day.day,day.date))}.png`,result.blob)
+        }
+        if(b)b.textContent='Đang đóng gói ZIP…';
+        const blob=await exporter.generateZip(zip),filename=`LBG_THEO_TUAN_${safeFile(d.ws.name)}_${safeFile(d.scopeTarget)}.zip`;
+        exporter.downloadBlob(blob,filename);
+        if(typeof root.toast==='function')root.toast(`Đã xuất ${d.days.length} ảnh PNG của tuần ${d.ws.name} trong 1 file ZIP.`);
+        return
+      }
+      const filename=`LBG_THEO_NGAY_${safeFile(d.dateKey)}_${safeFile(d.scopeTarget)}.png`;
+      const result=await exporter.exportElement(pngDayNode(d),filename,options);
+      if(typeof root.toast==='function')root.toast(`Đã xuất PNG ${formatDateTitle(d.date)} • ${Math.round(result.width*result.scale)}×${Math.round(result.height*result.scale)} px.`)
+    }catch(error){
+      console.error('LBG PNG:',error);root.alert?.('Không xuất được PNG: '+(error?.message||String(error)))
+    }finally{
+      pngExportBusy=false;
+      if(b){
+        b.textContent=old||'🖼 Xuất PNG';
+        const ready=Boolean(currentData&&(currentData.range==='day'||currentData.range==='week'));
+        setPngEnabled(ready,currentData?.range==='week'?'Xuất cả tuần thành 1 file ZIP, mỗi ngày 1 ảnh PNG.':'Xuất toàn bộ bảng ngày hiện tại thành 1 ảnh PNG.')
+      }
+    }
+  }
   function syncRangeUi(){
     const range=currentRangeMode(),dateLabel=q('lbgDailyDateLabel'),weekLabel=q('lbgDailyWeekLabel');
     if(dateLabel)dateLabel.hidden=range==='week';if(weekLabel)weekLabel.hidden=range!=='week';
@@ -393,20 +467,30 @@
   }
   async function refresh(){
     ensureCard();const note=q('lbgDailyPermission'),date=q('lbgDailyDate');if(!note||!date)return;
-    if(!root.LBGAccess){note.textContent='Đang kiểm tra quyền xem lịch…';return}
-    if(!canView()){note.innerHTML='<b>Phạm vi bảo mật:</b> Lịch theo ngày/tuần nhiều giáo viên chỉ mở cho Chủ sở hữu hoặc tài khoản được quyền kiểm tra toàn bộ báo giảng.';['lbgDailyRangeMode','lbgDailyDate','lbgDailyWeek','lbgDailyScope','lbgDailyScopeTarget','lbgDailyMode','lbgDailyView'].forEach(id=>{if(q(id))q(id).disabled=true});return}
+    const auth=root.LBGAuth,access=root.LBGAccess;
+    if(!accessReady()&&!authOwner()){
+      setControlsEnabled(false);
+      note.textContent=auth?.profile?'Đang tải quyền xem lịch và danh sách Khối / nhóm…':'Đang kiểm tra quyền xem lịch…';
+      return
+    }
+    if(!canView()){
+      setControlsEnabled(false);
+      note.innerHTML='<b>Phạm vi bảo mật:</b> Lịch theo ngày/tuần nhiều giáo viên chỉ mở cho Chủ sở hữu hoặc tài khoản được quyền kiểm tra toàn bộ báo giảng.';
+      return
+    }
+    setControlsEnabled(true);
     if(!date.value)date.value=defaultDate();syncRangeUi();
     await loadGroups();
-    note.textContent=currentRangeMode()==='week'?'Chọn nguyên tuần, sau đó chọn Giáo viên hoặc Khối / nhóm một lần. Trên web chuyển ngày bằng các tab; khi xuất Excel, mỗi ngày là một sheet riêng trong cùng một file.':'Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần; bạn có thể tự chọn giáo viên hoặc chọn đúng Khối / nhóm đang được quản lý trong hệ thống.';
+    note.textContent=currentRangeMode()==='week'?'Chọn nguyên tuần, sau đó chọn Giáo viên hoặc Khối / nhóm một lần. Xuất Excel: mỗi ngày một sheet. Xuất PNG: tải 1 file ZIP, mỗi ngày là 1 ảnh PNG riêng.':'Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần; bạn có thể tự chọn giáo viên hoặc chọn đúng Khối / nhóm đang được quản lý trong hệ thống. Sau khi Xem lịch, có thể xuất toàn bộ bảng thành 1 ảnh PNG.';
     try{const ctx=currentContext();renderTeacherPicker(ctx)}catch(error){q('lbgDailyTeacherPicker').innerHTML=`<div class="lbg-daily-empty">${esc(error?.message||String(error))}</div>`}
   }
   function bind(){
-    q('lbgDailyView').onclick=renderCurrent;q('lbgDailyExport').onclick=exportCurrent;
-    q('lbgDailyRangeMode').onchange=()=>{currentData=null;refresh()};
-    q('lbgDailyDate').onchange=()=>{currentData=null;refresh()};
-    q('lbgDailyWeek').onchange=()=>{currentData=null;refresh()};
-    q('lbgDailyScope').onchange=()=>{currentData=null;try{renderTeacherPicker(currentContext())}catch{}};
-    q('lbgDailyScopeTarget').onchange=()=>{currentData=null};
+    q('lbgDailyView').onclick=renderCurrent;q('lbgDailyExport').onclick=exportCurrent;q('lbgDailyExportPng').onclick=exportCurrentPng;
+    q('lbgDailyRangeMode').onchange=()=>{currentData=null;setPngEnabled(false,'Hãy bấm Xem lịch trước khi xuất PNG.');refresh()};
+    q('lbgDailyDate').onchange=()=>{currentData=null;setPngEnabled(false,'Hãy bấm Xem lịch trước khi xuất PNG.');refresh()};
+    q('lbgDailyWeek').onchange=()=>{currentData=null;setPngEnabled(false,'Hãy bấm Xem lịch trước khi xuất PNG.');refresh()};
+    q('lbgDailyScope').onchange=()=>{currentData=null;setPngEnabled(false,'Hãy bấm Xem lịch trước khi xuất PNG.');try{renderTeacherPicker(currentContext())}catch{}};
+    q('lbgDailyScopeTarget').onchange=()=>{currentData=null;setPngEnabled(false,'Hãy bấm Xem lịch trước khi xuất PNG.')};
     q('lbgDailyMode').onchange=()=>{if(currentData)renderCurrent()};
     q('week')?.addEventListener('change',()=>{const selected=selectedWeekName(),weekly=q('lbgDailyWeek');if(weekly&&[...weekly.options].some(o=>o.value===selected))weekly.value=selected;if(!q('lbgDailyDate').value)q('lbgDailyDate').value=defaultDate()});
   }
@@ -415,7 +499,8 @@
     const start=()=>{ensureCard();refresh()};start();
     root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));
     root.document.addEventListener('lbg-runtime-ready',()=>setTimeout(refresh,0));
+    try{root.LBGAuth?.onReady?.(()=>setTimeout(refresh,0))}catch{}
     return true;
   }
-  return{VERSION,PERIODS,DAILY_LAYOUT,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,weekDates,sheetNameForDate,availableWeeks,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,schoolText,eventLines,summarizeTeacher,install};
+  return{VERSION,PERIODS,DAILY_LAYOUT,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,weekDates,sheetNameForDate,availableWeeks,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,schoolText,eventLines,summarizeTeacher,authOwner,accessReady,canView,loadPngExporter,install};
 });
