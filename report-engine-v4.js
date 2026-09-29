@@ -28,10 +28,40 @@
   function reportTotals(a){const main=Number(a?.total)||0,plus=reportRules()?.scanPlus(worksheet(a?.sheet)||currentWorksheet(),a?.code)||0;return reportRules()?.totals(main,plus)||{main,plus,total:main+plus}}
   function reportTotalText(a){const t=reportTotals(a);return reportRules()?.totalText(t.main,t.plus)||(t.plus?`TỔNG: ${t.main} tiết + ${t.plus} tiết = ${t.total} tiết`:`TỔNG: ${t.main} tiết`)}
 
+  function displayLines(value){
+    return txt(value).replace(/<br\s*\/?\s*>/gi,'\n').split(/\n+/).map(x=>txt(x).replace(/^\s*[+•-]\s*/,'').replace(/\s+/g,' ')).filter(Boolean)
+  }
+  function isThuyLuong(value){return /(^|\b)THUY LUONG(?:\b|$)/.test(fold(value))}
+  function isDailyLocationNoise(line){
+    const f=fold(line),hasClass=/\d\s*\/\s*\d/.test(line);
+    if(!f)return true;
+    if(/^LAI AN\s*:/.test(f)&&hasClass)return true;
+    if(/^TIEN NON\b/.test(f)&&hasClass)return true;
+    if(/^PHU THANH\s*:/.test(f)&&hasClass)return true;
+    if(/CON LAI LA CO SO CHINH/.test(f))return true;
+    if(/13\s+14\s+23\s+24\s+33\s+34\s+43\s+44\s+54\s+55/.test(f)&&/CO SO LE/.test(f))return true;
+    if(/THANH LAM BO/.test(f)&&/DUONG MONG/.test(f)&&/KHOI/.test(f))return true;
+    if(/BUOI SANG/.test(f)&&/7H?\s*15/.test(f))return true;
+    if(/BUOI CHIEU/.test(f)&&/13H?\s*30/.test(f))return true;
+    return false
+  }
+  function cleanDailySiteText(value){return displayLines(value).filter(line=>!isDailyLocationNoise(line)).join(' • ')}
+  function displaySchoolName(value){return isThuyLuong(value)?'THỦY LƯƠNG':txt(value)}
+  function dailyLocationText(e){
+    const rawSchool=txt(e?.schoolName||e?.school),schoolName=displaySchoolName(rawSchool);
+    if(isThuyLuong(rawSchool))return schoolName;
+    let siteDisplay=cleanDailySiteText(e?.siteDisplay||e?.siteName);
+    if(!siteDisplay){
+      const labelLines=displayLines(e?.locationLabel).filter(line=>fold(line)!==fold(rawSchool)&&fold(line)!==fold(schoolName)&&!isDailyLocationNoise(line));
+      siteDisplay=labelLines.join(' • ')
+    }
+    return[schoolName,siteDisplay].filter(Boolean).join(' • ')||schoolName
+  }
   function locOf(e){
-    const schoolName=txt(e?.schoolName||e?.school),siteDisplay=txt(e?.siteDisplay||e?.siteName),label=txt(e?.locationLabel)||(siteDisplay?`${schoolName}\n${siteDisplay}`:schoolName);
-    const key=txt(e?.locationKey)||`${fold(schoolName)}|${fold(siteDisplay)}`;
-    return{key,schoolName,siteDisplay,label,legacySchool:txt(e?.school||schoolName)}
+    const rawSchool=txt(e?.schoolName||e?.school),rawSite=txt(e?.siteDisplay||e?.siteName),rawLabel=txt(e?.locationLabel)||(rawSite?`${rawSchool}\n${rawSite}`:rawSchool);
+    const key=txt(e?.locationKey)||`${fold(rawSchool)}|${fold(rawSite)}`;
+    const schoolName=displaySchoolName(rawSchool),siteDisplay=isThuyLuong(rawSchool)?'':rawSite,label=isThuyLuong(rawSchool)?schoolName:rawLabel;
+    return{key,schoolName,siteDisplay,label,legacySchool:txt(e?.school||rawSchool)}
   }
   function locationList(a,d,s){
     const map=new Map();
@@ -187,7 +217,7 @@
   function trackButtons(event){const b=event.target?.closest?.('button');if(!b)return;if(b.id==='multiClearAll')setTimeout(()=>selection.clear(),0);if(b.id==='multiSelectAll')setTimeout(()=>{selection.clear();readTeachers(currentWorksheet(),false).forEach(x=>selection.set(txt(x.code),{code:txt(x.code),name:txt(x.name||x.teacherName||x.code)}))},0)}
   function compareLabel(){const b=q('compare');if(!b)return;const label='⇄ So sánh phiên bản TKB',title='So sánh lịch của cùng một giáo viên giữa phiên bản TKB đang dùng và một phiên bản TKB khác.';if(b.textContent!==label)b.textContent=label;if(b.title!==title)b.title=title;if(b.dataset.lbgR4!=='1')b.dataset.lbgR4='1'}
   function weeklyDays(){const select=q('weeklyOffDay');if(!select)return;const weekName=q('weeklyStatsWeek')?.value||q('week')?.value,ws=worksheet(weekName);if(!ws)return;const ds=daysForWorksheet(ws),start=typeof startDate==='function'?startDate(ws.name):null,old=Number(select.value),sig=ds.join(',')+'|'+ws.name;if(select.dataset.lbgR4Days===sig)return;select.dataset.lbgR4Days=sig;select.innerHTML=ds.map(d=>{let label=dayLabel(d);if(start instanceof Date&&!Number.isNaN(start.getTime())){const date=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);date.setDate(date.getDate()+(d===8?6:d-2));label+=` – ${date.toLocaleDateString('vi-VN')}`}return`<option value="${d}">${escHtml(label)}</option>`}).join('');if(ds.includes(old))select.value=String(old);select.disabled=false}
-  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText,slotEntries,reportTotals,reportTotalText};compareLabel();weeklyDays()}
+  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText,slotEntries,reportTotals,reportTotalText,displaySchoolName,cleanDailySiteText,dailyLocationText};compareLabel();weeklyDays()}
   function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})}
 
   document.addEventListener('change',event=>{trackSelection(event);if(event.target?.id==='week'){selection.clear();sundayCache.delete(currentWorksheet());setTimeout(queue,40)}if(event.target?.id==='weeklyStatsWeek')setTimeout(()=>{const s=q('weeklyOffDay');if(s)s.dataset.lbgR4Days='';weeklyDays()},20)},true);
