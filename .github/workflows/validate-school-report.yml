@@ -25,7 +25,7 @@ jobs:
         run: node tests/school-report-v1.test.cjs
       - name: Loader and safety contracts
         run: |
-          grep -F 'school-report-v1.js?v=20260929.11' patch-runtime-loader-v1.js
+          grep -F 'school-report-v1.js?v=20260929.12' patch-runtime-loader-v1.js
           grep -F "canReviewAllReports" school-report-v1.js
           grep -F "LBGAllTeachers" school-report-v1.js
           grep -F "LBGAssistPPreviewSafe" school-report-v1.js
