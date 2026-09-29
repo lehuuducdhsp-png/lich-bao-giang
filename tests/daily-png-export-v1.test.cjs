@@ -3,14 +3,14 @@ const assert=require('node:assert/strict');
 const fs=require('fs');
 const P=require('../daily-png-export-v1.js');
 
-assert.equal(P.VERSION,'20260929.4');
-assert.equal(P.DEFAULT_WIDTH,2600,'PNG phải bớt ngang để dễ xem trên điện thoại nhưng vẫn đủ toàn bộ cột');
+assert.equal(P.VERSION,'20260929.5');
+assert.equal(P.DEFAULT_WIDTH,2100,'PNG bản cuối phải giảm mạnh chiều ngang để dễ xem hơn trên điện thoại');
 assert.equal(P.HTML2CANVAS_URL,'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js','thư viện ảnh phải pin version, không dùng latest');
 assert.equal(P.JSZIP_URL,'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js','JSZip phải pin version, không dùng latest');
 assert.equal(P.safeName('KHỐI 1 / 29-09'),'KHOI_1_29-09');
-assert.equal(P.chooseScale(2600,1400,2.5),2.5,'ảnh ngày bình thường vẫn giữ scale 2.5 để nét');
-assert.ok(P.chooseScale(2600,10000,2.5)<2.5,'ảnh quá cao phải tự hạ scale để tránh vỡ bộ nhớ trên điện thoại');
-assert.ok(P.chooseScale(2600,10000,2.5)>=1);
+assert.equal(P.chooseScale(2100,1700,2.5),2.5,'ảnh bản cuối vẫn giữ scale 2.5 để nét');
+assert.ok(P.chooseScale(2100,12000,2.5)<2.5,'ảnh quá cao phải tự hạ scale để tránh vỡ bộ nhớ trên điện thoại');
+assert.ok(P.chooseScale(2100,12000,2.5)>=1);
 
 const source=fs.readFileSync('daily-png-export-v1.js','utf8');
 assert.match(source,/cloneNode\(true\)/,'phải chụp từ bản sao DOM, không sửa bảng người dùng đang xem');
@@ -18,10 +18,10 @@ assert.match(source,/left='-100000px'/,'bản sao xuất ảnh phải nằm ngo�
 assert.match(source,/overflow:visible!important/,'bảng xuất PNG phải bỏ vùng cuộn để lấy đủ cột');
 assert.match(source,/position:static!important/,'sticky header/cột phải được tắt trong ảnh');
 assert.match(source,/table-layout:fixed!important/,'ảnh phải chia cột ổn định');
-assert.match(source,/width:9%!important/,'cột GV trong PNG phải thu còn 9%');
-assert.match(source,/width:7%!important/,'cột TỔNG trong PNG phải thu còn 7%');
+assert.match(source,/width:8%!important/,'cột GV bản cuối phải thu còn 8%');
+assert.match(source,/width:6%!important/,'cột TỔNG bản cuối phải thu còn 6%');
 assert.match(source,/el\.textContent='TỔNG'/,'PNG phải đổi TỔNG NGÀY thành TỔNG');
-assert.match(source,/font-size:16px!important/,'chữ trong ô phải cân bằng giữa độ rõ và khả năng hiển thị đủ tên trường');
+assert.match(source,/font-size:15px!important/,'chữ ô tiết bản cuối phải vừa đủ để wrap nhiều hơn nhưng vẫn rõ');
 assert.match(source,/font-size:40px!important/,'tiêu đề PNG phải rõ hơn');
 assert.match(source,/white-space:normal!important/,'ô PNG phải cho phép xuống dòng');
 assert.match(source,/overflow-wrap:anywhere!important/,'tên trường dài phải có điểm ngắt dòng an toàn');
@@ -34,4 +34,4 @@ assert.match(source,/compression:'STORE'/,'PNG đã nén nên ZIP phải ưu ti�
 assert.doesNotMatch(source,/localStorage|indexedDB|document\.cookie/,'bộ xuất PNG không được chạm dữ liệu người dùng');
 assert.doesNotMatch(source,/setInterval\s*\(/,'bộ xuất PNG không được thêm polling');
 
-console.log('OK daily PNG V2: phone-friendly 2600px layout, full wrapping, narrow GV/TỔNG, lazy ZIP, memory-safe scale');
+console.log('OK daily PNG final: 2100px portrait-ish layout, full wrapping, 8% GV, 6% total, lazy ZIP');
