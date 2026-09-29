@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - 'daily-report-v1.js'
+      - 'daily-png-export-v1.js'
       - 'report-engine-v4.js'
       - 'school-report-v1.js'
       - 'patch-runtime-loader-v1.js'
       - 'tests/daily-report-v1.test.cjs'
+      - 'tests/daily-png-export-v1.test.cjs'
       - 'tests/location-display-cleanup.test.cjs'
       - 'tests/runtime-responsive-loader-v1.test.cjs'
       - '.github/workflows/validate-daily-report.yml'
@@ -26,15 +28,19 @@ jobs:
       - name: Syntax
         run: |
           node --check daily-report-v1.js
+          node --check daily-png-export-v1.js
           node --check report-engine-v4.js
           node --check tests/daily-report-v1.test.cjs
+          node --check tests/daily-png-export-v1.test.cjs
           node --check tests/location-display-cleanup.test.cjs
       - name: Daily report regression
         run: |
           node tests/daily-report-v1.test.cjs
+          node tests/daily-png-export-v1.test.cjs
           node tests/location-display-cleanup.test.cjs
       - name: Runtime contract
         run: |
-          grep -F "daily-report-v1.js?v=20260929.5" school-report-v1.js
-          if grep -F "daily-report-v1.js?v=20260929.3" patch-runtime-loader-v1.js; then echo "Daily report must stay lazy"; exit 1; fi
+          grep -F "daily-report-v1.js?v=20260929.6" school-report-v1.js
+          if grep -F "daily-report-v1.js?v=" patch-runtime-loader-v1.js; then echo "Daily report must stay lazy"; exit 1; fi
+          if grep -F "daily-png-export-v1.js?v=" patch-runtime-loader-v1.js app-runtime-v1.js; then echo "PNG exporter must stay click-lazy"; exit 1; fi
           node tests/runtime-responsive-loader-v1.test.cjs
