@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.6');
+assert.equal(D.VERSION,'20260929.7');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
@@ -28,6 +28,21 @@ assert.match(dailySource,/\.lbg-daily-controls \[hidden\]\{display:none!importan
 assert.match(dailySource,/grid-template-columns:minmax\(110px/,'desktop phải dùng lưới điều khiển gọn');
 assert.match(dailySource,/max-content max-content/,'Xem lịch và Xuất Excel phải nằm cạnh nhau khi đủ rộng');
 assert.match(dailySource,/id="lbgDailyExportPng"/,'phải có nút Xuất PNG');
+const oldAuth=globalThis.LBGAuth,oldAccess=globalThis.LBGAccess;
+globalThis.LBGAuth={isOwner(){return true},profile:{role:'owner'}};
+delete globalThis.LBGAccess;
+assert.equal(D.authOwner(),true,'chủ sở hữu phải được nhận diện ngay từ Auth');
+assert.equal(D.accessReady(),false);
+assert.equal(D.canView(),true,'chủ sở hữu không được bị chặn trong lúc Access đang tải');
+globalThis.LBGAccess={context:{is_owner:false,can_review_all_reports:true},isOwner(){return false},canReviewAllReports(){return true}};
+assert.equal(D.accessReady(),true);
+assert.equal(D.canView(),true,'khi Access sẵn sàng phải dùng đúng quyền can_review_all_reports');
+globalThis.LBGAccess={context:{is_owner:false,can_review_all_reports:false},isOwner(){return false},canReviewAllReports(){return false}};
+assert.equal(D.canView(),false,'không được mở quyền nhiều GV cho tài khoản không có quyền');
+if(oldAuth===undefined)delete globalThis.LBGAuth;else globalThis.LBGAuth=oldAuth;
+if(oldAccess===undefined)delete globalThis.LBGAccess;else globalThis.LBGAccess=oldAccess;
+assert.match(dailySource,/LBGAuth\?\.onReady\?\.\(\(\)=>setTimeout\(refresh,0\)\)/,'module phải refresh lại khi Auth sẵn sàng');
+assert.match(dailySource,/groupsLoaded=false/,'lỗi tải nhóm không được cache rỗng vĩnh viễn');
 assert.match(dailySource,/daily-png-export-v1\.js\?v=20260929\.1/,'PNG exporter phải lazy-load từ module riêng');
 assert.match(dailySource,/if\(d\.range!==['"]day['"]\)/,'giai đoạn 1 chỉ cho phép xuất PNG Theo ngày');
 assert.match(dailySource,/width:2400,preferredScale:2/,'PNG ngày phải dùng khổ export cố định rõ nét');
