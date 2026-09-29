@@ -1,0 +1,32 @@
+name: Validate daily report
+
+on:
+  pull_request:
+    paths:
+      - 'daily-report-v1.js'
+      - 'patch-runtime-loader-v1.js'
+      - 'tests/daily-report-v1.test.cjs'
+      - 'tests/runtime-responsive-loader-v1.test.cjs'
+      - '.github/workflows/validate-daily-report.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check daily-report-v1.js
+          node --check tests/daily-report-v1.test.cjs
+      - name: Daily report regression
+        run: node tests/daily-report-v1.test.cjs
+      - name: Runtime contract
+        run: |
+          grep -F "daily-report-v1.js?v=20260929.1" patch-runtime-loader-v1.js
+          node tests/runtime-responsive-loader-v1.test.cjs
