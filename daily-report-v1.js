@@ -135,14 +135,9 @@
     for(const m of group?.members||[]){const code=txt(m?.teacher_code||m?.code).toUpperCase();if(!code||seen.has(code)||(allow.size&&!allow.has(code)))continue;seen.add(code);out.push(code)}
     return out;
   }
-  function resolveScopeCodes(scope,{teachers=[],events=[],day=0,selectedCodes=[],grade=0,group=null}={}){
+  function resolveScopeCodes(scope,{teachers=[],selectedCodes=[],group=null}={}){
     const available=new Set(teachers.map(x=>txt(x?.code).toUpperCase()).filter(Boolean));
     if(scope==='group')return groupCodes(group,available);
-    if(scope==='grade'){
-      const found=new Set();
-      for(const e of events||[])if(Number(e?.day)===Number(day)&&gradeOfEntry(e)===Number(grade)){const code=txt(e?.code).toUpperCase();if(available.has(code))found.add(code)}
-      return[...found];
-    }
     const seen=new Set(),out=[];
     for(const raw of selectedCodes||[]){const code=txt(raw).toUpperCase();if(code&&available.has(code)&&!seen.has(code)){seen.add(code);out.push(code)}}
     return out;
@@ -205,7 +200,7 @@
       <div id="lbgDailyPermission" class="lbg-daily-note">Đang kiểm tra quyền xem lịch…</div>
       <div class="lbg-daily-controls">
         <label>Ngày<input type="date" id="lbgDailyDate"></label>
-        <label>Phạm vi<select id="lbgDailyScope"><option value="teachers">Giáo viên</option><option value="grade">Khối lớp</option><option value="group">Nhóm</option></select></label>
+        <label>Phạm vi<select id="lbgDailyScope"><option value="teachers">Giáo viên</option><option value="group">Khối / nhóm</option></select></label>
         <label id="lbgDailyScopeTargetLabel">Chọn<select id="lbgDailyScopeTarget"><option value="">Chọn…</option></select></label>
         <label>Hiển thị<select id="lbgDailyMode"><option value="full">Đầy đủ</option><option value="compact">Gọn</option></select></label>
         <button class="btn primary" id="lbgDailyView">✓ Xem lịch</button>
@@ -237,25 +232,21 @@
       return;
     }
     box.hidden=true;label.hidden=false;
-    if(ctx.scope==='grade'){
-      label.firstChild.textContent='Khối lớp';target.innerHTML='<option value="">Chọn khối…</option>'+[1,2,3,4,5].map(n=>`<option value="${n}">Khối ${n}</option>`).join('');
-      return;
-    }
-    label.firstChild.textContent='Nhóm';target.innerHTML='<option value="">Chọn nhóm…</option>'+groups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)} (${(g.members||[]).filter(m=>txt(m?.teacher_code||m?.code)).length} GV)</option>`).join('');
+    label.firstChild.textContent='Khối / nhóm';
+    target.innerHTML='<option value="">Chọn khối / nhóm…</option>'+groups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)} (${(g.members||[]).filter(m=>txt(m?.teacher_code||m?.code)).length} GV)</option>`).join('');
   }
   function scopeCodes(ctx){
     const target=txt(q('lbgDailyScopeTarget')?.value);
-    if(ctx.scope==='grade'&&!target)throw new Error('Hãy chọn khối lớp.');
-    if(ctx.scope==='group'&&!target)throw new Error('Hãy chọn nhóm.');
+    if(ctx.scope==='group'&&!target)throw new Error('Hãy chọn khối / nhóm.');
     const group=ctx.scope==='group'?groups.find(g=>String(g.id)===target):null;
-    const codes=resolveScopeCodes(ctx.scope,{teachers:ctx.teachers,events:ctx.events,day:ctx.day,selectedCodes:[...manualSelected],grade:Number(target),group});
-    if(!codes.length)throw new Error(ctx.scope==='teachers'?'Hãy chọn ít nhất một giáo viên.':'Không có giáo viên phù hợp với phạm vi đã chọn trong tuần này.');
+    const codes=resolveScopeCodes(ctx.scope,{teachers:ctx.teachers,selectedCodes:[...manualSelected],group});
+    if(!codes.length)throw new Error(ctx.scope==='teachers'?'Hãy chọn ít nhất một giáo viên.':'Khối / nhóm này chưa có giáo viên khả dụng trong tuần này.');
     return codes;
   }
   function makeData(){
     if(!canView())throw new Error('Tài khoản này không có quyền xem lịch nhiều giáo viên.');
     const ctx=currentContext(),codes=scopeCodes(ctx),events=allEvents(ctx.ws,true),map=teacherMap(ctx.ws,events),teachers=codes.map(code=>map.get(code)||{code,name:code}),slots=buildDailySlots(events,codes,ctx.day),mode=txt(q('lbgDailyMode')?.value)||'full';
-    const scopeTarget=ctx.scope==='teachers'?`${teachers.length} giáo viên`:ctx.scope==='grade'?`Khối ${q('lbgDailyScopeTarget').value}`:txt(groups.find(g=>String(g.id)===q('lbgDailyScopeTarget').value)?.name);
+    const scopeTarget=ctx.scope==='teachers'?`${teachers.length} giáo viên`:txt(groups.find(g=>String(g.id)===q('lbgDailyScopeTarget').value)?.name);
     return{...ctx,events,codes,teacherMap:map,teachers,slots,mode,scopeTarget};
   }
   function renderEvent(e,mode){
@@ -335,7 +326,7 @@
     if(!canView()){note.innerHTML='<b>Phạm vi bảo mật:</b> Lịch theo ngày nhiều giáo viên chỉ mở cho Chủ sở hữu hoặc tài khoản được quyền kiểm tra toàn bộ báo giảng.';['lbgDailyDate','lbgDailyScope','lbgDailyScopeTarget','lbgDailyMode','lbgDailyView'].forEach(id=>{if(q(id))q(id).disabled=true});return}
     if(!date.value)date.value=defaultDate();
     await loadGroups();
-    note.textContent='Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần, sau đó có thể chọn giáo viên, khối lớp hoặc nhóm. Giáo viên chạy dọc bên trái; T1–T5 buổi sáng và T1–T5 buổi chiều chạy ngang. Sáng và chiều dùng hai màu riêng; cột GV được giữ cố định khi cuộn ngang.';
+    note.textContent='Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần; bạn có thể tự chọn giáo viên hoặc chọn đúng Khối / nhóm đang được quản lý trong hệ thống. Giáo viên chạy dọc bên trái; T1–T5 buổi sáng và T1–T5 buổi chiều chạy ngang. Sáng và chiều dùng hai màu riêng; cột GV được giữ cố định khi cuộn ngang.';
     try{const ctx=currentContext();renderTeacherPicker(ctx)}catch(error){q('lbgDailyTeacherPicker').innerHTML=`<div class="lbg-daily-empty">${esc(error?.message||String(error))}</div>`}
   }
   function bind(){
