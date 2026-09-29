@@ -5,7 +5,7 @@
   if(root)root.LBGSchoolReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.5';
+  const VERSION='20260929.6';
   const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'};
   const TARGET_SEP='::LBG_SITE::';
   const PERIODS=5;
@@ -184,7 +184,7 @@
         return;
       }
       const script=root.document.createElement('script');
-      script.id='lbgDailyReportV1ScriptLazy';script.src='daily-report-v1.js?v=20260929.6';script.async=false;
+      script.id='lbgDailyReportV1ScriptLazy';script.src='daily-report-v1.js?v=20260929.7';script.async=false;
       script.onload=()=>{try{root.LBGDailyReportV1?.install?.();q('lbgDailyReportCard')?.scrollIntoView?.({behavior:'smooth',block:'start'})}catch{}resolve(root.LBGDailyReportV1||null)};
       script.onerror=()=>{dailyLoadPromise=null;reject(new Error('Không tải được Lịch báo giảng theo ngày.'))};
       root.document.body.appendChild(script);
