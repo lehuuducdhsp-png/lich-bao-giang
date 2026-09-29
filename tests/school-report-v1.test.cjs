@@ -1,8 +1,9 @@
 'use strict';
 const assert=require('node:assert/strict');
+const fs=require('fs');
 const api=require('../school-report-v1.js');
 
-assert.equal(api.VERSION,'20260927.1');
+assert.equal(api.VERSION,'20260929.2');
 assert.deepEqual(api.MODES,{class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'});
 assert.deepEqual(api.layoutSpec(),{headerRow:4,morningStart:5,afternoonStart:10,footerRow:15,periods:5},'web và Excel phải chỉ có đúng 5 hàng tiết mỗi buổi, không còn hàng Tiết dư');
 
@@ -56,4 +57,7 @@ assert.match(footer,/2 Trợ \(P\)/);
 assert.match(footer,/Trường: PHÚ BÌNH • Cơ sở 1: PHÚ HẬU CŨ/);
 assert.doesNotMatch(footer,/Giáo viên:/,'LBG theo trường phải ghi Trường thay cho Giáo viên');
 
+const source=fs.readFileSync('school-report-v1.js','utf8');
+assert.match(source,/root\.LBGSchoolReportV1=\{[^}]*attachGa[^}]*\}/s,'browser runtime API phải giữ attachGa cho Lịch theo ngày');
+assert.match(source,/root\.LBGSchoolReportV1=\{[^}]*storedGaForEntry[^}]*canonicalGaHistory[^}]*attachGa[^}]*\}/s,'bridge GA phải giữ cả GA đã lưu và lịch sử GA');
 console.log('OK school report: compact 5-row sessions, split sites, teacher codes only, P labels, no slot dedupe, school footer');
