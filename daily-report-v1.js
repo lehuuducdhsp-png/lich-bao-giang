@@ -7,6 +7,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   const VERSION='20260929.2';
   const PERIODS=5;
+  const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -352,5 +353,5 @@
     root.document.addEventListener('lbg-runtime-ready',()=>setTimeout(refresh,0));
     return true;
   }
-  return{VERSION,PERIODS,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,eventLines,summarizeTeacher,install};
+  return{VERSION,PERIODS,DAILY_LAYOUT,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,eventLines,summarizeTeacher,install};
 });
