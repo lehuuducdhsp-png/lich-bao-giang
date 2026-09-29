@@ -2,11 +2,20 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.1');
+assert.equal(D.VERSION,'20260929.2');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
 assert.equal(D.formatDateTitle(date),'Thứ Ba, ngày 29/09/2026');
+assert.deepEqual(D.DAILY_LAYOUT,{teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12},
+  'bố cục phải là GV dọc + 5 tiết sáng + 5 tiết chiều + tổng ngày');
+const dailySource=require('fs').readFileSync('daily-report-v1.js','utf8');
+assert.match(dailySource,/BUỔI SÁNG/,'web phải có nhóm cột BUỔI SÁNG');
+assert.match(dailySource,/BUỔI CHIỀU/,'web phải có nhóm cột BUỔI CHIỀU');
+assert.match(dailySource,/B4:F4/,'Excel phải gộp 5 cột cho buổi sáng');
+assert.match(dailySource,/G4:K4/,'Excel phải gộp 5 cột cho buổi chiều');
+assert.match(dailySource,/morning-head/,'buổi sáng phải có theme riêng');
+assert.match(dailySource,/afternoon-head/,'buổi chiều phải có theme riêng');
 
 const book={worksheets:[
   {name:'21T9'},{name:'28T9'},{name:'5T10'}
@@ -72,4 +81,4 @@ const summaryEvents=[
 ];
 assert.deepEqual(D.summarizeTeacher(summaryEvents,'TÂM',3),{main:1,plus:1,assist:1,total:3});
 
-console.log('OK daily report: 29/9 -> 28T9, horizontal teacher scopes, grade/group filtering, GA/room display, daily totals');
+console.log('OK daily report: GV rows, T1-T5 morning/afternoon columns, two session colors, scopes, GA/room and totals');
