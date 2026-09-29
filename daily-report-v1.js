@@ -14,7 +14,7 @@
   const safeFile=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'NGAY';
   const dayNames={2:'Thứ Hai',3:'Thứ Ba',4:'Thứ Tư',5:'Thứ Năm',6:'Thứ Sáu',7:'Thứ Bảy',8:'Chủ Nhật'};
   let installed=false,currentData=null,groups=[],groupsLoaded=false,exportBusy=false;
-  const manualSelected=new Set();
+  const manualSelected=new Set(),rawEventCache=new WeakMap();
 
   function dateFromKey(value){
     const m=txt(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -108,18 +108,23 @@
     }
     return out;
   }
-  function allEvents(ws){
+  function rawEvents(ws){
+    if(rawEventCache.has(ws))return rawEventCache.get(ws);
     const map=new Map();
     for(const e of [...mainEvents(ws),...plusEvents(ws),...assistEvents(ws)]){
       const key=txt(e?.address)||`${txt(e?.code)}|${Number(e?.day)}|${txt(e?.session)}|${Number(e?.teachingPeriod??e?.period)}|${txt(e?.classRaw||e?.className)}|${e?.isAssist?'P':e?.isPlus?'+':'T'}`;
       if(!map.has(key))map.set(key,e);
     }
-    const raw=[...map.values()],api=root.LBGSchoolReportV1;
+    const rows=[...map.values()];rawEventCache.set(ws,rows);return rows;
+  }
+  function allEvents(ws,attachGa=false){
+    const raw=rawEvents(ws);if(!attachGa)return raw;
+    const api=root.LBGSchoolReportV1;
     try{return typeof api?.attachGa==='function'?api.attachGa(ws,raw):raw}catch{return raw}
   }
-  function teacherMap(ws){
+  function teacherMap(ws,events=[]){
     const map=new Map(allTeachers(ws).map(x=>[x.code,x]));
-    for(const e of allEvents(ws)){const code=txt(e?.code).toUpperCase();if(code&&!map.has(code))map.set(code,{code,name:txt(e?.teacherName||code)})}
+    for(const e of events||[]){const code=txt(e?.code).toUpperCase();if(code&&!map.has(code))map.set(code,{code,name:txt(e?.teacherName||code)})}
     return map;
   }
   function groupCodes(group,available){
@@ -215,7 +220,7 @@
     const d=dateFromKey(q('lbgDailyDate')?.value);if(!d)throw new Error('Hãy chọn ngày hợp lệ.');
     const b=book();if(!b)throw new Error('Hãy mở một file TKB trước.');
     const found=findWeekForDate(b,d);if(!found)throw new Error(`Chưa có TKB chứa ngày ${d.toLocaleDateString('vi-VN')}.`);
-    const teachers=allTeachers(found.ws),events=allEvents(found.ws),scope=txt(q('lbgDailyScope')?.value)||'teachers';
+    const teachers=allTeachers(found.ws),events=allEvents(found.ws,false),scope=txt(q('lbgDailyScope')?.value)||'teachers';
     return{date:d,dateKey:dateKey(d),day:found.day,ws:found.ws,teachers,events,scope};
   }
   function renderTeacherPicker(ctx){
@@ -248,9 +253,9 @@
   }
   function makeData(){
     if(!canView())throw new Error('Tài khoản này không có quyền xem lịch nhiều giáo viên.');
-    const ctx=currentContext(),codes=scopeCodes(ctx),map=teacherMap(ctx.ws),teachers=codes.map(code=>map.get(code)||{code,name:code}),slots=buildDailySlots(ctx.events,codes,ctx.day),mode=txt(q('lbgDailyMode')?.value)||'full';
+    const ctx=currentContext(),codes=scopeCodes(ctx),events=allEvents(ctx.ws,true),map=teacherMap(ctx.ws,events),teachers=codes.map(code=>map.get(code)||{code,name:code}),slots=buildDailySlots(events,codes,ctx.day),mode=txt(q('lbgDailyMode')?.value)||'full';
     const scopeTarget=ctx.scope==='teachers'?`${teachers.length} giáo viên`:ctx.scope==='grade'?`Khối ${q('lbgDailyScopeTarget').value}`:txt(groups.find(g=>String(g.id)===q('lbgDailyScopeTarget').value)?.name);
-    return{...ctx,codes,teacherMap:map,teachers,slots,mode,scopeTarget};
+    return{...ctx,events,codes,teacherMap:map,teachers,slots,mode,scopeTarget};
   }
   function renderEvent(e,mode){
     const lines=eventLines(e,mode);
