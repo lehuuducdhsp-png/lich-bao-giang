@@ -41,6 +41,8 @@ jobs:
       - name: Runtime contract
         run: |
           grep -F "daily-report-v1.js?v=20260929.8" school-report-v1.js
+          grep -F "daily-png-export-v1.js?v=20260929.2" daily-report-v1.js
           if grep -F "daily-report-v1.js?v=" patch-runtime-loader-v1.js; then echo "Daily report must stay lazy"; exit 1; fi
           if grep -F "daily-png-export-v1.js?v=" patch-runtime-loader-v1.js app-runtime-v1.js; then echo "PNG exporter must stay click-lazy"; exit 1; fi
+          if grep -F "jszip@" patch-runtime-loader-v1.js app-runtime-v1.js school-report-v1.js daily-report-v1.js; then echo "JSZip must stay week-export lazy"; exit 1; fi
           node tests/runtime-responsive-loader-v1.test.cjs
