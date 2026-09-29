@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.7');
+assert.equal(D.VERSION,'20260929.8');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
@@ -43,10 +43,16 @@ if(oldAuth===undefined)delete globalThis.LBGAuth;else globalThis.LBGAuth=oldAuth
 if(oldAccess===undefined)delete globalThis.LBGAccess;else globalThis.LBGAccess=oldAccess;
 assert.match(dailySource,/LBGAuth\?\.onReady\?\.\(\(\)=>setTimeout\(refresh,0\)\)/,'module phải refresh lại khi Auth sẵn sàng');
 assert.match(dailySource,/groupsLoaded=false/,'lỗi tải nhóm không được cache rỗng vĩnh viễn');
-assert.match(dailySource,/daily-png-export-v1\.js\?v=20260929\.1/,'PNG exporter phải lazy-load từ module riêng');
-assert.match(dailySource,/if\(d\.range!==['"]day['"]\)/,'giai đoạn 1 chỉ cho phép xuất PNG Theo ngày');
-assert.match(dailySource,/width:2400,preferredScale:2/,'PNG ngày phải dùng khổ export cố định rõ nét');
+assert.match(dailySource,/daily-png-export-v1\.js\?v=20260929\.2/,'PNG exporter phải lazy-load từ module riêng');
+assert.match(dailySource,/width:3000,preferredScale:2\.5/,'PNG V2 phải dùng khổ 3000px và scale ưu tiên 2.5');
 assert.doesNotMatch(dailySource,/html2canvas@/,'daily report không được tải trực tiếp thư viện nặng lúc khởi động');
+assert.match(dailySource,/function pngDayNode\(d\)/,'ngày và tuần phải tái sử dụng cùng một layout PNG ngày');
+assert.match(dailySource,/const zip=await exporter\.createZip\(\)/,'Theo tuần phải tạo ZIP lazy');
+assert.match(dailySource,/for\(let i=0;i<d\.days\.length;i\+\+\)/,'Theo tuần phải render từng ngày tuần tự để giảm đỉnh bộ nhớ');
+assert.match(dailySource,/zip\.file\(/,'mỗi ngày phải được thêm thành một PNG riêng trong ZIP');
+assert.match(dailySource,/generateZip\(zip\)/,'phải đóng gói ZIP sau khi render đủ ngày');
+assert.match(dailySource,/LBG_THEO_TUAN_/,'tên ZIP tuần phải rõ ràng');
+assert.match(dailySource,/Xuất cả tuần thành 1 file ZIP, mỗi ngày 1 ảnh PNG/,'giao diện tuần phải bật PNG ZIP');
 assert.match(dailySource,/BUỔI SÁNG/,'web phải có nhóm cột BUỔI SÁNG');
 assert.match(dailySource,/BUỔI CHIỀU/,'web phải có nhóm cột BUỔI CHIỀU');
 assert.match(dailySource,/B4:F4/,'Excel phải gộp 5 cột cho buổi sáng');
@@ -121,4 +127,4 @@ const summaryEvents=[
 ];
 assert.deepEqual(D.summarizeTeacher(summaryEvents,'TÂM',3),{main:1,plus:1,assist:1,total:3});
 
-console.log('OK daily report: day/week modes, PNG day export lazy hook, one worksheet per day, GV rows, colors, groups, GA/room and totals');
+console.log('OK daily report: day/week PNG V2, weekly ZIP sequential export, Excel sheets, GV rows, colors, groups, GA/room and totals');
