@@ -18,12 +18,12 @@ assert.equal(sevenDays.length,7);
 assert.deepEqual([sevenDays[6].day,sevenDays[6].dateKey],[8,'2026-10-04'],'chỉ thêm Chủ Nhật khi TKB có dạy Chủ Nhật');
 assert.equal(D.sheetNameForDate(2,sixDays[0].date),'T2 28-09');
 assert.equal(D.sheetNameForDate(8,sevenDays[6].date),'CN 04-10');
-assert.match(dailySource,/Theo tuần/,'giao diện phải có chế độ Theo tuần');
-assert.match(dailySource,/LBG_THEO_TUAN_/,'phải có file Excel nguyên tuần');
-assert.match(dailySource,/for\(const day of d\.days\)addExcelSheet/,'Excel tuần phải tạo mỗi ngày một worksheet');
 assert.deepEqual(D.DAILY_LAYOUT,{teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12},
   'bố cục phải là GV dọc + 5 tiết sáng + 5 tiết chiều + tổng ngày');
 const dailySource=require('fs').readFileSync('daily-report-v1.js','utf8');
+assert.match(dailySource,/Theo tuần/,'giao diện phải có chế độ Theo tuần');
+assert.match(dailySource,/LBG_THEO_TUAN_/,'phải có file Excel nguyên tuần');
+assert.match(dailySource,/for\(const day of d\.days\)addExcelSheet/,'Excel tuần phải tạo mỗi ngày một worksheet');
 assert.match(dailySource,/BUỔI SÁNG/,'web phải có nhóm cột BUỔI SÁNG');
 assert.match(dailySource,/BUỔI CHIỀU/,'web phải có nhóm cột BUỔI CHIỀU');
 assert.match(dailySource,/B4:F4/,'Excel phải gộp 5 cột cho buổi sáng');
