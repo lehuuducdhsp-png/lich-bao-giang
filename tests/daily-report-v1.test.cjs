@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.5');
+assert.equal(D.VERSION,'20260929.6');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
@@ -27,6 +27,11 @@ assert.match(dailySource,/for\(const day of d\.days\)addExcelSheet/,'Excel tuầ
 assert.match(dailySource,/\.lbg-daily-controls \[hidden\]\{display:none!important\}/,'Ngày/Tuần không dùng phải ẩn thật để tiết kiệm chiều ngang');
 assert.match(dailySource,/grid-template-columns:minmax\(110px/,'desktop phải dùng lưới điều khiển gọn');
 assert.match(dailySource,/max-content max-content/,'Xem lịch và Xuất Excel phải nằm cạnh nhau khi đủ rộng');
+assert.match(dailySource,/id="lbgDailyExportPng"/,'phải có nút Xuất PNG');
+assert.match(dailySource,/daily-png-export-v1\.js\?v=20260929\.1/,'PNG exporter phải lazy-load từ module riêng');
+assert.match(dailySource,/if\(d\.range!==['"]day['"]\)/,'giai đoạn 1 chỉ cho phép xuất PNG Theo ngày');
+assert.match(dailySource,/width:2400,preferredScale:2/,'PNG ngày phải dùng khổ export cố định rõ nét');
+assert.doesNotMatch(dailySource,/html2canvas@/,'daily report không được tải trực tiếp thư viện nặng lúc khởi động');
 assert.match(dailySource,/BUỔI SÁNG/,'web phải có nhóm cột BUỔI SÁNG');
 assert.match(dailySource,/BUỔI CHIỀU/,'web phải có nhóm cột BUỔI CHIỀU');
 assert.match(dailySource,/B4:F4/,'Excel phải gộp 5 cột cho buổi sáng');
@@ -101,4 +106,4 @@ const summaryEvents=[
 ];
 assert.deepEqual(D.summarizeTeacher(summaryEvents,'TÂM',3),{main:1,plus:1,assist:1,total:3});
 
-console.log('OK daily report: day/week modes, one worksheet per day, GV rows, colors, managed groups, GA/room and totals');
+console.log('OK daily report: day/week modes, PNG day export lazy hook, one worksheet per day, GV rows, colors, groups, GA/room and totals');
