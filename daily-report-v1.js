@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.11';
+  const VERSION='20260929.12';
   const PERIODS=5;
   const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -408,7 +408,7 @@
       }
       const script=root.document.createElement('script');
       script.id='lbgDailyPngExportV1Script';
-      script.src='daily-png-export-v1.js?v=20260929.5';
+      script.src='daily-png-export-v1.js?v=20260929.6';
       script.async=true;
       script.onload=done;
       script.onerror=()=>{pngModulePromise=null;reject(new Error('Không tải được bộ xuất PNG.'))};
@@ -426,7 +426,7 @@
     if(pngExportBusy)return;
     const b=q('lbgDailyExportPng'),old=b?.textContent;pngExportBusy=true;if(b){b.disabled=true;b.textContent='Đang tạo PNG…'}
     try{
-      const d=currentData||makeData(),exporter=await loadPngExporter(),options={width:2100,preferredScale:2.5};
+      const d=currentData||makeData(),exporter=await loadPngExporter(),options={width:1800,preferredScale:2.5};
       if(d.range==='week'){
         if(!d.days?.length)throw new Error('Tuần này chưa có ngày để xuất PNG.');
         const zip=await exporter.createZip();
