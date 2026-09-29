@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.6';
+  const VERSION='20260929.7';
   const PERIODS=5;
   const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -188,13 +188,23 @@
     const rows=eventsForTeacherDay(events,code,day);
     return{main:rows.filter(e=>!e.isAssist&&!e.isPlus).length,plus:rows.filter(e=>e.isPlus).length,assist:rows.filter(e=>e.isAssist).length,total:rows.length};
   }
-  function canView(){const a=root.LBGAccess;return Boolean(a&&(a.isOwner?.()||a.canReviewAllReports?.()))}
+  function authOwner(){try{return Boolean(root.LBGAuth?.isOwner?.())}catch{return false}}
+  function accessReady(){return Boolean(root.LBGAccess?.context)}
+  function canView(){
+    const a=root.LBGAccess;
+    if(accessReady())return Boolean(a?.isOwner?.()||a?.canReviewAllReports?.());
+    return authOwner()
+  }
+  function setControlsEnabled(enabled){
+    for(const id of ['lbgDailyRangeMode','lbgDailyDate','lbgDailyWeek','lbgDailyScope','lbgDailyScopeTarget','lbgDailyMode','lbgDailyView'])if(q(id))q(id).disabled=!enabled;
+    if(!enabled){if(q('lbgDailyExport'))q('lbgDailyExport').disabled=true;setPngEnabled(false,'Đang chờ xác nhận quyền xem lịch.')}
+  }
 
   async function loadGroups(){
     if(groupsLoaded)return groups;
-    const api=root.LBGAuth;if(!api?.client)return[];
+    const api=root.LBGAuth;if(!api?.client||!api?.profile)return[];
     try{const {data,error}=await api.client.rpc('report_picker_groups');if(error)throw error;groups=Array.isArray(data)?data:[];groups.sort((a,b)=>txt(a?.name).localeCompare(txt(b?.name),'vi'));groupsLoaded=true;return groups}
-    catch(error){console.warn('LBG daily groups:',error);groups=[];groupsLoaded=true;return[]}
+    catch(error){console.warn('LBG daily groups:',error);groups=[];groupsLoaded=false;return[]}
   }
   function defaultDate(){
     const today=new Date(),b=book();
@@ -436,8 +446,18 @@
   }
   async function refresh(){
     ensureCard();const note=q('lbgDailyPermission'),date=q('lbgDailyDate');if(!note||!date)return;
-    if(!root.LBGAccess){note.textContent='Đang kiểm tra quyền xem lịch…';return}
-    if(!canView()){note.innerHTML='<b>Phạm vi bảo mật:</b> Lịch theo ngày/tuần nhiều giáo viên chỉ mở cho Chủ sở hữu hoặc tài khoản được quyền kiểm tra toàn bộ báo giảng.';['lbgDailyRangeMode','lbgDailyDate','lbgDailyWeek','lbgDailyScope','lbgDailyScopeTarget','lbgDailyMode','lbgDailyView','lbgDailyExport','lbgDailyExportPng'].forEach(id=>{if(q(id))q(id).disabled=true});return}
+    const auth=root.LBGAuth,access=root.LBGAccess;
+    if(!accessReady()&&!authOwner()){
+      setControlsEnabled(false);
+      note.textContent=auth?.profile?'Đang tải quyền xem lịch và danh sách Khối / nhóm…':'Đang kiểm tra quyền xem lịch…';
+      return
+    }
+    if(!canView()){
+      setControlsEnabled(false);
+      note.innerHTML='<b>Phạm vi bảo mật:</b> Lịch theo ngày/tuần nhiều giáo viên chỉ mở cho Chủ sở hữu hoặc tài khoản được quyền kiểm tra toàn bộ báo giảng.';
+      return
+    }
+    setControlsEnabled(true);
     if(!date.value)date.value=defaultDate();syncRangeUi();
     await loadGroups();
     note.textContent=currentRangeMode()==='week'?'Chọn nguyên tuần, sau đó chọn Giáo viên hoặc Khối / nhóm một lần. Trên web chuyển ngày bằng các tab; khi xuất Excel, mỗi ngày là một sheet riêng trong cùng một file. Xuất PNG cả tuần sẽ bổ sung ở bước sau.':'Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần; bạn có thể tự chọn giáo viên hoặc chọn đúng Khối / nhóm đang được quản lý trong hệ thống. Sau khi Xem lịch, có thể xuất toàn bộ bảng thành 1 ảnh PNG.';
@@ -458,7 +478,8 @@
     const start=()=>{ensureCard();refresh()};start();
     root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));
     root.document.addEventListener('lbg-runtime-ready',()=>setTimeout(refresh,0));
+    try{root.LBGAuth?.onReady?.(()=>setTimeout(refresh,0))}catch{}
     return true;
   }
-  return{VERSION,PERIODS,DAILY_LAYOUT,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,weekDates,sheetNameForDate,availableWeeks,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,schoolText,eventLines,summarizeTeacher,loadPngExporter,install};
+  return{VERSION,PERIODS,DAILY_LAYOUT,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,weekDates,sheetNameForDate,availableWeeks,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,schoolText,eventLines,summarizeTeacher,authOwner,accessReady,canView,loadPngExporter,install};
 });
