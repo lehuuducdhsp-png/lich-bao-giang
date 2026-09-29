@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.4');
+assert.equal(D.VERSION,'20260929.5');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
@@ -24,6 +24,9 @@ const dailySource=require('fs').readFileSync('daily-report-v1.js','utf8');
 assert.match(dailySource,/Theo tuần/,'giao diện phải có chế độ Theo tuần');
 assert.match(dailySource,/LBG_THEO_TUAN_/,'phải có file Excel nguyên tuần');
 assert.match(dailySource,/for\(const day of d\.days\)addExcelSheet/,'Excel tuần phải tạo mỗi ngày một worksheet');
+assert.match(dailySource,/\.lbg-daily-controls \[hidden\]\{display:none!important\}/,'Ngày/Tuần không dùng phải ẩn thật để tiết kiệm chiều ngang');
+assert.match(dailySource,/grid-template-columns:minmax\(110px/,'desktop phải dùng lưới điều khiển gọn');
+assert.match(dailySource,/max-content max-content/,'Xem lịch và Xuất Excel phải nằm cạnh nhau khi đủ rộng');
 assert.match(dailySource,/BUỔI SÁNG/,'web phải có nhóm cột BUỔI SÁNG');
 assert.match(dailySource,/BUỔI CHIỀU/,'web phải có nhóm cột BUỔI CHIỀU');
 assert.match(dailySource,/B4:F4/,'Excel phải gộp 5 cột cho buổi sáng');
