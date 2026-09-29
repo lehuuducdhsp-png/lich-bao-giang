@@ -3,14 +3,14 @@ const assert=require('node:assert/strict');
 const fs=require('fs');
 const P=require('../daily-png-export-v1.js');
 
-assert.equal(P.VERSION,'20260929.3');
-assert.equal(P.DEFAULT_WIDTH,3000,'PNG V2 phải dựng bảng rộng hơn để chữ rõ và vẫn đủ toàn bộ cột');
+assert.equal(P.VERSION,'20260929.4');
+assert.equal(P.DEFAULT_WIDTH,2600,'PNG phải bớt ngang để dễ xem trên điện thoại nhưng vẫn đủ toàn bộ cột');
 assert.equal(P.HTML2CANVAS_URL,'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js','thư viện ảnh phải pin version, không dùng latest');
 assert.equal(P.JSZIP_URL,'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js','JSZip phải pin version, không dùng latest');
 assert.equal(P.safeName('KHỐI 1 / 29-09'),'KHOI_1_29-09');
-assert.equal(P.chooseScale(3000,1200,2.5),2.5,'ảnh ngày bình thường nên giữ scale 2.5 để nét hơn');
-assert.ok(P.chooseScale(3000,9000,2.5)<2.5,'ảnh quá cao phải tự hạ scale để tránh vỡ bộ nhớ trên điện thoại');
-assert.ok(P.chooseScale(3000,9000,2.5)>=1);
+assert.equal(P.chooseScale(2600,1400,2.5),2.5,'ảnh ngày bình thường vẫn giữ scale 2.5 để nét');
+assert.ok(P.chooseScale(2600,10000,2.5)<2.5,'ảnh quá cao phải tự hạ scale để tránh vỡ bộ nhớ trên điện thoại');
+assert.ok(P.chooseScale(2600,10000,2.5)>=1);
 
 const source=fs.readFileSync('daily-png-export-v1.js','utf8');
 assert.match(source,/cloneNode\(true\)/,'phải chụp từ bản sao DOM, không sửa bảng người dùng đang xem');
@@ -34,4 +34,4 @@ assert.match(source,/compression:'STORE'/,'PNG đã nén nên ZIP phải ưu ti�
 assert.doesNotMatch(source,/localStorage|indexedDB|document\.cookie/,'bộ xuất PNG không được chạm dữ liệu người dùng');
 assert.doesNotMatch(source,/setInterval\s*\(/,'bộ xuất PNG không được thêm polling');
 
-console.log('OK daily PNG V2: sharper 3000px layout, narrow GV/TỔNG, lazy pinned ZIP, memory-safe scale, no data mutation');
+console.log('OK daily PNG V2: phone-friendly 2600px layout, full wrapping, narrow GV/TỔNG, lazy ZIP, memory-safe scale');
