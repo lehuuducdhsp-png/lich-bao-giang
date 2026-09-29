@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.8';
+  const VERSION='20260929.9';
   const PERIODS=5;
   const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -408,7 +408,7 @@
       }
       const script=root.document.createElement('script');
       script.id='lbgDailyPngExportV1Script';
-      script.src='daily-png-export-v1.js?v=20260929.2';
+      script.src='daily-png-export-v1.js?v=20260929.3';
       script.async=true;
       script.onload=done;
       script.onerror=()=>{pngModulePromise=null;reject(new Error('Không tải được bộ xuất PNG.'))};
