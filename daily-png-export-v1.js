@@ -4,10 +4,10 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.LBGDailyPngExportV1=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.5';
+  const VERSION='20260929.6';
   const HTML2CANVAS_URL='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
   const JSZIP_URL='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-  const DEFAULT_WIDTH=2100;
+  const DEFAULT_WIDTH=1800;
   const MAX_PIXELS=30000000;
   let canvasLibraryPromise=null,zipLibraryPromise=null;
 
@@ -76,7 +76,7 @@
       .lbg-png-capture .lbg-daily-wrap{overflow:visible!important;max-width:none!important;border:1px solid #777!important;border-radius:0!important}
       .lbg-png-capture .lbg-daily-table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important;border-spacing:0!important}
       .lbg-png-capture .lbg-daily-table tr{height:auto!important;min-height:0!important;max-height:none!important}
-      .lbg-png-capture .lbg-daily-table th,.lbg-png-capture .lbg-daily-table td{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;padding:8px 4px!important;font-size:15px!important;line-height:1.3!important;border:1px solid #666!important;vertical-align:middle!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;text-overflow:clip!important}
+      .lbg-png-capture .lbg-daily-table th,.lbg-png-capture .lbg-daily-table td{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;padding:7px 3px!important;font-size:16px!important;line-height:1.3!important;border:1px solid #666!important;vertical-align:middle!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;text-overflow:clip!important}
       .lbg-png-capture .lbg-daily-table .gv-head,.lbg-png-capture .lbg-daily-table .gv-cell{width:8%!important;min-width:0!important;max-width:none!important;padding-left:5px!important;padding-right:5px!important}
       .lbg-png-capture .lbg-daily-table .total-head,.lbg-png-capture .lbg-daily-table .total-cell{width:6%!important;min-width:0!important;max-width:none!important;padding-left:4px!important;padding-right:4px!important;font-weight:800!important;white-space:normal!important;overflow-wrap:anywhere!important}
       .lbg-png-capture .lbg-daily-table .morning-slot,.lbg-png-capture .lbg-daily-table .afternoon-slot{min-width:0!important;max-width:none!important;overflow:visible!important}
