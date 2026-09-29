@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.8');
+assert.equal(D.VERSION,'20260929.9');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
@@ -43,7 +43,7 @@ if(oldAuth===undefined)delete globalThis.LBGAuth;else globalThis.LBGAuth=oldAuth
 if(oldAccess===undefined)delete globalThis.LBGAccess;else globalThis.LBGAccess=oldAccess;
 assert.match(dailySource,/LBGAuth\?\.onReady\?\.\(\(\)=>setTimeout\(refresh,0\)\)/,'module phải refresh lại khi Auth sẵn sàng');
 assert.match(dailySource,/groupsLoaded=false/,'lỗi tải nhóm không được cache rỗng vĩnh viễn');
-assert.match(dailySource,/daily-png-export-v1\.js\?v=20260929\.2/,'PNG exporter phải lazy-load từ module riêng');
+assert.match(dailySource,/daily-png-export-v1\.js\?v=20260929\.3/,'PNG exporter phải lazy-load từ module riêng');
 assert.match(dailySource,/width:3000,preferredScale:2\.5/,'PNG V2 phải dùng khổ 3000px và scale ưu tiên 2.5');
 assert.doesNotMatch(dailySource,/html2canvas@/,'daily report không được tải trực tiếp thư viện nặng lúc khởi động');
 assert.match(dailySource,/function pngDayNode\(d\)/,'ngày và tuần phải tái sử dụng cùng một layout PNG ngày');
