@@ -43,4 +43,4 @@ jobs:
           grep -F 'ga-per-class-v2.js?v=20260920.5' patch-runtime-loader-v1.js
           grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' patch-runtime-loader-v1.js
           grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' patch-runtime-loader-v1.js
-          grep -F 'school-report-v1.js?v=20260929.2' patch-runtime-loader-v1.js
+          grep -F 'school-report-v1.js?v=20260929.3' patch-runtime-loader-v1.js

@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.2');
+assert.equal(D.VERSION,'20260929.3');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
@@ -70,6 +70,11 @@ assert.deepEqual(lines,['LÊ LỢI','1/B • P 1.5','GA 1']);
 const pLines=D.eventLines({schoolName:'LÊ LỢI',className:'1/B',roomRaw:'P 1.5',ga:1,isAssist:true},'compact');
 assert.match(pLines[0],/Trợ \(P\)/);
 assert.match(pLines[0],/GA 1/);
+
+const oldCleaner=globalThis.LBGReportEngineV4;
+globalThis.LBGReportEngineV4={dailyLocationText(){return'THỦY LƯƠNG'}};
+assert.equal(D.schoolText({schoolName:'THỦY LƯƠNG',locationLabel:'THỦY LƯƠNG\n+ Buổi sáng: 7h15 có mặt ở trường'}),'THỦY LƯƠNG','Lịch theo ngày phải dùng lớp làm sạch địa điểm');
+if(oldCleaner===undefined)delete globalThis.LBGReportEngineV4;else globalThis.LBGReportEngineV4=oldCleaner;
 
 const summaryEvents=[
   {code:'TÂM',day:3,isPlus:false,isAssist:false},
