@@ -4,7 +4,7 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.LBGDailyPngExportV1=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.2';
+  const VERSION='20260929.3';
   const HTML2CANVAS_URL='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
   const JSZIP_URL='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
   const DEFAULT_WIDTH=3000;
@@ -75,12 +75,15 @@
       .lbg-png-capture .lbg-daily-title p{font-size:23px!important;line-height:1.3!important;margin:9px 0 0!important;color:#5f4a40!important}
       .lbg-png-capture .lbg-daily-wrap{overflow:visible!important;max-width:none!important;border:1px solid #777!important;border-radius:0!important}
       .lbg-png-capture .lbg-daily-table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important;border-spacing:0!important}
-      .lbg-png-capture .lbg-daily-table th,.lbg-png-capture .lbg-daily-table td{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;padding:11px 7px!important;font-size:17px!important;line-height:1.28!important;border:1px solid #666!important;vertical-align:middle!important}
+      .lbg-png-capture .lbg-daily-table tr{height:auto!important;min-height:0!important;max-height:none!important}
+      .lbg-png-capture .lbg-daily-table th,.lbg-png-capture .lbg-daily-table td{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;padding:10px 6px!important;font-size:16px!important;line-height:1.3!important;border:1px solid #666!important;vertical-align:middle!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;text-overflow:clip!important}
       .lbg-png-capture .lbg-daily-table .gv-head,.lbg-png-capture .lbg-daily-table .gv-cell{width:9%!important;min-width:0!important;max-width:none!important;padding-left:5px!important;padding-right:5px!important}
-      .lbg-png-capture .lbg-daily-table .total-head,.lbg-png-capture .lbg-daily-table .total-cell{width:7%!important;min-width:0!important;padding-left:4px!important;padding-right:4px!important;font-weight:800!important}
+      .lbg-png-capture .lbg-daily-table .total-head,.lbg-png-capture .lbg-daily-table .total-cell{width:7%!important;min-width:0!important;max-width:none!important;padding-left:4px!important;padding-right:4px!important;font-weight:800!important;white-space:normal!important;overflow-wrap:anywhere!important}
+      .lbg-png-capture .lbg-daily-table .morning-slot,.lbg-png-capture .lbg-daily-table .afternoon-slot{min-width:0!important;max-width:none!important;overflow:visible!important}
       .lbg-png-capture .lbg-daily-table .morning-head,.lbg-png-capture .lbg-daily-table .afternoon-head{font-size:19px!important}
-      .lbg-png-capture .lbg-daily-event{margin:2px 0!important;padding:6px 4px!important;background:rgba(255,255,255,.9)!important;border-radius:4px!important}
-      .lbg-png-capture .lbg-daily-event .meta{font-size:14px!important}
+      .lbg-png-capture .lbg-daily-event{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;margin:2px 0!important;padding:6px 4px!important;box-sizing:border-box!important;background:rgba(255,255,255,.9)!important;border-radius:4px!important;overflow:visible!important;white-space:normal!important;text-overflow:clip!important}
+      .lbg-png-capture .lbg-daily-event span{display:block!important;width:auto!important;max-width:100%!important;min-width:0!important;height:auto!important;max-height:none!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;word-break:break-word!important;text-overflow:clip!important}
+      .lbg-png-capture .lbg-daily-event .meta{font-size:13px!important;line-height:1.25!important}
       .lbg-png-capture .gv-cell b{font-size:19px!important;line-height:1.15!important}
       .lbg-png-capture .gv-cell small{font-size:13px!important;line-height:1.15!important}
       .lbg-png-capture .lbg-week-tabs,.lbg-png-capture .lbg-week-day-label{display:none!important}
