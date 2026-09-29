@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.2';
+  const VERSION='20260929.3';
   const PERIODS=5;
   const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -157,7 +157,13 @@
     if(raw===null||raw===undefined||txt(raw)==='')return'GA —';
     const n=Number(raw);return Number.isFinite(n)?`GA ${Math.round(n)}`:`GA ${txt(raw)}`;
   }
-  function schoolText(e){return txt(e?.locationLabel||e?.schoolName||e?.school).split(/\n/).filter(Boolean).join(' • ')||'Chưa xác định trường'}
+  function schoolText(e){
+    const cleaner=root.LBGReportEngineV4?.dailyLocationText;
+    if(typeof cleaner==='function'){
+      const value=txt(cleaner(e));if(value)return value
+    }
+    return txt(e?.locationLabel||e?.schoolName||e?.school).replace(/<br\s*\/?\s*>/gi,'\n').split(/\n/).map(txt).filter(Boolean).join(' • ')||'Chưa xác định trường'
+  }
   function roomText(e){return txt(e?.roomRaw)}
   function eventLines(e,mode='full'){
     const school=schoolText(e),cls=classText(e),room=roomText(e),ga=gaText(e),flags=[e?.isPlus?'Cộng (+)':'',e?.isAssist?'Trợ (P)':'',e?.makeUp?'Dạy bù':''].filter(Boolean);
@@ -344,5 +350,5 @@
     root.document.addEventListener('lbg-runtime-ready',()=>setTimeout(refresh,0));
     return true;
   }
-  return{VERSION,PERIODS,DAILY_LAYOUT,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,eventLines,summarizeTeacher,install};
+  return{VERSION,PERIODS,DAILY_LAYOUT,dateFromKey,dateKey,dayNoForDate,formatDateTitle,gradeOfEntry,findWeekForDate,groupCodes,resolveScopeCodes,eventSlot,buildDailySlots,schoolText,eventLines,summarizeTeacher,install};
 });
