@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.1';
+  const VERSION='20260929.2';
   const PERIODS=5;
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
@@ -192,15 +192,15 @@
       .lbg-daily-controls label{display:grid;gap:5px;font-size:12px;font-weight:800}.lbg-daily-controls input,.lbg-daily-controls select{width:100%;padding:10px 11px;border:1px solid #eadfd8;border-radius:11px;background:#fff;color:#4b342b}
       .lbg-daily-picker{margin-top:10px;padding:10px;border:1px solid #eadfd8;border-radius:12px;background:#fffaf7}.lbg-daily-picker-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.lbg-daily-picker-head input{min-width:220px;flex:1;padding:8px 10px;border:1px solid #eadfd8;border-radius:10px}
       .lbg-daily-teachers{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;max-height:150px;overflow:auto}.lbg-daily-teacher{display:inline-flex;gap:6px;align-items:center;padding:6px 9px;border:1px solid #eadfd8;border-radius:999px;background:#fff;font-size:12px}.lbg-daily-teacher small{color:#806b61}.lbg-daily-note{margin-top:10px;padding:9px 11px;border:1px solid #bfdbfe;border-radius:11px;background:#eff6ff;color:#1e40af;font-size:12px}
-      .lbg-daily-summary{margin:12px 0;padding:9px 11px;border:1px solid #d1fae5;border-radius:11px;background:#ecfdf5;color:#166534;font-size:12px}.lbg-daily-wrap{overflow:auto;max-width:100%;border:1px solid #eadfd8;border-radius:12px}.lbg-daily-table{border-collapse:separate;border-spacing:0;min-width:max-content;width:100%;font-family:"Times New Roman",serif}.lbg-daily-table th,.lbg-daily-table td{border-right:1px solid #777;border-bottom:1px solid #777;padding:7px;text-align:center;vertical-align:middle;background:#fff}.lbg-daily-table thead th{position:sticky;top:0;z-index:5;background:#f6c9ae;font-weight:800}.lbg-daily-table .sticky-a{position:sticky;left:0;z-index:6;min-width:88px;background:#f6c9ae}.lbg-daily-table .sticky-b{position:sticky;left:88px;z-index:6;min-width:76px;background:#f6c9ae}.lbg-daily-table thead .sticky-a,.lbg-daily-table thead .sticky-b{z-index:8}.lbg-daily-table .teacher-head{min-width:190px;max-width:235px}.lbg-daily-table .teacher-head small{display:block;font-family:system-ui,sans-serif;font-weight:500;color:#806b61;margin-top:2px}.lbg-daily-table .slot{min-width:190px;max-width:235px;background:#eef9f0}.lbg-daily-event{margin:2px 0;padding:5px 6px;border-radius:7px;background:rgba(255,255,255,.72);line-height:1.25}.lbg-daily-event span{display:block}.lbg-daily-event .meta{font-family:system-ui,sans-serif;font-size:10px;color:#806b61;margin-top:2px}.lbg-daily-session{font-weight:800}.lbg-daily-total td{font-weight:800;background:#b9e6a5}.lbg-daily-empty{padding:18px;text-align:center;color:#806b61;background:#fffaf7}.lbg-daily-title{text-align:center;padding:12px 8px}.lbg-daily-title h2{margin:0;font-family:"Times New Roman",serif;font-size:22px}.lbg-daily-title p{margin:5px 0 0;color:#806b61}
-      @media(max-width:1100px){.lbg-daily-controls{grid-template-columns:1fr 1fr 1fr}.lbg-daily-controls button{width:100%}}@media(max-width:700px){.lbg-daily-controls{grid-template-columns:1fr 1fr}.lbg-daily-table .teacher-head,.lbg-daily-table .slot{min-width:170px}.lbg-daily-table .sticky-a{min-width:76px}.lbg-daily-table .sticky-b{left:76px;min-width:66px}}
+      .lbg-daily-summary{margin:12px 0;padding:9px 11px;border:1px solid #d1fae5;border-radius:11px;background:#ecfdf5;color:#166534;font-size:12px}.lbg-daily-wrap{overflow:auto;max-width:100%;border:1px solid #eadfd8;border-radius:12px}.lbg-daily-table{border-collapse:separate;border-spacing:0;min-width:1320px;width:100%;font-family:"Times New Roman",serif}.lbg-daily-table th,.lbg-daily-table td{border-right:1px solid #777;border-bottom:1px solid #777;padding:7px;text-align:center;vertical-align:middle}.lbg-daily-table thead th{position:sticky;z-index:5;font-weight:800}.lbg-daily-table thead tr:first-child th{top:0}.lbg-daily-table thead tr:nth-child(2) th{top:44px}.lbg-daily-table .gv-head,.lbg-daily-table .gv-cell{position:sticky;left:0;z-index:7;min-width:150px;max-width:180px;background:#fff2df}.lbg-daily-table thead .gv-head{z-index:9;background:#f6c58f}.lbg-daily-table .gv-cell b{display:block;font-size:16px}.lbg-daily-table .gv-cell small{display:block;font-family:system-ui,sans-serif;color:#806b61;margin-top:2px}.lbg-daily-table .morning-head{background:#bfe3ff;color:#153a59}.lbg-daily-table .morning-period{background:#e4f4ff}.lbg-daily-table .afternoon-head{background:#ffd4b8;color:#6d3518}.lbg-daily-table .afternoon-period{background:#fff0e6}.lbg-daily-table .morning-slot{background:#f3faff;min-width:118px}.lbg-daily-table .afternoon-slot{background:#fff8f3;min-width:118px}.lbg-daily-table .total-head,.lbg-daily-table .total-cell{background:#d9efca;font-weight:800;min-width:112px}.lbg-daily-event{margin:2px 0;padding:5px 6px;border-radius:7px;background:rgba(255,255,255,.78);line-height:1.22}.lbg-daily-event span{display:block}.lbg-daily-event .meta{font-family:system-ui,sans-serif;font-size:10px;color:#806b61;margin-top:2px}.lbg-daily-empty{padding:18px;text-align:center;color:#806b61;background:#fffaf7}.lbg-daily-title{text-align:center;padding:12px 8px}.lbg-daily-title h2{margin:0;font-family:"Times New Roman",serif;font-size:22px}.lbg-daily-title p{margin:5px 0 0;color:#806b61}
+      @media(max-width:1100px){.lbg-daily-controls{grid-template-columns:1fr 1fr 1fr}.lbg-daily-controls button{width:100%}}@media(max-width:700px){.lbg-daily-controls{grid-template-columns:1fr 1fr}.lbg-daily-table{min-width:1180px}.lbg-daily-table .gv-head,.lbg-daily-table .gv-cell{min-width:125px}}
     `;root.document.head.appendChild(s);
   }
   function ensureCard(){
     if(q('lbgDailyReportCard'))return q('lbgDailyReportCard');
     const anchor=q('lbgSchoolReportCard')||q('previewCard')||[...root.document.querySelectorAll('section.card')].find(x=>/Kiểm tra và lập báo giảng/i.test(txt(x.textContent)));if(!anchor?.parentNode)return null;
     ensureStyle();const card=root.document.createElement('section');card.id='lbgDailyReportCard';card.className='card';
-    card.innerHTML=`<div class="head"><div><h3>📅 Lịch báo giảng theo ngày</h3><p>Xem một ngày cụ thể theo giáo viên, khối lớp hoặc nhóm; giáo viên trải ngang từ trái sang phải.</p></div><span class="badge">1 ngày • nhiều GV</span></div>
+    card.innerHTML=`<div class="head"><div><h3>📅 Lịch báo giảng theo ngày</h3><p>Xem một ngày cụ thể theo giáo viên, khối lớp hoặc nhóm; giáo viên chạy dọc, T1–T5 buổi sáng và buổi chiều chạy ngang.</p></div><span class="badge">1 ngày • nhiều GV</span></div>
       <div id="lbgDailyPermission" class="lbg-daily-note">Đang kiểm tra quyền xem lịch…</div>
       <div class="lbg-daily-controls">
         <label>Ngày<input type="date" id="lbgDailyDate"></label>
@@ -261,23 +261,23 @@
     const lines=eventLines(e,mode);
     return`<div class="lbg-daily-event">${lines.map((line,i)=>`<span class="${i===2?'meta':''}">${esc(line)}</span>`).join('')}</div>`;
   }
-  function renderRows(d){
-    let html='';
-    for(const session of ['Sáng','Chiều']){
-      for(let p=1;p<=PERIODS;p++){
-        html+=`<tr>${p===1?`<td class="sticky-a lbg-daily-session" rowspan="${PERIODS}">${session}</td>`:''}<td class="sticky-b"><b>Tiết ${p}</b></td>${d.teachers.map(t=>{const list=d.slots.get(`${t.code}|${session}|${p}`)||[];return`<td class="slot">${list.length?list.map(e=>renderEvent(e,d.mode)).join(''):'—'}</td>`}).join('')}</tr>`;
-      }
-    }
-    return html;
+  function renderTeacherRows(d){
+    return d.teachers.map(t=>{
+      const s=summarizeTeacher(d.events,t.code,d.day);
+      const morning=Array.from({length:PERIODS},(_,i)=>{const p=i+1,list=d.slots.get(`${t.code}|Sáng|${p}`)||[];return`<td class="morning-slot">${list.length?list.map(e=>renderEvent(e,d.mode)).join(''):'—'}</td>`}).join('');
+      const afternoon=Array.from({length:PERIODS},(_,i)=>{const p=i+1,list=d.slots.get(`${t.code}|Chiều|${p}`)||[];return`<td class="afternoon-slot">${list.length?list.map(e=>renderEvent(e,d.mode)).join(''):'—'}</td>`}).join('');
+      const total=`${s.main} chính${s.plus?` + ${s.plus} Cộng`:''}${s.assist?` + ${s.assist} P`:''}`;
+      return`<tr><td class="gv-cell"><b>${esc(t.code)}</b><small>${esc(t.name)}</small></td>${morning}${afternoon}<td class="total-cell">${esc(total)}</td></tr>`;
+    }).join('');
   }
   function renderCurrent(){
     const preview=q('lbgDailyPreview'),summary=q('lbgDailySummary');if(!preview)return;
     try{
       const d=makeData();currentData=d;
       const totalMain=d.teachers.reduce((n,t)=>n+summarizeTeacher(d.events,t.code,d.day).main,0),totalPlus=d.teachers.reduce((n,t)=>n+summarizeTeacher(d.events,t.code,d.day).plus,0),totalAssist=d.teachers.reduce((n,t)=>n+summarizeTeacher(d.events,t.code,d.day).assist,0);
-      if(summary)summary.innerHTML=`<div class="lbg-daily-summary"><b>${esc(formatDateTitle(d.date))}</b> • Tuần ${esc(d.ws.name)} • ${esc(d.scopeTarget)} • ${d.teachers.length} cột giáo viên • ${totalMain} chính${totalPlus?` • ${totalPlus} Cộng (+)`:''}${totalAssist?` • ${totalAssist} Trợ (P)`:''}</div>`;
-      const totals=d.teachers.map(t=>{const s=summarizeTeacher(d.events,t.code,d.day);return`<td>${s.main} chính${s.plus?` + ${s.plus} Cộng`:''}${s.assist?` + ${s.assist} P`:''}</td>`}).join('');
-      preview.innerHTML=`<div class="lbg-daily-title"><h2>LỊCH BÁO GIẢNG THEO NGÀY</h2><p><b>${esc(formatDateTitle(d.date))}</b> • ${esc(d.scopeTarget)}</p></div><div class="lbg-daily-wrap"><table class="lbg-daily-table"><thead><tr><th class="sticky-a">Buổi</th><th class="sticky-b">Tiết</th>${d.teachers.map(t=>`<th class="teacher-head">${esc(t.code)}<small>${esc(t.name)}</small></th>`).join('')}</tr></thead><tbody>${renderRows(d)}<tr class="lbg-daily-total"><td class="sticky-a" colspan="2">TỔNG NGÀY</td>${totals}</tr></tbody></table></div>`;
+      if(summary)summary.innerHTML=`<div class="lbg-daily-summary"><b>${esc(formatDateTitle(d.date))}</b> • Tuần ${esc(d.ws.name)} • ${esc(d.scopeTarget)} • ${d.teachers.length} giáo viên • ${totalMain} chính${totalPlus?` • ${totalPlus} Cộng (+)`:''}${totalAssist?` • ${totalAssist} Trợ (P)`:''}</div>`;
+      const periodHead=Array.from({length:PERIODS},(_,i)=>`<th>T${i+1}</th>`).join('');
+      preview.innerHTML=`<div class="lbg-daily-title"><h2>LỊCH BÁO GIẢNG THEO NGÀY</h2><p><b>${esc(formatDateTitle(d.date))}</b> • ${esc(d.scopeTarget)}</p></div><div class="lbg-daily-wrap"><table class="lbg-daily-table"><thead><tr><th class="gv-head" rowspan="2">GV</th><th class="morning-head" colspan="5">BUỔI SÁNG</th><th class="afternoon-head" colspan="5">BUỔI CHIỀU</th><th class="total-head" rowspan="2">TỔNG NGÀY</th></tr><tr class="period-row"><th class="morning-period">T1</th><th class="morning-period">T2</th><th class="morning-period">T3</th><th class="morning-period">T4</th><th class="morning-period">T5</th><th class="afternoon-period">T1</th><th class="afternoon-period">T2</th><th class="afternoon-period">T3</th><th class="afternoon-period">T4</th><th class="afternoon-period">T5</th></tr></thead><tbody>${renderTeacherRows(d)}</tbody></table></div>`;
       q('lbgDailyExport').disabled=false;
     }catch(error){currentData=null;q('lbgDailyExport').disabled=true;if(summary)summary.innerHTML='';preview.innerHTML=`<div class="lbg-daily-empty">${esc(error?.message||String(error))}</div>`}
   }
@@ -285,24 +285,38 @@
   function styleCell(cell,fill,bold=false,size=11){cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};cell.font={name:'Times New Roman',size,bold};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};cell.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}}}
   function colLetter(n){let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
   function addExcelSheet(out,d){
-    const last=2+d.teachers.length,end=colLetter(last),ws=out.addWorksheet('LBG THEO NGÀY');
-    ws.pageSetup={orientation:'landscape',paperSize:9,fitToPage:false,scale:d.teachers.length<=6?90:75,margins:{left:.2,right:.2,top:.35,bottom:.35,header:.1,footer:.1},printTitlesRow:'1:4',printTitlesColumn:'1:2',horizontalCentered:true};
-    ws.views=[{state:'frozen',xSplit:2,ySplit:4,topLeftCell:'C5',activeCell:'C5'}];
-    [`A1:${end}1`,`A2:${end}2`,`A3:${end}3`,`A5:A9`,`A10:A14`,`A15:B15`].forEach(r=>{try{ws.mergeCells(r)}catch{}});
-    ws.getCell('A1').value='LỊCH BÁO GIẢNG THEO NGÀY';ws.getCell('A2').value=formatDateTitle(d.date).toUpperCase();ws.getCell('A3').value=`Tuần ${d.ws.name} • Phạm vi: ${d.scopeTarget} • Chế độ: ${d.mode==='full'?'Đầy đủ':'Gọn'}`;
-    ws.getRow(4).values=['Buổi','Tiết',...d.teachers.map(t=>`${t.code}\n${t.name}`)];
-    let row=5;
-    for(const session of ['Sáng','Chiều']){
-      ws.getCell(row,1).value=session;
-      for(let p=1;p<=PERIODS;p++,row++){
-        ws.getCell(row,2).value=`Tiết ${p}`;
-        d.teachers.forEach((t,i)=>{ws.getCell(row,i+3).value=excelCellText(d.slots.get(`${t.code}|${session}|${p}`)||[],d.mode)});
+    const last=12,end=colLetter(last),ws=out.addWorksheet('LBG THEO NGÀY');
+    ws.pageSetup={orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.2,right:.2,top:.35,bottom:.35,header:.1,footer:.1},printTitlesRow:'1:5',printTitlesColumn:'1:1',horizontalCentered:true};
+    ws.views=[{state:'frozen',xSplit:1,ySplit:5,topLeftCell:'B6',activeCell:'B6'}];
+    [`A1:${end}1`,`A2:${end}2`,`A3:${end}3`,'A4:A5','B4:F4','G4:K4','L4:L5'].forEach(r=>{try{ws.mergeCells(r)}catch{}});
+    ws.getCell('A1').value='LỊCH BÁO GIẢNG THEO NGÀY';
+    ws.getCell('A2').value=formatDateTitle(d.date).toUpperCase();
+    ws.getCell('A3').value=`Tuần ${d.ws.name} • Phạm vi: ${d.scopeTarget} • Chế độ: ${d.mode==='full'?'Đầy đủ':'Gọn'}`;
+    ws.getCell('A4').value='GV';ws.getCell('B4').value='BUỔI SÁNG';ws.getCell('G4').value='BUỔI CHIỀU';ws.getCell('L4').value='TỔNG NGÀY';
+    ['T1','T2','T3','T4','T5'].forEach((v,i)=>{ws.getCell(5,i+2).value=v;ws.getCell(5,i+7).value=v});
+    d.teachers.forEach((t,index)=>{
+      const row=6+index;ws.getCell(row,1).value=`${t.code}\n${t.name}`;
+      for(let p=1;p<=PERIODS;p++){
+        ws.getCell(row,p+1).value=excelCellText(d.slots.get(`${t.code}|Sáng|${p}`)||[],d.mode);
+        ws.getCell(row,p+6).value=excelCellText(d.slots.get(`${t.code}|Chiều|${p}`)||[],d.mode);
+      }
+      const sum=summarizeTeacher(d.events,t.code,d.day);
+      ws.getCell(row,12).value=`${sum.main} chính${sum.plus?` + ${sum.plus} Cộng`:''}${sum.assist?` + ${sum.assist} P`:''}`;
+    });
+    ws.getColumn(1).width=20;for(let c=2;c<=11;c++)ws.getColumn(c).width=d.mode==='full'?18:16;ws.getColumn(12).width=17;
+    const rows=5+d.teachers.length;
+    for(let r=1;r<=rows;r++){
+      ws.getRow(r).height=r===1?30:r===2?25:r===3?22:r===4?26:r===5?24:(d.mode==='full'?70:46);
+      for(let c=1;c<=last;c++){
+        let fill='FFFFFFFF',bold=false,size=11;
+        if(r<=3){fill='FFD9EFCA';bold=true;size=r===1?18:r===2?14:11}
+        else if(c===1){fill='FFFFF2DF';bold=true}
+        else if(c>=2&&c<=6){fill=r===4?'FFBFE3FF':r===5?'FFE4F4FF':'FFF3FAFF';bold=r<=5}
+        else if(c>=7&&c<=11){fill=r===4?'FFFFD4B8':r===5?'FFFFF0E6':'FFFFF8F3';bold=r<=5}
+        else if(c===12){fill='FFD9EFCA';bold=true}
+        styleCell(ws.getCell(r,c),fill,bold,size);
       }
     }
-    ws.getCell('A15').value='TỔNG NGÀY';
-    d.teachers.forEach((t,i)=>{const s=summarizeTeacher(d.events,t.code,d.day);ws.getCell(15,i+3).value=`${s.main} chính${s.plus?` + ${s.plus} Cộng`:''}${s.assist?` + ${s.assist} P`:''}`});
-    ws.getColumn(1).width=10;ws.getColumn(2).width=10;for(let c=3;c<=last;c++)ws.getColumn(c).width=d.mode==='full'?25:22;
-    for(let r=1;r<=15;r++){ws.getRow(r).height=r===1?30:r===2?25:r===3?22:r===4?38:r===15?28:(d.mode==='full'?62:42);for(let c=1;c<=last;c++){const fill=r<=3||r===15?'FFB9E6A5':r===4||c<=2?'FFF6C9AE':'FFEEF9F0';styleCell(ws.getCell(r,c),fill,r<=4||r===15,r===1?18:r===2?14:11)}}
     ws.autoFilter=undefined;return ws;
   }
   async function exportCurrent(){
@@ -320,7 +334,7 @@
     if(!canView()){note.innerHTML='<b>Phạm vi bảo mật:</b> Lịch theo ngày nhiều giáo viên chỉ mở cho Chủ sở hữu hoặc tài khoản được quyền kiểm tra toàn bộ báo giảng.';['lbgDailyDate','lbgDailyScope','lbgDailyScopeTarget','lbgDailyMode','lbgDailyView'].forEach(id=>{if(q(id))q(id).disabled=true});return}
     if(!date.value)date.value=defaultDate();
     await loadGroups();
-    note.textContent='Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần, sau đó có thể chọn giáo viên, khối lớp hoặc nhóm. Khi nhiều giáo viên, bảng cuộn ngang nhưng cột Buổi/Tiết và tiêu đề giáo viên luôn được giữ cố định.';
+    note.textContent='Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần, sau đó có thể chọn giáo viên, khối lớp hoặc nhóm. Giáo viên chạy dọc bên trái; T1–T5 buổi sáng và T1–T5 buổi chiều chạy ngang. Sáng và chiều dùng hai màu riêng; cột GV được giữ cố định khi cuộn ngang.';
     try{const ctx=currentContext();renderTeacherPicker(ctx)}catch(error){q('lbgDailyTeacherPicker').innerHTML=`<div class="lbg-daily-empty">${esc(error?.message||String(error))}</div>`}
   }
   function bind(){
