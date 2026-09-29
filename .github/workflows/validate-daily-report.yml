@@ -35,6 +35,6 @@ jobs:
           node tests/location-display-cleanup.test.cjs
       - name: Runtime contract
         run: |
-          grep -F "daily-report-v1.js?v=20260929.3" school-report-v1.js
+          grep -F "daily-report-v1.js?v=20260929.4" school-report-v1.js
           if grep -F "daily-report-v1.js?v=20260929.3" patch-runtime-loader-v1.js; then echo "Daily report must stay lazy"; exit 1; fi
           node tests/runtime-responsive-loader-v1.test.cjs
