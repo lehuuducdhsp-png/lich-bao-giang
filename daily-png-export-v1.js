@@ -4,10 +4,10 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.LBGDailyPngExportV1=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.3';
+  const VERSION='20260929.4';
   const HTML2CANVAS_URL='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
   const JSZIP_URL='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-  const DEFAULT_WIDTH=3000;
+  const DEFAULT_WIDTH=2600;
   const MAX_PIXELS=30000000;
   let canvasLibraryPromise=null,zipLibraryPromise=null;
 
