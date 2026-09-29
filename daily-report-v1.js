@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.7';
+  const VERSION='20260929.8';
   const PERIODS=5;
   const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -331,7 +331,7 @@
       if(d.range==='week'){
         const totals=d.days.reduce((acc,x)=>{const t=dailyTotals(x);acc.main+=t.main;acc.plus+=t.plus;acc.assist+=t.assist;return acc},{main:0,plus:0,assist:0});
         if(summary)summary.innerHTML=`<div class="lbg-daily-summary"><b>Tuần ${esc(d.ws.name)}</b> • ${d.days.length} ngày • ${esc(d.scopeTarget)} • ${d.teachers.length} giáo viên • ${totals.main} chính${totals.plus?` • ${totals.plus} Cộng (+)`:''}${totals.assist?` • ${totals.assist} Trợ (P)`:''}</div>`;
-        renderWeekDay(d,d.days[0]?.day);q('lbgDailyExport').disabled=!d.days.length;setPngEnabled(false,'Giai đoạn 1 chỉ xuất PNG cho Theo ngày; ZIP PNG cả tuần sẽ làm sau.');return
+        renderWeekDay(d,d.days[0]?.day);q('lbgDailyExport').disabled=!d.days.length;setPngEnabled(Boolean(d.days.length),'Xuất cả tuần thành 1 file ZIP, mỗi ngày 1 ảnh PNG.');return
       }
       const totals=dailyTotals(d);
       if(summary)summary.innerHTML=`<div class="lbg-daily-summary"><b>${esc(formatDateTitle(d.date))}</b> • Tuần ${esc(d.ws.name)} • ${esc(d.scopeTarget)} • ${d.teachers.length} giáo viên • ${totals.main} chính${totals.plus?` • ${totals.plus} Cộng (+)`:''}${totals.assist?` • ${totals.assist} Trợ (P)`:''}</div>`;
@@ -408,7 +408,7 @@
       }
       const script=root.document.createElement('script');
       script.id='lbgDailyPngExportV1Script';
-      script.src='daily-png-export-v1.js?v=20260929.1';
+      script.src='daily-png-export-v1.js?v=20260929.2';
       script.async=true;
       script.onload=done;
       script.onerror=()=>{pngModulePromise=null;reject(new Error('Không tải được bộ xuất PNG.'))};
@@ -416,22 +416,43 @@
     });
     return pngModulePromise
   }
+  function pngDayNode(d){
+    const node=root.document.createElement('div');
+    node.className='lbg-png-day-source';
+    node.innerHTML=`<div class="lbg-daily-title"><h2>LỊCH BÁO GIẢNG THEO NGÀY</h2><p><b>${esc(formatDateTitle(d.date))}</b> • Tuần ${esc(d.ws.name)} • ${esc(d.scopeTarget)}</p></div>${tableHtml(d)}`;
+    return node
+  }
   async function exportCurrentPng(){
     if(pngExportBusy)return;
     const b=q('lbgDailyExportPng'),old=b?.textContent;pngExportBusy=true;if(b){b.disabled=true;b.textContent='Đang tạo PNG…'}
     try{
-      const d=currentData||makeData();
-      if(d.range!=='day')throw new Error('Bản thử hiện tại xuất PNG cho Theo ngày trước. PNG cả tuần sẽ làm ở bước tiếp theo.');
-      const preview=q('lbgDailyPreview');if(!preview)throw new Error('Chưa có bảng lịch để xuất PNG.');
-      const exporter=await loadPngExporter();
+      const d=currentData||makeData(),exporter=await loadPngExporter(),options={width:3000,preferredScale:2.5};
+      if(d.range==='week'){
+        if(!d.days?.length)throw new Error('Tuần này chưa có ngày để xuất PNG.');
+        const zip=await exporter.createZip();
+        for(let i=0;i<d.days.length;i++){
+          const day=d.days[i];if(b)b.textContent=`Đang tạo ${i+1}/${d.days.length}…`;
+          const result=await exporter.renderBlob(pngDayNode(day),options);
+          zip.file(`${safeFile(sheetNameForDate(day.day,day.date))}.png`,result.blob)
+        }
+        if(b)b.textContent='Đang đóng gói ZIP…';
+        const blob=await exporter.generateZip(zip),filename=`LBG_THEO_TUAN_${safeFile(d.ws.name)}_${safeFile(d.scopeTarget)}.zip`;
+        exporter.downloadBlob(blob,filename);
+        if(typeof root.toast==='function')root.toast(`Đã xuất ${d.days.length} ảnh PNG của tuần ${d.ws.name} trong 1 file ZIP.`);
+        return
+      }
       const filename=`LBG_THEO_NGAY_${safeFile(d.dateKey)}_${safeFile(d.scopeTarget)}.png`;
-      const result=await exporter.exportElement(preview,filename,{width:2400,preferredScale:2});
+      const result=await exporter.exportElement(pngDayNode(d),filename,options);
       if(typeof root.toast==='function')root.toast(`Đã xuất PNG ${formatDateTitle(d.date)} • ${Math.round(result.width*result.scale)}×${Math.round(result.height*result.scale)} px.`)
     }catch(error){
       console.error('LBG PNG:',error);root.alert?.('Không xuất được PNG: '+(error?.message||String(error)))
     }finally{
       pngExportBusy=false;
-      if(b){b.textContent=old||'🖼 Xuất PNG';setPngEnabled(Boolean(currentData&&currentData.range==='day'),'Giai đoạn 1: xuất PNG toàn bộ bảng của ngày đang xem')}
+      if(b){
+        b.textContent=old||'🖼 Xuất PNG';
+        const ready=Boolean(currentData&&(currentData.range==='day'||currentData.range==='week'));
+        setPngEnabled(ready,currentData?.range==='week'?'Xuất cả tuần thành 1 file ZIP, mỗi ngày 1 ảnh PNG.':'Xuất toàn bộ bảng ngày hiện tại thành 1 ảnh PNG.')
+      }
     }
   }
   function syncRangeUi(){
@@ -460,7 +481,7 @@
     setControlsEnabled(true);
     if(!date.value)date.value=defaultDate();syncRangeUi();
     await loadGroups();
-    note.textContent=currentRangeMode()==='week'?'Chọn nguyên tuần, sau đó chọn Giáo viên hoặc Khối / nhóm một lần. Trên web chuyển ngày bằng các tab; khi xuất Excel, mỗi ngày là một sheet riêng trong cùng một file. Xuất PNG cả tuần sẽ bổ sung ở bước sau.':'Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần; bạn có thể tự chọn giáo viên hoặc chọn đúng Khối / nhóm đang được quản lý trong hệ thống. Sau khi Xem lịch, có thể xuất toàn bộ bảng thành 1 ảnh PNG.';
+    note.textContent=currentRangeMode()==='week'?'Chọn nguyên tuần, sau đó chọn Giáo viên hoặc Khối / nhóm một lần. Xuất Excel: mỗi ngày một sheet. Xuất PNG: tải 1 file ZIP, mỗi ngày là 1 ảnh PNG riêng.':'Chọn một ngày cụ thể. Hệ thống tự tìm đúng sheet tuần; bạn có thể tự chọn giáo viên hoặc chọn đúng Khối / nhóm đang được quản lý trong hệ thống. Sau khi Xem lịch, có thể xuất toàn bộ bảng thành 1 ảnh PNG.';
     try{const ctx=currentContext();renderTeacherPicker(ctx)}catch(error){q('lbgDailyTeacherPicker').innerHTML=`<div class="lbg-daily-empty">${esc(error?.message||String(error))}</div>`}
   }
   function bind(){
