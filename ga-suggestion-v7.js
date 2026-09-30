@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionV7=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260925.1';
+  const VERSION='20260930.2';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -39,6 +39,16 @@
   function schoolLabel(e){return txt(e?.locationLabel||e?.schoolName||e?.school)||'Chưa xác định'}
   function classLabel(e){return txt(e?.classRaw||e?.className)||'Chưa xác định'}
   const QUANG_TRUNG_GA_START='2026-09-21';
+  const QUANG_TRUNG_WEEK21_SHEET='21T9';
+  function isQuangTrungEvent(ev){
+    if((ev?.atoms||[]).some(e=>fold(e?.schoolName||e?.school||txt(e?.locationLabel).split(/\n/)[0])==='QUANG TRUNG'))return true;
+    return fold(txt(ev?.school).split(/\n/)[0])==='QUANG TRUNG'
+  }
+  function quangTrungWeek21Ga(ev){
+    if(txt(ev?.sheet).toUpperCase()!==QUANG_TRUNG_WEEK21_SHEET||ev?.track!=='kns'||!isQuangTrungEvent(ev))return null;
+    const members=[...(ev?.members||[])].map(x=>fold(x).replace(/\s+/g,'')).filter(Boolean).sort(),key=members.join('+');
+    return key==='1/4+1/5'||key==='2/5'?1:2
+  }
   function weekStart(ws,opts={}){
     let d=null;try{d=opts.startDateFor?opts.startDateFor(ws):null}catch{}
     if(d instanceof Date&&!Number.isNaN(d.getTime()))return d;
@@ -85,7 +95,9 @@
       const seq=seqFor(ev.track),manual=[...ev.manualValues].filter(x=>seq.includes(Number(x))),prior=[];
       for(const member of ev.members){const st=states.get([ev.locationKey,ev.grade,ev.track,member].join('|'));if(st)prior.push(st)}
       ev.previousEvents=[...new Map(prior.map(x=>[x.event.id,x.event])).values()];
-      if(manual.length===1){ev.ga=manual[0];ev.gaSource='manual'}
+      const quangTrungAnchor=quangTrungWeek21Ga(ev);
+      if(quangTrungAnchor!==null){ev.ga=quangTrungAnchor;ev.gaSource='quang-trung-21t9-anchor'}
+      else if(manual.length===1){ev.ga=manual[0];ev.gaSource='manual'}
       else if(manual.length>1){ev.ga=null;ev.gaSource='conflict';ev.historyMismatch=true;warnings.push(`Mâu thuẫn GA đã nhập tại ${ev.dateKey}, ${ev.school}, ${ev.classDisplay}.`)}
       else if(!prior.length){ev.ga=seq[0]??null;ev.gaSource='first'}
       else{
@@ -111,6 +123,7 @@
   function trackText(ev){return ev.track==='stem'?'STEM':'Kỹ năng sống'}
   function participantText(ev){return(ev.participants||[]).map(p=>`${p.name||p.code} (${p.code})${p.role==='CTV'?' – CTV KNS':''}`).join(' + ')}
   function basisText(ev){
+    if(ev.gaSource==='quang-trung-21t9-anchor')return ev.ga===1?'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/4+1/5 và lớp 2/5 dùng GA 1.':'Mốc thực tế QUANG TRUNG tuần 21T9: các lớp còn lại dùng GA 2.';
     if(ev.gaSource==='manual')return'GA đã được nhập/xác nhận thủ công cho sự kiện này.';
     if(ev.gaSource==='conflict')return'Lịch sử hoặc mốc GA đang mâu thuẫn — cần xác nhận trước khi dùng.';
     if(ev.gaSource==='first')return`Chưa có lần dạy ${trackText(ev)} trước đó của đúng lớp/nhóm lớp tại điểm dạy này trong dữ liệu từ tuần đầu; dùng GA đầu chuỗi.`;
@@ -130,5 +143,5 @@
   }
   function bind(){const b=root.document?.getElementById('gaSuggestV6');if(!b||!root.LBGTkbParserV2||!root.LBGTeacherIntelligenceV6)return false;if(b.dataset.gaV7==='1')return true;b.dataset.gaV7='1';b.onclick=run;b.textContent='💡 Phân tích giáo án gợi ý';return true}
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>240)clearInterval(timer)},100);bind();return true}
-  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,QUANG_TRUNG_GA_START,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,weekStart,isGaEligibleEntry,buildHistory,basisText,install};
+  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,QUANG_TRUNG_GA_START,QUANG_TRUNG_WEEK21_SHEET,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,weekStart,isGaEligibleEntry,isQuangTrungEvent,quangTrungWeek21Ga,buildHistory,basisText,install};
 });
