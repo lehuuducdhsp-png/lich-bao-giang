@@ -3,8 +3,24 @@ const assert=require('node:assert/strict');
 const fs=require('fs');
 const api=require('../school-report-v1.js');
 
-assert.equal(api.VERSION,'20260929.11');
+assert.equal(api.VERSION,'20260930.1');
 assert.deepEqual(api.MODES,{class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'});
+
+assert.equal(api.stemGaOrdinal(3),1);
+assert.equal(api.stemGaOrdinal(6),2);
+assert.equal(api.stemGaOrdinal(13),3);
+assert.equal(api.stemGaOrdinal(16),4);
+assert.equal(api.stemGaOrdinal(20),5);
+assert.equal(api.stemGaOrdinal(23),6);
+assert.equal(api.stemGaOrdinal(27),7);
+assert.equal(api.stemGaOrdinal(32),8);
+assert.equal(api.stemGaOrdinal(35),9);
+assert.equal(api.stemGaOrdinal(9),null,'GA9 không thuộc chuỗi STEM');
+assert.equal(api.gaText({ga:3,gaTrack:'stem'}),'GA 3 (1)');
+assert.equal(api.gaText({ga:13,gaTrack:'stem'}),'GA 13 (3)');
+assert.equal(api.gaText({ga:35,gaTrack:'stem'}),'GA 35 (9)');
+assert.equal(api.gaText({ga:9,gaTrack:'kns'}),'GA 9','KNS không được thêm số thứ tự STEM');
+assert.equal(api.gaText({ga:9,gaTrack:'stem'}),'GA 9','GA ngoài chuỗi STEM không được gắn ngoặc giả');
 assert.deepEqual(api.layoutSpec(),{headerRow:4,morningStart:5,afternoonStart:10,footerRow:15,periods:5},'web và Excel phải chỉ có đúng 5 hàng tiết mỗi buổi, không còn hàng Tiết dư');
 
 const mainA={day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'PHÚ BÌNH',siteDisplay:'Cơ sở 1: PHÚ HẬU CŨ',teacherName:'Diệu Tâm',code:'TÂM',className:'5/4',classType:'single',address:'A1'};
@@ -58,6 +74,9 @@ assert.match(footer,/Trường: PHÚ BÌNH • Cơ sở 1: PHÚ HẬU CŨ/);
 assert.doesNotMatch(footer,/Giáo viên:/,'LBG theo trường phải ghi Trường thay cho Giáo viên');
 
 const source=fs.readFileSync('school-report-v1.js','utf8');
+assert.match(source,/gaTrack=txt\(ev\?\.track\)\.toLowerCase\(\)/,'attachGa phải giữ track STEM/KNS từ history');
+assert.match(source,/roleResolver\(ws,e\?\.code,e\)/,'khi history thiếu track phải fallback đúng vai trò GV');
+assert.match(source,/gaTrack:tracks\.length===1\?tracks\[0\]:''/,'Trợ P chỉ kế thừa track khi nguồn khớp duy nhất');
 assert.match(source,/root\.LBGSchoolReportV1=\{[^}]*attachGa[^}]*\}/s,'browser runtime API phải giữ attachGa cho Lịch theo ngày');
 assert.match(source,/root\.LBGSchoolReportV1=\{[^}]*storedGaForEntry[^}]*canonicalGaHistory[^}]*attachGa[^}]*\}/s,'bridge GA phải giữ cả GA đã lưu và lịch sử GA');
 console.log('OK school report: compact 5-row sessions, split sites, teacher codes only, P labels, no slot dedupe, school footer');
