@@ -106,7 +106,7 @@ const expectedCorePatches=[
 ];
 const expectedRuntimePatches=[
   'ga-suggestion-multi-apply-v1.js?v=20260920.3',
-  'ga-per-class-v2.js?v=20260920.5',
+  'ga-per-class-v2.js?v=20260930.1',
   'ga-multi-selection-bridge-v1.js?v=20260914.2',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'report-branding-v1.js?v=20260925.2',
@@ -125,7 +125,7 @@ const expectedRuntimePatches=[
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
 assert.match(index,/app-runtime-v1\.js\?v=20260930\.2/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20260930\.1/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20260930\.2/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
 assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');
@@ -135,7 +135,7 @@ assert.match(patches,/if\(corePromise\)return corePromise/,'concurrent core requ
 assert.match(patches,/if\(runtimePromise\)return runtimePromise/,'concurrent runtime requests must share one promise');
 assert.doesNotMatch(patches,/setInterval\s*\(/,'patch loader must be lifecycle-driven, not poll continuously');
 assert.doesNotMatch(patches,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'loader refactor must not touch stored user data');
-assert.ok(expectedRuntimePatches.indexOf('ga-per-class-v2.js?v=20260920.5')<expectedRuntimePatches.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'per-class GA must load before shared bridge');
+assert.ok(expectedRuntimePatches.indexOf('ga-per-class-v2.js?v=20260930.1')<expectedRuntimePatches.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'per-class GA must load before shared bridge');
 assert.ok(expectedCorePatches.indexOf('ga-group-split-stale-repair-v1.js?v=20260920.1')<expectedCorePatches.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4'),'role-track repair must load after group-split repair');
 
 console.log(`OK responsive loader: ${expectedCore.length} report-core + ${expectedModules.length} modules + staged patches preserve exact execution order`);
