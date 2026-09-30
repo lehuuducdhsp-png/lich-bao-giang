@@ -46,7 +46,7 @@ const expectedModules=[
   'branding-header-fix-v1.js?v=20260805.1',
   'ui-redesign-v1.js?v=20260806.1',
   'report-pay-rules-v1.js?v=20260908.1',
-  'report-engine-v4.js?v=20260929.1',
+  'report-engine-v4.js?v=20260930.1',
   'sheets-ga-sync-compat-v1.js?v=20260906.1',
   'week-number-guard-v2.js?v=20260903.2',
   'mobile-polish-v2.js?v=20260807.4',
@@ -116,7 +116,7 @@ const expectedRuntimePatches=[
   'multi-preview-assist-sync-v1.js?v=20260914.1',
   'assist-p-excel-export-parity-v1.js?v=20260918.1',
   'assist-p-export-safe-v1.js?v=20260912.1',
-  'school-report-v1.js?v=20260929.12',
+  'school-report-v1.js?v=20260930.1',
   'account-bulk-handoff-v1.js?v=20260927.1',
   'assist-p-sheets-label-safe-v1.js?v=20260912.3',
   'assist-p-sheets-location-safe-v1.js?v=20260912.1',
@@ -124,8 +124,8 @@ const expectedRuntimePatches=[
 ];
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
-assert.match(index,/app-runtime-v1\.js\?v=20260929\.4/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20260929\.13/);
+assert.match(index,/app-runtime-v1\.js\?v=20260930\.1/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20260930\.1/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
 assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');
