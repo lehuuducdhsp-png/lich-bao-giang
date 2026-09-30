@@ -5,7 +5,7 @@
   if(root)root.LBGSchoolReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.11';
+  const VERSION='20260930.1';
   const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'};
   const TARGET_SEP='::LBG_SITE::';
   const PERIODS=5;
@@ -25,10 +25,23 @@
     return note&&!base.toUpperCase().includes(note.toUpperCase())?`${base} - ${note}`:base;
   }
   function teacherCodeText(e){return txt(e?.code)||'GV?'}
+  const STEM_GA_SEQUENCE=[3,6,13,16,20,23,27,32,35];
+  function gaTrackOf(e){
+    const raw=txt(e?.gaTrack||e?.track||e?.actualCategory||e?.role).toUpperCase();
+    return raw==='STEM'?'stem':raw==='KNS'||raw==='CTV'||raw==='CTV KNS'?'kns':''
+  }
+  function stemGaOrdinal(ga){
+    const n=Number(ga);if(!Number.isFinite(n))return null;
+    const seq=root.LBGGaRoleTrackStaleRepairV1?.STEM_SEQUENCE||STEM_GA_SEQUENCE,i=seq.indexOf(Math.round(n));
+    return i>=0?i+1:null
+  }
   function gaText(e){
     const raw=e?.gaDisplay??e?.ga;
     if(raw===null||raw===undefined||txt(raw)==='')return'GA —';
-    const n=Number(raw);return Number.isFinite(n)?`GA ${Math.round(n)}`:`GA ${txt(raw)}`;
+    const n=Number(raw);
+    if(!Number.isFinite(n))return`GA ${txt(raw)}`;
+    const value=Math.round(n),ordinal=gaTrackOf(e)==='stem'?stemGaOrdinal(value):null;
+    return ordinal?`GA ${value} (${ordinal})`:`GA ${value}`
   }
   function displayEntry(e,mode='teacher-class'){
     const teacher=teacherCodeText(e),cls=classText(e),assist=Boolean(e?.isAssist);
@@ -149,19 +162,24 @@
   function attachGa(ws,entries){
     const history=canonicalGaHistory(ws),main=[];
     for(const e of entries||[]){
-      if(e?.isAssist){main.push({...e,ga:null});continue}
+      if(e?.isAssist){main.push({...e,ga:null,gaTrack:''});continue}
       const stored=storedGaForEntry(ws,e),ev=history?.byAddress?.get?.(`${ws.name}!${txt(e?.address)}`),ga=stored!==null?stored:(ev?.ga??null);
-      main.push({...e,ga});
+      let gaTrack=txt(ev?.track).toLowerCase();
+      if(gaTrack!=='stem'&&gaTrack!=='kns'){
+        const role=txt(roleResolver(ws,e?.code,e)).toUpperCase();gaTrack=role==='STEM'?'stem':'kns'
+      }
+      main.push({...e,ga,gaTrack});
     }
     const byKey=new Map();
     for(const e of main){
       if(e.isAssist||e.ga===null||e.ga===undefined||txt(e.ga)==='')continue;
-      const key=gaJoinKey(e);if(!byKey.has(key))byKey.set(key,new Set());byKey.get(key).add(String(e.ga));
+      const key=gaJoinKey(e);if(!byKey.has(key))byKey.set(key,{values:new Set(),tracks:new Set()});
+      const item=byKey.get(key);item.values.add(String(e.ga));if(e.gaTrack)item.tracks.add(e.gaTrack)
     }
     return main.map(e=>{
       if(!e.isAssist)return e;
-      const values=[...(byKey.get(gaJoinKey(e))||[])];
-      return values.length===1?{...e,ga:Number.isFinite(Number(values[0]))?Number(values[0]):values[0]}:values.length>1?{...e,gaDisplay:'?'}:e;
+      const item=byKey.get(gaJoinKey(e)),values=[...(item?.values||[])],tracks=[...(item?.tracks||[])];
+      return values.length===1?{...e,ga:Number.isFinite(Number(values[0]))?Number(values[0]):values[0],gaTrack:tracks.length===1?tracks[0]:''}:values.length>1?{...e,gaDisplay:'?'}:e;
     });
   }
   function daysFor(ws,events){
@@ -184,7 +202,7 @@
         return;
       }
       const script=root.document.createElement('script');
-      script.id='lbgDailyReportV1ScriptLazy';script.src='daily-report-v1.js?v=20260929.12';script.async=false;
+      script.id='lbgDailyReportV1ScriptLazy';script.src='daily-report-v1.js?v=20260930.1';script.async=false;
       script.onload=()=>{try{root.LBGDailyReportV1?.install?.();q('lbgDailyReportCard')?.scrollIntoView?.({behavior:'smooth',block:'start'})}catch{}resolve(root.LBGDailyReportV1||null)};
       script.onerror=()=>{dailyLoadPromise=null;reject(new Error('Không tải được Lịch báo giảng theo ngày.'))};
       root.document.body.appendChild(script);
@@ -270,7 +288,7 @@
     try{const d=currentData&&currentData.key===txt(q('lbgSchoolSelect')?.value)&&currentData.mode===txt(q('lbgSchoolMode')?.value)?currentData:makeData();if(!root.ExcelJS||!root.saveAs)throw new Error('Thư viện xuất Excel chưa sẵn sàng.');const out=new root.ExcelJS.Workbook();addExcelSheet(out,d);const buf=await out.xlsx.writeBuffer();root.saveAs(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`LBG_TRUONG_${safeFile(d.school)}${d.site?`_${safeFile(d.site)}`:''}_${safeFile(d.ws.name)}_${safeFile(d.mode)}.xlsx`);if(typeof root.toast==='function')root.toast(`Đã xuất LBG ${d.label} • ${MODES[d.mode]||d.mode}.`)}catch(error){console.error(error);root.alert?.('Không xuất được LBG theo trường: '+(error?.message||String(error)))}finally{exportBusy=false;if(button){button.disabled=false;button.textContent=old||'⇩ Xuất Excel'}}
   }
   function install(){
-    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,storedGaForEntry,canonicalGaHistory,gaJoinKey,attachGa,canWholeSchool,refresh,renderCurrent,addExcelSheet,loadDailyReport};
+    if(installed)return;installed=true;ensureCard();root.document.addEventListener('lbg-access-ready',()=>setTimeout(refresh,0));setTimeout(refresh,300);setTimeout(refresh,900);root.LBGSchoolReportV1={version:VERSION,MODES,layoutSpec,classText,teacherCodeText,gaTrackOf,stemGaOrdinal,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,storedGaForEntry,canonicalGaHistory,gaJoinKey,attachGa,canWholeSchool,refresh,renderCurrent,addExcelSheet,loadDailyReport};
   }
-  return{VERSION,MODES,layoutSpec,classText,teacherCodeText,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,gaJoinKey,attachGa,loadDailyReport,install};
+  return{VERSION,MODES,layoutSpec,classText,teacherCodeText,gaTrackOf,stemGaOrdinal,gaText,displayEntry,schoolKey,siteText,targetKey,collectSchoolOptions,collectSchoolSiteOptions,filterBySchool,filterBySchoolSite,slotKey,buildSlots,reportLocationText,footerText,gaJoinKey,attachGa,loadDailyReport,install};
 });
