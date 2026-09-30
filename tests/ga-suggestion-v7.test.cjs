@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const V=require('../ga-suggestion-v7.js');
-assert.equal(V.version,'20260925.1');
+assert.equal(V.version,'20260930.2');
 assert.deepEqual(V.KNS_SEQUENCE,[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34]);
 assert.deepEqual(V.STEM_SEQUENCE,[3,6,13,16,20,23,27,32,35]);
 
@@ -117,10 +117,16 @@ const qt14={name:'14T9',entries:[
   {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:3,session:'Sáng',period:1,teachingPeriod:1,schoolName:'TRƯỜNG KHÁC',locationKey:'TRUONG KHAC|',locationLabel:'TRƯỜNG KHÁC',classRaw:'1/2',className:'1/2',address:'OTHER14'}
 ]};
 const qt21={name:'21T9',entries:[
-  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'QT21'}
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'QT21_12'},
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:2,teachingPeriod:2,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/4+1/5',className:'1/4+1/5',address:'QT21_145'},
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:3,teachingPeriod:3,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'2/5',className:'2/5',address:'QT21_25'},
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:4,teachingPeriod:4,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/6+1/7',className:'1/6+1/7',address:'QT21_167'},
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:5,teachingPeriod:5,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'2/2+2/4',className:'2/2+2/4',address:'QT21_224'}
 ]};
 const qt28={name:'28T9',entries:[
-  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'QT28'}
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'QT28_12'},
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:2,teachingPeriod:2,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/4+1/5',className:'1/4+1/5',address:'QT28_145'},
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Chiều',period:3,teachingPeriod:3,schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'2/5',className:'2/5',address:'QT28_25'}
 ]};
 const qtStarts={'7T9':new Date(2026,8,7,12),'14T9':new Date(2026,8,14,12),'21T9':new Date(2026,8,21,12),'28T9':new Date(2026,8,28,12)};
 const qtHistory=V.buildHistory({worksheets:[qt7,qt14,qt21,qt28]},'28T9',{
@@ -131,8 +137,26 @@ const qtHistory=V.buildHistory({worksheets:[qt7,qt14,qt21,qt28]},'28T9',{
 });
 assert.equal(qtHistory.byAddress.get('7T9!QT7'),undefined,'QUANG TRUNG 7T9 không được tính GA');
 assert.equal(qtHistory.byAddress.get('14T9!QT14'),undefined,'QUANG TRUNG 14T9 không được tính GA');
-assert.equal(qtHistory.byAddress.get('21T9!QT21').ga,1,'QUANG TRUNG bắt đầu tính từ 21T9 nên KNS phải khởi đầu GA1');
-assert.equal(qtHistory.byAddress.get('28T9!QT28').ga,2,'28T9 mới nối tiếp lịch sử GA từ 21T9');
+assert.equal(V.QUANG_TRUNG_WEEK21_SHEET,'21T9');
+assert.equal(qtHistory.byAddress.get('21T9!QT21_145').ga,1,'21T9 QUANG TRUNG lớp 1/4+1/5 phải là GA1');
+assert.equal(qtHistory.byAddress.get('21T9!QT21_25').ga,1,'21T9 QUANG TRUNG lớp 2/5 phải là GA1');
+assert.equal(qtHistory.byAddress.get('21T9!QT21_12').ga,2,'21T9 QUANG TRUNG lớp 1/2 phải là GA2');
+assert.equal(qtHistory.byAddress.get('21T9!QT21_167').ga,2,'21T9 QUANG TRUNG lớp 1/6+1/7 phải là GA2');
+assert.equal(qtHistory.byAddress.get('21T9!QT21_224').ga,2,'21T9 QUANG TRUNG lớp 2/2+2/4 phải là GA2');
+assert.equal(qtHistory.byAddress.get('21T9!QT21_145').gaSource,'quang-trung-21t9-anchor');
+assert.equal(qtHistory.byAddress.get('21T9!QT21_12').gaSource,'quang-trung-21t9-anchor');
+assert.equal(qtHistory.byAddress.get('28T9!QT28_145').ga,2,'tuần sau lớp 1/4+1/5 phải nối GA1 → GA2');
+assert.equal(qtHistory.byAddress.get('28T9!QT28_25').ga,2,'tuần sau lớp 2/5 phải nối GA1 → GA2');
+assert.equal(qtHistory.byAddress.get('28T9!QT28_12').ga,4,'tuần sau lớp 1/2 phải nối GA2 → GA4 theo chuỗi KNS');
+assert.match(V.basisText(qtHistory.byAddress.get('21T9!QT21_145')),/1\/4\+1\/5.*2\/5.*GA 1/);
+assert.match(V.basisText(qtHistory.byAddress.get('21T9!QT21_12')),/các lớp còn lại dùng GA 2/);
 assert.equal(qtHistory.byAddress.get('14T9!OTHER14').ga,1,'quy tắc chỉ áp dụng QUANG TRUNG, trường khác vẫn tính bình thường');
+
+// Mốc 21T9 chỉ áp dụng luồng KNS; STEM vẫn giữ chuỗi STEM riêng.
+const qtStem=V.quangTrungWeek21Ga({sheet:'21T9',track:'stem',school:'QUANG TRUNG',members:['1/2'],atoms:[{schoolName:'QUANG TRUNG'}]});
+assert.equal(qtStem,null,'không được ép tiết STEM QUANG TRUNG sang GA1/GA2 KNS');
+assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG',members:['1/4','1/5'],atoms:[{schoolName:'QUANG TRUNG'}]}),1);
+assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG',members:['2/5'],atoms:[{schoolName:'QUANG TRUNG'}]}),1);
+assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG',members:['1/2'],atoms:[{schoolName:'QUANG TRUNG'}]}),2);
 
 console.log('OK GA suggestion V7: actual-period grouping, collaboration, separate KNS/STEM progress, class-specific nearest GA');
