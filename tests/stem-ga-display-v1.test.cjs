@@ -22,7 +22,7 @@ assert.equal(daily.eventLines({schoolName:'TRƯỜNG A',className:'4/1',ga:20,ga
 assert.match(report,/const STEM_GA_SEQUENCE=\[3,6,13,16,20,23,27,32,35\]/,'LBG thường phải dùng đúng chuỗi STEM');
 assert.match(report,/function stemGaOrdinal\(ga\)/);
 assert.match(report,/function reportEntryTrack\(a,e\)/,'LBG thường phải xác định đúng track giáo viên/tiết');
-assert.match(report,/LBGGaRoleTrackStaleRepairV1\?\.roleFor/,'phải tái sử dụng bộ nhận diện STEM hiện hành');
+assert.match(report,/safe\?\.roleFor\?safe\.roleFor/,'phải tái sử dụng bộ nhận diện STEM hiện hành');
 assert.match(report,/function gaDisplayValue\(a,d,s,loc\)/);
 assert.match(report,/data-stem="\$\{stem\?'1':'0'\}"/,'input GA phải chỉ mang cờ STEM, không đổi kiểu dữ liệu');
 assert.match(report,/class="lbg-r4-stem-ordinal"/,'web phải hiển thị số STEM ở suffix riêng');
