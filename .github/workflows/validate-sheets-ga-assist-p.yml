@@ -10,6 +10,7 @@ on:
       - 'patch-runtime-loader-v1.js'
       - 'tests/sheets-ga-save-safe-v1.test.cjs'
       - 'tests/assist-p-class-pairing-v1.test.cjs'
+      - 'tests/quang-trung-tien-28t9-self-heal.test.cjs'
       - '.github/workflows/validate-sheets-ga-assist-p.yml'
 
 jobs:
@@ -24,14 +25,16 @@ jobs:
           node --check ga-per-class-v2.js
           node --check tests/sheets-ga-save-safe-v1.test.cjs
           node --check tests/assist-p-class-pairing-v1.test.cjs
+          node --check tests/quang-trung-tien-28t9-self-heal.test.cjs
       - name: Regression checks
         run: |
           node tests/sheets-ga-save-safe-v1.test.cjs
           node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/quang-trung-tien-28t9-self-heal.test.cjs
       - name: Loader contract
         run: |
           grep -F 'app-runtime-v1.js?v=20260930.2' index.html
-          grep -F 'ga-per-class-v2.js?v=20260920.5' patch-runtime-loader-v1.js
+          grep -F 'ga-per-class-v2.js?v=20260930.1' patch-runtime-loader-v1.js
           grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' patch-runtime-loader-v1.js
           grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' patch-runtime-loader-v1.js
       - name: Assist P own-column class contract
