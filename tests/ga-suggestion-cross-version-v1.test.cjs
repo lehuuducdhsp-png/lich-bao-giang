@@ -66,7 +66,8 @@ const q14=ws('14T9',[
   {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',schoolKey:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'Q14'}
 ]);
 const q21=ws('21T9',[
-  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',schoolKey:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'Q21'}
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:1,teachingPeriod:1,schoolName:'QUANG TRUNG',schoolKey:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'1/2',className:'1/2',address:'Q21'},
+  {code:'ĐỨC',teacherName:'Lê Hữu Đức',day:2,session:'Sáng',period:2,teachingPeriod:2,schoolName:'QUANG TRUNG',schoolKey:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG',classRaw:'2/5',className:'2/5',address:'Q21_25'}
 ]);
 const qStarts={'14T9':new Date(2026,8,14,12),'21T9':new Date(2026,8,21,12)};
 const qSources=[
@@ -80,6 +81,7 @@ const qHistory=Cross.buildHistoryAcrossSources(V7,qSources,qSources[1].book,'21T
   weekLike(){return true}
 });
 assert.equal(qHistory.byAddress.get('14T9!Q14'),undefined,'cross-version cũng phải bỏ QUANG TRUNG 14T9');
-assert.equal(qHistory.byAddress.get('21T9!Q21').ga,1,'dù phiên bản cũ có 14T9, QUANG TRUNG 21T9 vẫn phải bắt đầu GA1');
+assert.equal(qHistory.byAddress.get('21T9!Q21').ga,2,'cross-version phải giữ mốc 21T9: lớp 1/2 là GA2');
+assert.equal(qHistory.byAddress.get('21T9!Q21_25').ga,1,'cross-version phải giữ mốc 21T9: lớp 2/5 là GA1');
 
 console.log('OK GA cross-version: THUỶ LƯƠNG note-in-site normalized; Hoài Thanh 2/5 & 2/4 advance GA1 -> GA2');
