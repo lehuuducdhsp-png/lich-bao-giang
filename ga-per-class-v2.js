@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.5';
+  const VERSION='20260930.1';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -168,6 +168,34 @@
     const plan=planApplications(verified,entries,values,normalizer);
     return{...plan,apply:(plan.apply||[]).filter(item=>item?.replaceExisting===true&&item?.reason==='stale-role-track-mix')};
   }
+  function quangTrungAnchorAdvance(ev){
+    if(ev?.track!=='kns'||normalizedGa(ev?.ga)!==4)return false;
+    const previous=latestPriorSameTrack(ev);
+    if(!previous||txt(previous?.sheet).toUpperCase()!=='21T9'||previous?.gaSource!=='quang-trung-21t9-anchor'||normalizedGa(previous?.ga)!==2)return false;
+    const school=fold(txt(previous?.school||ev?.school).split(/\n/)[0]);
+    return school==='QUANG TRUNG'
+  }
+  function verifiedQuangTrungCommonRepairPlan(rows,entries=[],values={},normalizer){
+    const groups=new Map();
+    for(const ev of Array.isArray(rows)?rows:[]){
+      const resolved=resolveTarget(ev,entries,normalizer);if(!resolved.ok)continue;
+      const target=resolved.target,key=txt(target?.defaultKey);if(!key)continue;
+      if(!groups.has(key))groups.set(key,{target,items:[]});
+      groups.get(key).items.push({ev,target,ga:normalizedGa(ev?.ga),verified:quangTrungAnchorAdvance(ev)})
+    }
+    const apply=[];
+    for(const group of groups.values()){
+      if(!group.items.length||group.items.some(x=>!x.verified||x.ga===null))continue;
+      const expected=[...new Set(group.items.map(x=>x.ga))];if(expected.length!==1||expected[0]!==4)continue;
+      if(group.items.some(x=>rawValue(values,x.target.key)!==undefined))continue;
+      const direct=rawValue(values,group.target.defaultKey),legacy=rawValue(values,group.target.legacyKey);
+      const storedKey=direct!==undefined?group.target.defaultKey:legacy!==undefined?group.target.legacyKey:'';
+      const current=normalizedGa(direct!==undefined?direct:legacy);if(!storedKey||current!==2)continue;
+      const items=group.items.map(x=>({ev:{...x.ev,__lbgStaleRepairReason:'quang-trung-21t9-common-anchor',__lbgStaleRoleTrackManual:2,__lbgRoleTrackExpected:4,__lbgStaleRoleTrackVerified:true},ga:x.ga}));
+      apply.push({target:{...group.target,key:storedKey},ga:4,current:2,items,replaceExisting:true,reason:'quang-trung-21t9-common-anchor'})
+    }
+    return{apply,same:[],conflicts:[],skipped:[]}
+  }
   function makeAnalyzeDecorator(original,decorate,isCurrent,after){
     if(typeof original!=='function'||typeof decorate!=='function')return null;
     const wrapper=function(ws,...args){
@@ -181,7 +209,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,REPAIR_BACKUP_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,repairBackupKey,buildRepairBackup,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,buildCanonicalHistoryAcrossSources};
+    return{VERSION,GA_PREFIX,LEGACY_GA_PREFIX,CLASS_PREFIX,REPAIR_BACKUP_PREFIX,normalizedGa,normalizeClassValue,classWeight,entryClassKey,locOf,gaKey,classGaKey,storageKey,repairBackupKey,buildRepairBackup,buildProfiles,targetForEntry,resolveTarget,staleRoleTrackReplacement,planApplications,applyPlan,verifiedStaleOnlyPlan,quangTrungAnchorAdvance,verifiedQuangTrungCommonRepairPlan,makeAnalyzeDecorator,latestPriorSameTrack,markVerifiedStaleClassOverridesFromValues,markVerifiedStaleClassOverrides,buildCanonicalHistoryAcrossSources};
   }
 
   const q=id=>root.document?.getElementById(id),cross=()=>root.LBGGaSuggestionCrossVersionV1||null,v7=()=>root.LBGGaSuggestionV7||null,parser=()=>root.LBGTkbParserV2||null,engine=()=>root.LBGReportEngineV4||null;
@@ -359,8 +387,10 @@
     return{history,canonicalHistory:history,rows:rowsFor(history,a)};
   }
   async function repairVerifiedStaleOnly(a){
-    const analyzed=await analyzeReport(a),values=loadStoredValues(a);
-    const plan=verifiedStaleOnlyPlan(analyzed.rows,a?.entries||[],values,normalizer());
+    const analyzed=await analyzeReport(a),values=loadStoredValues(a),norm=normalizer();
+    const classPlan=verifiedStaleOnlyPlan(analyzed.rows,a?.entries||[],values,norm);
+    const quangTrungPlan=verifiedQuangTrungCommonRepairPlan(analyzed.rows,a?.entries||[],values,norm);
+    const plan={apply:[...(classPlan.apply||[]),...(quangTrungPlan.apply||[])],same:[...(classPlan.same||[])],conflicts:[...(classPlan.conflicts||[])],skipped:[...(classPlan.skipped||[])]};
     const write=applyPlan(plan,values);
     if(write.applied){backupBeforeRepair(a,values,plan);persistStoredValues(a,write.values);}
     return{...analyzed,plan,values:write.values,applied:write.applied,replacedCount:write.replacedCount||0,protectedCount:write.protectedCount||0};
