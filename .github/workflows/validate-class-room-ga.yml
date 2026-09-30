@@ -9,6 +9,7 @@ on:
       - 'index.html'
       - 'tests/tkb-class-room-ga.test.cjs'
       - 'tests/ga-suggestion-v7.test.cjs'
+      - 'tests/quang-trung-21t9-class-ga.test.cjs'
       - '.github/workflows/validate-class-room-ga.yml'
 
 permissions:
@@ -28,10 +29,12 @@ jobs:
           node --check ga-suggestion-v7.js
           node --check tests/tkb-class-room-ga.test.cjs
           node --check tests/ga-suggestion-v7.test.cjs
+          node --check tests/quang-trung-21t9-class-ga.test.cjs
       - name: Class vs room regressions
         run: |
           node tests/tkb-class-room-ga.test.cjs
           node tests/ga-suggestion-v7.test.cjs
+          node tests/quang-trung-21t9-class-ga.test.cjs
       - name: Runtime cache contract
         run: |
           grep -F 'tkb-parser-v2.js?v=20260925.1' app-runtime-v1.js
