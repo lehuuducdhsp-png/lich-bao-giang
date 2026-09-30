@@ -35,5 +35,5 @@ jobs:
       - name: Runtime cache contract
         run: |
           grep -F 'tkb-parser-v2.js?v=20260925.1' app-runtime-v1.js
-          grep -F 'ga-suggestion-v7.js?v=20260925.1' app-runtime-v1.js
-          grep -F 'app-runtime-v1.js?v=20260930.1' index.html
+          grep -F 'ga-suggestion-v7.js?v=20260930.2' app-runtime-v1.js
+          grep -F 'app-runtime-v1.js?v=20260930.2' index.html
