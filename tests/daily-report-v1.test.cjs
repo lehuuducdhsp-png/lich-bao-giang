@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../daily-report-v1.js');
 
-assert.equal(D.VERSION,'20260929.12');
+assert.equal(D.VERSION,'20260930.1');
 const date=D.dateFromKey('2026-09-29');
 assert.ok(date instanceof Date);
 assert.equal(D.dayNoForDate(date),3,'29/9/2026 là Thứ Ba => day 3');
@@ -113,6 +113,11 @@ assert.deepEqual(lines,['LÊ LỢI','1/B • P 1.5','GA 1']);
 const pLines=D.eventLines({schoolName:'LÊ LỢI',className:'1/B',roomRaw:'P 1.5',ga:1,isAssist:true},'compact');
 assert.match(pLines[0],/Trợ \(P\)/);
 assert.match(pLines[0],/GA 1/);
+
+const stemLines=D.eventLines({schoolName:'LÊ LỢI',className:'4/1',ga:13,gaTrack:'stem'},'full');
+assert.equal(stemLines[2],'GA 13 (3)','Lịch theo ngày phải hiện số thứ tự riêng của STEM');
+const knsLines=D.eventLines({schoolName:'LÊ LỢI',className:'4/1',ga:13,gaTrack:'kns'},'full');
+assert.equal(knsLines[2],'GA 13','cùng số GA nhưng KNS không được gắn ngoặc STEM');
 
 const oldCleaner=globalThis.LBGReportEngineV4;
 globalThis.LBGReportEngineV4={dailyLocationText(){return'THỦY LƯƠNG'}};
