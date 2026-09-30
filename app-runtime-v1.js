@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260929.4';
+  const VERSION='20260930.1';
   const LOOKAHEAD=8;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -125,7 +125,7 @@
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
         ['report-pay-rules-v1.js?v=20260908.1','lbgReportPayRulesV1Script'],
-        ['report-engine-v4.js?v=20260929.1','lbgReportEngineV4Script'],
+        ['report-engine-v4.js?v=20260930.1','lbgReportEngineV4Script'],
         ['sheets-ga-sync-compat-v1.js?v=20260906.1','lbgSheetsGaSyncCompatV1Script'],
         ['week-number-guard-v2.js?v=20260903.2','lbgWeekNumberGuardV2Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],

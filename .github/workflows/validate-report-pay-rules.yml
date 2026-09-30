@@ -35,9 +35,9 @@ jobs:
       - name: Check runtime contract
         run: |
           grep -Fq "report-pay-rules-v1.js?v=20260908.1" app-runtime-v1.js
-          grep -Fq "report-engine-v4.js?v=20260929.1" app-runtime-v1.js
+          grep -Fq "report-engine-v4.js?v=20260930.1" app-runtime-v1.js
           grep -Fq "monthly-calendar-v3.js?v=20260927.1" app-runtime-v1.js
-          grep -Fq "app-runtime-v1.js?v=20260929.4" index.html
+          grep -Fq "app-runtime-v1.js?v=20260930.1" index.html
       - name: Run report/pay regression
         run: |
           node tests/report-pay-rules-v1.test.cjs

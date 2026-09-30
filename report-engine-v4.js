@@ -27,6 +27,36 @@
   const classReportText=e=>{const base=txt(e?.className),note=txt(e?.groupNote);return note?`${base} - ${note}`:base};
   function reportTotals(a){const main=Number(a?.total)||0,plus=reportRules()?.scanPlus(worksheet(a?.sheet)||currentWorksheet(),a?.code)||0;return reportRules()?.totals(main,plus)||{main,plus,total:main+plus}}
   function reportTotalText(a){const t=reportTotals(a);return reportRules()?.totalText(t.main,t.plus)||(t.plus?`TỔNG: ${t.main} tiết + ${t.plus} tiết = ${t.total} tiết`:`TỔNG: ${t.main} tiết`)}
+  const STEM_GA_SEQUENCE=[3,6,13,16,20,23,27,32,35];
+  function stemGaOrdinal(ga){
+    const n=Number(ga);if(!Number.isFinite(n))return null;
+    const seq=window.LBGGaRoleTrackStaleRepairV1?.STEM_SEQUENCE||STEM_GA_SEQUENCE,i=seq.indexOf(Math.round(n));
+    return i>=0?i+1:null
+  }
+  function reportEntryTrack(a,e){
+    const direct=txt(e?.gaTrack||e?.track||e?.actualCategory||e?.role).toUpperCase();
+    if(direct==='STEM')return'stem';
+    if(direct==='KNS'||direct==='CTV'||direct==='CTV KNS')return'kns';
+    const ws=worksheet(a?.sheet)||currentWorksheet(),code=txt(e?.code||a?.code).toUpperCase();
+    if(!ws||!code)return'';
+    const fallback=(sheet,c)=>window.LBGTeacherIntelligenceV6?.summaryRoles?.(sheet)?.get?.(txt(c).toUpperCase())?.role||'KNS';
+    try{
+      const safe=window.LBGGaRoleTrackStaleRepairV1,role=safe?.roleFor?safe.roleFor(ws,code,e||{},fallback,book(),window.LBGTeacherIntelligenceV6):fallback(ws,code);
+      return txt(role).toUpperCase()==='STEM'?'stem':'kns'
+    }catch{return txt(fallback(ws,code)).toUpperCase()==='STEM'?'stem':'kns'}
+  }
+  function locationGaTrack(a,d,s,loc){
+    const rows=(a?.entries||[]).filter(e=>Number(e?.day)===Number(d)&&txt(e?.session)===txt(s)&&locOf(e).key===txt(loc?.key));
+    if(rows.some(e=>reportEntryTrack(a,e)==='stem'))return'stem';
+    if(rows.length)return'kns';
+    return reportEntryTrack(a,{code:a?.code})
+  }
+  function gaDisplayValue(a,d,s,loc){
+    const raw=gaValue(a,d,s,loc);if(txt(raw)==='')return'';
+    const n=Number(raw);if(!Number.isFinite(n))return txt(raw);
+    const value=Math.round(n),ordinal=locationGaTrack(a,d,s,loc)==='stem'?stemGaOrdinal(value):null;
+    return ordinal?`${value} (${ordinal})`:`${value}`
+  }
 
   function displayLines(value){
     return txt(value).replace(/<br\s*\/?\s*>/gi,'\n').split(/\n+/).map(x=>txt(x).replace(/^\s*[+•-]\s*/,'').replace(/\s+/g,' ')).filter(Boolean)
@@ -96,16 +126,20 @@
 
   function locationEditor(a,d,s){
     const list=locationList(a,d,s);if(!list.length)return'';
-    return list.map(loc=>`<div class="lbg-r4-location">
+    return list.map(loc=>{
+      const value=gaValue(a,d,s,loc),stem=locationGaTrack(a,d,s,loc)==='stem',ordinal=stem?stemGaOrdinal(value):null;
+      return`<div class="lbg-r4-location">
       <div class="lbg-r4-school-name">${escHtml(loc.schoolName||loc.label)}</div>
       ${loc.siteDisplay?`<div class="lbg-r4-site">${escHtml(loc.siteDisplay)}</div>`:''}
-      <label>(GA <input class="lbg-r4-ga" type="number" min="0" step="1" inputmode="numeric" value="${escHtml(gaValue(a,d,s,loc))}" data-day="${d}" data-session="${encodeURIComponent(s)}" data-location="${encodeURIComponent(loc.key||loc.label)}" data-legacy="${encodeURIComponent(loc.legacySchool||loc.schoolName)}">)</label>
-    </div>`).join('<div class="lbg-r4-sep">/</div>')
+      <label>(GA <input class="lbg-r4-ga" type="number" min="0" step="1" inputmode="numeric" value="${escHtml(value)}" data-stem="${stem?'1':'0'}" data-day="${d}" data-session="${encodeURIComponent(s)}" data-location="${encodeURIComponent(loc.key||loc.label)}" data-legacy="${encodeURIComponent(loc.legacySchool||loc.schoolName)}"><span class="lbg-r4-stem-ordinal">${ordinal?` (${ordinal})`:''}</span>)</label>
+    </div>`
+    }).join('<div class="lbg-r4-sep">/</div>')
   }
   function bindGa(a){
     q('preview')?.querySelectorAll('.lbg-r4-ga').forEach(input=>input.addEventListener('input',()=>{
       const loc={key:decodeURIComponent(input.dataset.location||''),legacySchool:decodeURIComponent(input.dataset.legacy||'')},key=gaKey(Number(input.dataset.day),decodeURIComponent(input.dataset.session||''),loc),value=safeGa(input.value);
-      input.value=value;if(value==='')delete ensureGa(a)[key];else ensureGa(a)[key]=value;saveGa(a)
+      input.value=value;if(value==='')delete ensureGa(a)[key];else ensureGa(a)[key]=value;saveGa(a);
+      const suffix=input.parentElement?.querySelector?.('.lbg-r4-stem-ordinal'),ordinal=input.dataset.stem==='1'?stemGaOrdinal(value):null;if(suffix)suffix.textContent=ordinal?` (${ordinal})`:''
     }))
   }
 
@@ -119,7 +153,7 @@
       .lbg-r4-site{font-weight:700;line-height:1.15;font-size:12px}
       .lbg-r4-location label{font-weight:800;white-space:nowrap}
       .lbg-r4-ga{width:68px;min-width:68px;height:34px;box-sizing:border-box;padding:4px 8px;border:1px solid #94a3b8;border-radius:8px;background:#fff;text-align:center;font:800 15px "Times New Roman",serif;appearance:textfield;-moz-appearance:textfield}
-      .lbg-r4-ga::-webkit-outer-spin-button,.lbg-r4-ga::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+      .lbg-r4-stem-ordinal{font-weight:900;color:#9a3412}.lbg-r4-ga::-webkit-outer-spin-button,.lbg-r4-ga::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
       .lbg-r4-ga:focus{outline:2px solid #0f766e;border-color:#0f766e}.lbg-r4-sep{font-weight:900}
       .sheet.lbg-r4-seven{min-width:1180px}.sheet.lbg-r4-six{min-width:1020px}
       #compare[data-lbg-r4="1"]{white-space:nowrap}`;
@@ -147,7 +181,7 @@
   function uniqueSheetName(bookOut,name){let base=txt(name).replace(/[\\/?*\[\]:]/g,' ').replace(/\s+/g,' ').trim().slice(0,31)||'GIÁO VIÊN',out=base,n=2;while(bookOut.getWorksheet(out)){const x=` (${n++})`;out=base.slice(0,31-x.length)+x}return out}
   function gaLocationText(a,d,s){
     return locationList(a,d,s).map(loc=>{
-      const lines=[loc.schoolName||loc.label];if(loc.siteDisplay)lines.push(loc.siteDisplay);lines.push(`(GA ${gaValue(a,d,s,loc)})`);return lines.join('\n')
+      const lines=[loc.schoolName||loc.label];if(loc.siteDisplay)lines.push(loc.siteDisplay);lines.push(`(GA ${gaDisplayValue(a,d,s,loc)})`);return lines.join('\n')
     }).join('\n/\n')
   }
   function addReportSheet(bookOut,a,name){
@@ -217,7 +251,7 @@
   function trackButtons(event){const b=event.target?.closest?.('button');if(!b)return;if(b.id==='multiClearAll')setTimeout(()=>selection.clear(),0);if(b.id==='multiSelectAll')setTimeout(()=>{selection.clear();readTeachers(currentWorksheet(),false).forEach(x=>selection.set(txt(x.code),{code:txt(x.code),name:txt(x.name||x.teacherName||x.code)}))},0)}
   function compareLabel(){const b=q('compare');if(!b)return;const label='⇄ So sánh phiên bản TKB',title='So sánh lịch của cùng một giáo viên giữa phiên bản TKB đang dùng và một phiên bản TKB khác.';if(b.textContent!==label)b.textContent=label;if(b.title!==title)b.title=title;if(b.dataset.lbgR4!=='1')b.dataset.lbgR4='1'}
   function weeklyDays(){const select=q('weeklyOffDay');if(!select)return;const weekName=q('weeklyStatsWeek')?.value||q('week')?.value,ws=worksheet(weekName);if(!ws)return;const ds=daysForWorksheet(ws),start=typeof startDate==='function'?startDate(ws.name):null,old=Number(select.value),sig=ds.join(',')+'|'+ws.name;if(select.dataset.lbgR4Days===sig)return;select.dataset.lbgR4Days=sig;select.innerHTML=ds.map(d=>{let label=dayLabel(d);if(start instanceof Date&&!Number.isNaN(start.getTime())){const date=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);date.setDate(date.getDate()+(d===8?6:d-2));label+=` – ${date.toLocaleDateString('vi-VN')}`}return`<option value="${d}">${escHtml(label)}</option>`}).join('');if(ds.includes(old))select.value=String(old);select.disabled=false}
-  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText,slotEntries,reportTotals,reportTotalText,displaySchoolName,cleanDailySiteText,dailyLocationText};compareLabel();weeklyDays()}
+  function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText,slotEntries,reportTotals,reportTotalText,stemGaOrdinal,reportEntryTrack,locationGaTrack,gaDisplayValue,displaySchoolName,cleanDailySiteText,dailyLocationText};compareLabel();weeklyDays()}
   function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})}
 
   document.addEventListener('change',event=>{trackSelection(event);if(event.target?.id==='week'){selection.clear();sundayCache.delete(currentWorksheet());setTimeout(queue,40)}if(event.target?.id==='weeklyStatsWeek')setTimeout(()=>{const s=q('weeklyOffDay');if(s)s.dataset.lbgR4Days='';weeklyDays()},20)},true);
