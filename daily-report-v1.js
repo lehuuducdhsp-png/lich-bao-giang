@@ -5,7 +5,7 @@
   if(root)root.LBGDailyReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260929.12';
+  const VERSION='20260930.1';
   const PERIODS=5;
   const DAILY_LAYOUT=Object.freeze({teacherColumn:1,morningStart:2,morningEnd:6,afternoonStart:7,afternoonEnd:11,totalColumn:12});
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -167,9 +167,14 @@
     return map;
   }
   function gaText(e){
+    const shared=root.LBGSchoolReportV1?.gaText;
+    if(typeof shared==='function')return shared(e);
     const raw=e?.gaDisplay??e?.ga;
     if(raw===null||raw===undefined||txt(raw)==='')return'GA —';
-    const n=Number(raw);return Number.isFinite(n)?`GA ${Math.round(n)}`:`GA ${txt(raw)}`;
+    const n=Number(raw);if(!Number.isFinite(n))return`GA ${txt(raw)}`;
+    const value=Math.round(n),track=txt(e?.gaTrack||e?.track||e?.actualCategory||e?.role).toUpperCase();
+    const seq=root.LBGGaRoleTrackStaleRepairV1?.STEM_SEQUENCE||[3,6,13,16,20,23,27,32,35],i=seq.indexOf(value);
+    return track==='STEM'&&i>=0?`GA ${value} (${i+1})`:`GA ${value}`
   }
   function schoolText(e){
     const cleaner=root.LBGReportEngineV4?.dailyLocationText;
