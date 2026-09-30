@@ -6,7 +6,7 @@ const Per=require('../ga-per-class-v2.js');
 
 assert.equal(V7.version,'20260930.2');
 assert.equal(R.VERSION,'20260920.4');
-assert.equal(Per.VERSION,'20260920.5');
+assert.equal(Per.VERSION,'20260930.1');
 
 // Kiến trúc bắt buộc: canonical history không được nhận manualResolver/storage.
 let capturedOpts=null;
