@@ -19,7 +19,7 @@ const expectedCore=[
   'tkb-parser-bridge-v2.js?v=20260906.3',
   'teaching-plan-progress-v1.js?v=20260909.1',
   'conflict-check-v8.js?v=20260909.1',
-  'ga-suggestion-v7.js?v=20260925.1',
+  'ga-suggestion-v7.js?v=20260930.2',
   'ga-suggestion-cross-version-v1.js?v=20260912.4'
 ];
 
@@ -124,7 +124,7 @@ const expectedRuntimePatches=[
 ];
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
-assert.match(index,/app-runtime-v1\.js\?v=20260930\.1/);
+assert.match(index,/app-runtime-v1\.js\?v=20260930\.2/);
 assert.match(index,/patch-runtime-loader-v1\.js\?v=20260930\.1/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
