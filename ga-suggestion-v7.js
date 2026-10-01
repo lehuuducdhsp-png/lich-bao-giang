@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionV7=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261001.1';
+  const VERSION='20261001.2';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -41,6 +41,7 @@
   const QUANG_TRUNG_GA_START='2026-09-21';
   const QUANG_TRUNG_WEEK21_SHEET='21T9';
   const QUANG_TRUNG_WEEK21_GA1_KEYS=new Set(['1/3','1/4+1/5','2/5','2/6']);
+  const QUANG_TRUNG_WEEK21_GA2_KEYS=new Set(['1/8']);
   function isQuangTrungEvent(ev){
     if((ev?.atoms||[]).some(e=>fold(e?.schoolName||e?.school||txt(e?.locationLabel).split(/\n/)[0])==='QUANG TRUNG'))return true;
     return fold(txt(ev?.school).split(/\n/)[0])==='QUANG TRUNG'
@@ -48,6 +49,7 @@
   function quangTrungWeek21Ga(ev){
     if(txt(ev?.sheet).toUpperCase()!==QUANG_TRUNG_WEEK21_SHEET||ev?.track!=='kns'||!isQuangTrungEvent(ev))return null;
     const members=[...(ev?.members||[])].map(x=>fold(x).replace(/\s+/g,'')).filter(Boolean).sort(),key=members.join('+');
+    if(QUANG_TRUNG_WEEK21_GA2_KEYS.has(key))return 2;
     return QUANG_TRUNG_WEEK21_GA1_KEYS.has(key)?1:2
   }
   function weekStart(ws,opts={}){
@@ -124,7 +126,7 @@
   function trackText(ev){return ev.track==='stem'?'STEM':'Kỹ năng sống'}
   function participantText(ev){return(ev.participants||[]).map(p=>`${p.name||p.code} (${p.code})${p.role==='CTV'?' – CTV KNS':''}`).join(' + ')}
   function basisText(ev){
-    if(ev.gaSource==='quang-trung-21t9-anchor')return ev.ga===1?'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/3, lớp 1/4+1/5, lớp 2/5 và lớp 2/6 dùng GA 1.':'Mốc thực tế QUANG TRUNG tuần 21T9: các lớp còn lại dùng GA 2.';
+    if(ev.gaSource==='quang-trung-21t9-anchor')return ev.ga===1?'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/3, lớp 1/4+1/5, lớp 2/5 và lớp 2/6 dùng GA 1.':'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/8 được khóa GA 2; các lớp KNS còn lại ngoài nhóm GA 1 cũng dùng GA 2.';
     if(ev.gaSource==='manual')return'GA đã được nhập/xác nhận thủ công cho sự kiện này.';
     if(ev.gaSource==='conflict')return'Lịch sử hoặc mốc GA đang mâu thuẫn — cần xác nhận trước khi dùng.';
     if(ev.gaSource==='first')return`Chưa có lần dạy ${trackText(ev)} trước đó của đúng lớp/nhóm lớp tại điểm dạy này trong dữ liệu từ tuần đầu; dùng GA đầu chuỗi.`;
@@ -144,5 +146,5 @@
   }
   function bind(){const b=root.document?.getElementById('gaSuggestV6');if(!b||!root.LBGTkbParserV2||!root.LBGTeacherIntelligenceV6)return false;if(b.dataset.gaV7==='1')return true;b.dataset.gaV7='1';b.onclick=run;b.textContent='💡 Phân tích giáo án gợi ý';return true}
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>240)clearInterval(timer)},100);bind();return true}
-  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,QUANG_TRUNG_GA_START,QUANG_TRUNG_WEEK21_SHEET,QUANG_TRUNG_WEEK21_GA1_KEYS,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,weekStart,isGaEligibleEntry,isQuangTrungEvent,quangTrungWeek21Ga,buildHistory,basisText,install};
+  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,QUANG_TRUNG_GA_START,QUANG_TRUNG_WEEK21_SHEET,QUANG_TRUNG_WEEK21_GA1_KEYS,QUANG_TRUNG_WEEK21_GA2_KEYS,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,weekStart,isGaEligibleEntry,isQuangTrungEvent,quangTrungWeek21Ga,buildHistory,basisText,install};
 });
