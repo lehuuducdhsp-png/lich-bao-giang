@@ -90,14 +90,18 @@ assert.equal(ptLaterNormalized.locationKey,pt7Normalized.locationKey,'ghi chú c
 assert.equal(ptLaterNormalized.siteDisplay,'Trường chính: PHÚ THUẬN CŨ');
 
 const ptClasses=['4/2','4/1','5/1','5/2'];
-const makePtEntries=(code,site,rowPrefix)=>ptClasses.map((cls,i)=>({
-  code,teacherName:code,day:6,session:'Sáng',period:i+1,teachingPeriod:i+1,
+const makePtEntries=(codes,site,rowPrefix)=>ptClasses.map((cls,i)=>({
+  code:codes[i],teacherName:codes[i],day:6,session:'Sáng',period:i+1,teachingPeriod:i+1,
   ...site,classRaw:cls,className:cls,address:`${rowPrefix}${i+1}`
 }));
-const pt7=ws('7T9',makePtEntries('VÂN',phuThuanOld7Site,'PT7_'));
-const pt14=ws('14T9',makePtEntries('KHÁNH',phuThuanOldLaterSite,'PT14_'));
-const pt21=ws('21T9',makePtEntries('LINH2',phuThuanOldLaterSite,'PT21_'));
-const pt28=ws('28T9',makePtEntries('ĐỨC',phuThuanOldLaterSite,'PT28_'));
+// Đúng theo file TKB người dùng gửi:
+// 7T9: 4/2=VÂN, 4/1=HẰNG, 5/1=MỘNG, 5/2=THẢO2;
+// 14T9: cả 4 lớp = KHÁNH màu đỏ (STEM);
+// 21T9: cả 4 lớp = LINH2; 28T9: cả 4 lớp = ĐỨC.
+const pt7=ws('7T9',makePtEntries(['VÂN','HẰNG','MỘNG','THẢO2'],phuThuanOld7Site,'PT7_'));
+const pt14=ws('14T9',makePtEntries(['KHÁNH','KHÁNH','KHÁNH','KHÁNH'],phuThuanOldLaterSite,'PT14_'));
+const pt21=ws('21T9',makePtEntries(['LINH2','LINH2','LINH2','LINH2'],phuThuanOldLaterSite,'PT21_'));
+const pt28=ws('28T9',makePtEntries(['ĐỨC','ĐỨC','ĐỨC','ĐỨC'],phuThuanOldLaterSite,'PT28_'));
 const ptStarts={
   '7T9':new Date(2026,8,7,12),'14T9':new Date(2026,8,14,12),
   '21T9':new Date(2026,8,21,12),'28T9':new Date(2026,8,28,12)
