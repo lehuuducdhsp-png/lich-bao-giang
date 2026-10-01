@@ -20,7 +20,7 @@ const w21={name:'21T9',entries:[
   base('1/6+1/7','A167',4),
   base('2/2+2/4','A224',5),
   {...base('1/1','A11',1),day:6},
-  {...base('1/8','A18',2),day:6}
+  {...base('1/8','A18',2),day:6,code:'PHƯƠNG CTV',teacherName:'Thùy Dương',schoolName:'QUANG TRUNG',school:'QUANG TRUNG',locationKey:'QUANG TRUNG|',locationLabel:'QUANG TRUNG'}
 ]};
 const w28={name:'28T9',entries:[
   base('1/4+1/5','B145',1),
@@ -45,7 +45,9 @@ assert.equal(history.byAddress.get('28T9!B25').ga,2,'2/5 phải nối GA1 → GA
 assert.equal(history.byAddress.get('28T9!B13').ga,2,'1/3 phải nối GA1 → GA2');
 assert.equal(history.byAddress.get('28T9!B26').ga,2,'2/6 phải nối GA1 → GA2');
 assert.equal(history.byAddress.get('28T9!B12').ga,4,'1/2 phải nối GA2 → GA4');
-assert.equal(history.byAddress.get('21T9!A18').track,'kns','1/8 do CTV dạy vẫn phải nằm trong luồng KNS');
+assert.equal(history.byAddress.get('21T9!A18').track,'kns','1/8 có phân công CTV vẫn phải nằm trong luồng KNS');
+assert.equal(history.byAddress.get('21T9!A18').school,'QUANG TRUNG','1/8 thuộc khối trường QUANG TRUNG, không được gán sang VỸ DẠ chỉ vì dòng phân công nằm sát ranh giới bên dưới');
+assert.ok(history.byAddress.get('21T9!A18').participants.some(p=>p.code==='PHƯƠNG CTV'),'PHƯƠNG CTV là phân công giáo viên dưới lớp 1/8, không phải tên trường');
 assert.match(V.basisText(history.byAddress.get('21T9!A18')),/1\/8.*GA 2/,'căn cứ phải nêu rõ lớp 1/8 là GA2');
 
 const manualHistory=V.buildHistory({worksheets:[w21]},'21T9',{
