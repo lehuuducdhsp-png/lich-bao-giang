@@ -201,7 +201,7 @@
 
   if(typeof module!=='undefined'&&module.exports){
     return{
-      VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
+      VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,isPhuThuanOldMainSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
       gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications
     };
   }
