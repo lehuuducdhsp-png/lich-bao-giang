@@ -37,6 +37,6 @@ jobs:
           node tests/quang-trung-21t9-class-ga.test.cjs
       - name: Runtime cache contract
         run: |
-          grep -F 'tkb-parser-v2.js?v=20260925.1' app-runtime-v1.js
-          grep -F 'ga-suggestion-v7.js?v=20261001.1' app-runtime-v1.js
-          grep -F 'app-runtime-v1.js?v=20261001.1' index.html
+          grep -F 'tkb-parser-v2.js?v=20261001.1' app-runtime-v1.js
+          grep -F 'ga-suggestion-v7.js?v=20261001.2' app-runtime-v1.js
+          grep -F 'app-runtime-v1.js?v=20261001.3' index.html

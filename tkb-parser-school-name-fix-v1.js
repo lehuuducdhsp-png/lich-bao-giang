@@ -14,7 +14,7 @@
     return lines[0];
   }
   function patchEntry(ws,e){
-    const school=schoolNameAt(ws,e?.row);if(!school||school===e.schoolName)return e;
+    const anchorRow=Number(e?.classRow)||Number(e?.row);const school=schoolNameAt(ws,anchorRow);if(!school||school===e.schoolName)return e;
     const site=txt(e.siteDisplay||e.siteName),schoolKey=fold(school),locationLabel=site?`${school}\n${site}`:school,locationKey=`${schoolKey}|${fold(site)}`;
     return{...e,school,schoolName:school,schoolKey,locationLabel,locationKey};
   }
