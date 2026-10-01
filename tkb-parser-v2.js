@@ -235,28 +235,28 @@
     for(const c of candidates){
       const v=txt(masterText(ws,row,c)).replace(/\s+/g,' ').trim();if(!v||resolveTeacherCode(ws,v))continue;
       const meta=classMeta(v);
-      if(meta.classType==='single')return{...meta,roomRaw:meta.roomRaw||roomRaw,classSourceRaw:meta.classSourceRaw||v}
+      if(meta.classType==='single')return{...meta,roomRaw:meta.roomRaw||roomRaw,classSourceRaw:meta.classSourceRaw||v,classRow:row}
     }
     return null
   }
   function classAt(ws,row,col){
-    let fallback='';
+    let fallback='',fallbackRow=null;
     const floor=Math.max(buildHeader(ws).headerRow+1,row-8);
     for(let r=row-1;r>=floor;r--){
       const v=txt(masterText(ws,r,col)).replace(/\s+/g,' ').trim();if(!v)continue;
-      if(resolveTeacherCode(ws,v))return classMeta(fallback);
+      if(resolveTeacherCode(ws,v))return{...classMeta(fallback),classRow:fallbackRow};
       const up=v.toUpperCase();
       if(blocked.has(up)||/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI)$/i.test(v)||isNoteText(v))continue;
       const meta=classMeta(v);
-      if(meta.classType!=='unknown')return meta;
+      if(meta.classType!=='unknown')return{...meta,classRow:r};
       const room=roomText(v);
       if(room){
         const nearby=classNeighborAt(ws,r,col,room);
         if(nearby)return nearby
       }
-      if(!fallback&&v.length<=100)fallback=v
+      if(!fallback&&v.length<=100){fallback=v;fallbackRow=r}
     }
-    return classMeta(fallback)
+    return{...classMeta(fallback),classRow:fallbackRow}
   }
 
   function isBlue(cell){
@@ -277,12 +277,12 @@
       const cell=ws.getCell(r,c),sourceCode=txt(cellText(cell)).toUpperCase();if(!sourceCode)continue;
       const resolved=resolveTeacherCode(ws,sourceCode);if(!resolved||!allowed.has(resolved.code)||(want&&resolved.code!==want))continue;
       const info=colInfoFor(ws,c);if(!info)continue;
-      const loc=locationAt(ws,r),cm=classAt(ws,r,c);
+      const cm=classAt(ws,r,c),classRow=Number(cm?.classRow),loc=locationAt(ws,Number.isFinite(classRow)&&classRow>0?classRow:r);
       entries.push({...info,
         school:loc.schoolName,schoolName:loc.schoolName,schoolNote:loc.schoolNote,
         siteRaw:loc.siteRaw,siteType:loc.siteType,siteName:loc.siteName,siteDisplay:loc.siteDisplay,
         locationLabel:loc.locationLabel,locationKey:loc.locationKey,locationNotes:loc.notes,
-        className:cm.classDisplay,classRaw:cm.classRaw,classSourceRaw:cm.classSourceRaw,roomRaw:cm.roomRaw,classType:cm.classType,classCount:cm.classCount,groupNote:cm.groupNote,
+        className:cm.classDisplay,classRaw:cm.classRaw,classSourceRaw:cm.classSourceRaw,roomRaw:cm.roomRaw,classType:cm.classType,classCount:cm.classCount,groupNote:cm.groupNote,classRow:cm.classRow||null,
         code:resolved.code,sourceCode,resolution:resolved.mapping,teacherName:nameMap.get(resolved.code)||resolved.code,
         address:cell.address,row:r,col:c,makeUp:isBlue(cell)
       })
@@ -363,7 +363,7 @@
     }catch(error){console.error('Parser V2: không làm mới được danh sách giáo viên',error)}
   }
 
-  const api={version:'2.2.0',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,roomText,singleClassRoom,scanAssignments,analyze,dayLabel};
+  const api={version:'2.2.1',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,roomText,singleClassRoom,classAt,scanAssignments,analyze,dayLabel};
   window.LBGTkbParserV2=api;window.teachers=teachers;window.analyzeNow=analyze;
   window.colInfo=function(c){const ws=currentWs();return ws?colInfoFor(ws,c):null};
   window.LBGAllTeachers=teachers;
