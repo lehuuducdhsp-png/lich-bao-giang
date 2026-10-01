@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const V=require('../ga-suggestion-v7.js');
-assert.equal(V.version,'20261001.1');
+assert.equal(V.version,'20261001.2');
 assert.deepEqual(V.KNS_SEQUENCE,[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34]);
 assert.deepEqual(V.STEM_SEQUENCE,[3,6,13,16,20,23,27,32,35]);
 
@@ -168,5 +168,7 @@ assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG'
 assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG',members:['1/3'],atoms:[{schoolName:'QUANG TRUNG'}]}),1);
 assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG',members:['2/6'],atoms:[{schoolName:'QUANG TRUNG'}]}),1);
 assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG',members:['1/2'],atoms:[{schoolName:'QUANG TRUNG'}]}),2);
+assert.equal(V.quangTrungWeek21Ga({sheet:'21T9',track:'kns',school:'QUANG TRUNG',members:['1/8'],atoms:[{schoolName:'QUANG TRUNG'}]}),2);
+assert.equal(V.QUANG_TRUNG_WEEK21_GA2_KEYS.has('1/8'),true);
 
 console.log('OK GA suggestion V7: actual-period grouping, collaboration, separate KNS/STEM progress, class-specific nearest GA');
