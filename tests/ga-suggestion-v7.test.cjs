@@ -157,7 +157,7 @@ assert.equal(qtHistory.byAddress.get('28T9!QT28_13').ga,2,'tuần sau lớp 1/3 
 assert.equal(qtHistory.byAddress.get('28T9!QT28_26').ga,2,'tuần sau lớp 2/6 phải nối GA1 → GA2');
 assert.equal(qtHistory.byAddress.get('28T9!QT28_12').ga,4,'tuần sau lớp 1/2 phải nối GA2 → GA4 theo chuỗi KNS');
 assert.match(V.basisText(qtHistory.byAddress.get('21T9!QT21_145')),/1\/3.*1\/4\+1\/5.*2\/5.*2\/6.*GA 1/);
-assert.match(V.basisText(qtHistory.byAddress.get('21T9!QT21_12')),/các lớp còn lại dùng GA 2/);
+assert.match(V.basisText(qtHistory.byAddress.get('21T9!QT21_12')),/1\/8.*GA 2.*các lớp KNS còn lại/);
 assert.equal(qtHistory.byAddress.get('14T9!OTHER14').ga,1,'quy tắc chỉ áp dụng QUANG TRUNG, trường khác vẫn tính bình thường');
 
 // Mốc 21T9 chỉ áp dụng luồng KNS; STEM vẫn giữ chuỗi STEM riêng.
