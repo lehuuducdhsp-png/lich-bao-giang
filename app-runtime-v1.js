@@ -93,7 +93,7 @@
         ['tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script'],
         ['teaching-plan-progress-v1.js?v=20260909.1','lbgTeachingPlanProgressV1Script'],
         ['conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script'],
-        ['ga-suggestion-v7.js?v=20260930.2','lbgGaSuggestionV7Script'],
+        ['ga-suggestion-v7.js?v=20261001.1','lbgGaSuggestionV7Script'],
         ['ga-suggestion-cross-version-v1.js?v=20260912.4','lbgGaSuggestionCrossVersionV1Script']
       ];
       preloadWindow(reportCore,0,reportCore.length);
