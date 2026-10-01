@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const V=require('../ga-suggestion-v7.js');
 
-assert.equal(V.version,'20260930.2');
+assert.equal(V.version,'20261001.1');
 assert.equal(V.QUANG_TRUNG_GA_START,'2026-09-21');
 assert.equal(V.QUANG_TRUNG_WEEK21_SHEET,'21T9');
 
@@ -14,6 +14,8 @@ const base=(cls,address,period)=>({
 const w21={name:'21T9',entries:[
   base('1/4+1/5','A145',1),
   base('2/5','A25',2),
+  {...base('1/3','A13',1),day:4},
+  {...base('2/6','A26',2),day:4},
   base('1/2','A12',3),
   base('1/6+1/7','A167',4),
   base('2/2+2/4','A224',5),
@@ -23,6 +25,8 @@ const w21={name:'21T9',entries:[
 const w28={name:'28T9',entries:[
   base('1/4+1/5','B145',1),
   base('2/5','B25',2),
+  {...base('1/3','B13',1),day:4},
+  {...base('2/6','B26',2),day:4},
   base('1/2','B12',3)
 ]};
 const starts={'21T9':new Date(2026,8,21,12),'28T9':new Date(2026,8,28,12)};
@@ -33,10 +37,12 @@ const history=V.buildHistory({worksheets:[w21,w28]},'28T9',{
   weekLike(){return true}
 });
 
-for(const address of ['A145','A25'])assert.equal(history.byAddress.get('21T9!'+address).ga,1,address+' phải GA1');
+for(const address of ['A145','A25','A13','A26'])assert.equal(history.byAddress.get('21T9!'+address).ga,1,address+' phải GA1');
 for(const address of ['A12','A167','A224','A11','A18'])assert.equal(history.byAddress.get('21T9!'+address).ga,2,address+' phải GA2');
 assert.equal(history.byAddress.get('28T9!B145').ga,2,'1/4+1/5 phải nối GA1 → GA2');
 assert.equal(history.byAddress.get('28T9!B25').ga,2,'2/5 phải nối GA1 → GA2');
+assert.equal(history.byAddress.get('28T9!B13').ga,2,'1/3 phải nối GA1 → GA2');
+assert.equal(history.byAddress.get('28T9!B26').ga,2,'2/6 phải nối GA1 → GA2');
 assert.equal(history.byAddress.get('28T9!B12').ga,4,'1/2 phải nối GA2 → GA4');
 
 const manualHistory=V.buildHistory({worksheets:[w21]},'21T9',{
@@ -57,4 +63,4 @@ const stemHistory=V.buildHistory({worksheets:[{name:'21T9',entries:[base('1/2','
 });
 assert.equal(stemHistory.byAddress.get('21T9!STEM12').ga,3,'STEM không được áp dụng mốc KNS Quang Trung');
 
-console.log('OK Quang Trung 21T9: 1/4+1/5 + 2/5 = GA1; all other KNS classes = GA2; later weeks continue per class');
+console.log('OK Quang Trung 21T9: 1/3 + 1/4+1/5 + 2/5 + 2/6 = GA1; all other KNS classes = GA2; later weeks continue per class');
