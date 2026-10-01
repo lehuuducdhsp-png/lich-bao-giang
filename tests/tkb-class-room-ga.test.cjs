@@ -25,7 +25,7 @@ const parserSource=fs.readFileSync('tkb-parser-v2.js','utf8');
 vm.runInNewContext(parserSource,sandbox,{filename:'tkb-parser-v2.js'});
 const P=window.LBGTkbParserV2;
 assert.ok(P,'Parser V2 phải khởi tạo được');
-assert.equal(P.version,'2.2.0');
+assert.equal(P.version,'2.2.1');
 
 let m=P.classMeta('1/B');
 assert.equal(m.classType,'single');
@@ -52,6 +52,11 @@ assert.equal(m.roomRaw,'PHÒNG 4.2');
 m=P.classMeta('P 1.5');
 assert.equal(m.classType,'unknown','ô chỉ chứa phòng tuyệt đối không được nhận là lớp');
 assert.equal(P.roomText('P 1.5'),'P 1.5');
+
+assert.match(parserSource,/loc=locationAt\(ws,Number\.isFinite\(classRow\)&&classRow>0\?classRow:r\)/,'school/location must be resolved from the matched class row, not blindly from the teacher assignment row');
+assert.match(parserSource,/classRow:cm\.classRow\|\|null/,'scan output must preserve the class source row');
+const schoolFixSource=fs.readFileSync('tkb-parser-school-name-fix-v1.js','utf8');
+assert.match(schoolFixSource,/anchorRow=Number\(e\?\.classRow\)\|\|Number\(e\?\.row\)/,'school-name compatibility fix must keep the same class-row anchor');
 
 const V=require('../ga-suggestion-v7.js');
 assert.equal(V.normalizeClass('1/B - P 1.5'),'1/B');
