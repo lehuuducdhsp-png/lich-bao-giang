@@ -2,11 +2,12 @@
 const assert=require('node:assert/strict');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 
-assert.equal(R.VERSION,'20260919.1');
+assert.equal(R.VERSION,'20261002.1');
 
 // Đúng cấu trúc TKB mới ở TRẦN QUỐC TOẢN, sheet 21T9.
 assert.equal(R.periodHintFromText('KHỐI 1  - DẠY TIẾT 4'),4);
 assert.equal(R.periodHintFromText('MỖI NGƯỜI 1 LỚP, DẠY TRONG LỚP TIẾT 4'),4);
+assert.equal(R.periodHintFromText('MỖI NGƯỜI 1 LỚP, DẠY TRONG LỚP - TIẾT 4'),4,'dấu gạch trước TIẾT như TKB thực tế vẫn phải nhận Tiết 4');
 
 // Không đụng cách ghi lớp gộp cũ; loại này đã được classMeta/groupNote xử lý riêng.
 assert.equal(R.periodHintFromText('KHỐI 4 (6 LỚP) - TIẾT 4'),null);
