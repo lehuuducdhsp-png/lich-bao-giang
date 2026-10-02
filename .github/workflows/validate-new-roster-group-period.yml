@@ -44,7 +44,7 @@ jobs:
           node tests/runtime-responsive-loader-v1.test.cjs
       - name: Loader order and narrow-scope contracts
         run: |
-          grep -F 'tkb-roster-group-period-safe-v1.js?v=20261002.1' patch-runtime-loader-v1.js
+          grep -F 'tkb-roster-group-period-safe-v1.js?v=20261002.2' patch-runtime-loader-v1.js
           grep -F 'grouped-plus-report-safe-v1.js?v=20260919.1' patch-runtime-loader-v1.js
           grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' patch-runtime-loader-v1.js
           grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' patch-runtime-loader-v1.js
@@ -54,7 +54,7 @@ jobs:
           from pathlib import Path
           s=Path('patch-runtime-loader-v1.js').read_text()
           a=s.index('class-typo-report-path-safe-v1.js?v=20260916.1')
-          b=s.index('tkb-roster-group-period-safe-v1.js?v=20261002.1')
+          b=s.index('tkb-roster-group-period-safe-v1.js?v=20261002.2')
           c=s.index('tkb-assignment-cache-safe-v1.js?v=20260913.1')
           d=s.index('grouped-plus-report-safe-v1.js?v=20260919.1')
           e=s.index('ga-per-class-v2.js?v=20260930.1')
