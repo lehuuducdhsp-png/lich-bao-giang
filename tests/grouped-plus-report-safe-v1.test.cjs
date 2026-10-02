@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 const G=require('../grouped-plus-report-safe-v1.js');
 
-assert.equal(R.VERSION,'20261002.1');
+assert.equal(R.VERSION,'20261002.2');
 assert.equal(G.VERSION,'20260919.1');
 
 function colName(n){let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
