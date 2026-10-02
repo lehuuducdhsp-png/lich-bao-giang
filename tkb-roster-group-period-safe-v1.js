@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261002.1';
+  const VERSION='20261002.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -15,6 +15,8 @@
     let m=f.match(/\bKHOI\s*[1-5]\s*[-–—:]?\s*DAY\s*(?:TRONG\s*LOP\s*)?(?:[-–—:]\s*)?TIET\s*([1-5])\b/);
     if(m)return Number(m[1]);
     m=f.match(/\bMOI\s*NGUOI\s*1\s*LOP\b.*\bDAY\s*(?:TRONG\s*LOP\s*)?(?:[-–—:]\s*)?TIET\s*([1-5])\b/);
+    if(m)return Number(m[1]);
+    m=f.match(/\bHOC\s+TIET\s*([1-5])\b.*\bMOI\s+(?:GV|GIAO\s+VIEN)\s*\/\s*LOP\b/);
     return m?Number(m[1]):null;
   }
   function explicitGroupPeriod(value){
