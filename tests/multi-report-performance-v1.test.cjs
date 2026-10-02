@@ -83,7 +83,7 @@ assert.ok(patchLoader.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<p
 // Các module nghiệp vụ đã chốt gần đây vẫn phải còn nguyên trên đường chạy chính.
 for(const required of [
   'tkb-class-typo-fix-v1.js?v=20260913.2',
-  'tkb-roster-group-period-safe-v1.js?v=20261002.1',
+  'tkb-roster-group-period-safe-v1.js?v=20261002.2',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
   'ga-per-class-v2.js?v=20260930.1',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
