@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261002.1';
+  const VERSION='20261002.2';
   const LOOKAHEAD=6;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -19,7 +19,7 @@
   const CORE_PATCHES=[
     ['tkb-class-typo-fix-v1.js?v=20260913.2','lbgTkbClassTypoFixV1Script'],
     ['class-typo-report-path-safe-v1.js?v=20260916.1','lbgClassTypoReportPathSafeV1Script'],
-    ['tkb-roster-group-period-safe-v1.js?v=20261002.1','lbgTkbRosterGroupPeriodSafeV1Script'],
+    ['tkb-roster-group-period-safe-v1.js?v=20261002.2','lbgTkbRosterGroupPeriodSafeV1Script'],
     ['tkb-assignment-cache-safe-v1.js?v=20260913.1','lbgTkbAssignmentCacheSafeV1Script'],
     ['grouped-plus-report-safe-v1.js?v=20260919.1','lbgGroupedPlusReportSafeV1Script'],
     ['ga-per-class-history-safe-v1.js?v=20260913.1','lbgGaPerClassHistorySafeV1Script'],

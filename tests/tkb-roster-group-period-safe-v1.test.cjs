@@ -2,12 +2,15 @@
 const assert=require('node:assert/strict');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 
-assert.equal(R.VERSION,'20261002.1');
+assert.equal(R.VERSION,'20261002.2');
 
 // Đúng cấu trúc TKB mới ở TRẦN QUỐC TOẢN, sheet 21T9.
 assert.equal(R.periodHintFromText('KHỐI 1  - DẠY TIẾT 4'),4);
 assert.equal(R.periodHintFromText('MỖI NGƯỜI 1 LỚP, DẠY TRONG LỚP TIẾT 4'),4);
 assert.equal(R.periodHintFromText('MỖI NGƯỜI 1 LỚP, DẠY TRONG LỚP - TIẾT 4'),4,'dấu gạch trước TIẾT như TKB thực tế vẫn phải nhận Tiết 4');
+assert.equal(R.periodHintFromText('HỌC TIẾT 5 SÁNG THỨ 3 - MỖI GV/LỚP'),5);
+assert.equal(R.periodHintFromText('HỌC TIẾT 5 SÁNG THỨ 2 - MỖI GV / LỚP'),5);
+assert.equal(R.periodHintFromText('HỌC TIẾT 5 SÁNG THỨ 6 - MỖI GIÁO VIÊN/LỚP'),5);
 
 // Không đụng cách ghi lớp gộp cũ; loại này đã được classMeta/groupNote xử lý riêng.
 assert.equal(R.periodHintFromText('KHỐI 4 (6 LỚP) - TIẾT 4'),null);
@@ -90,6 +93,50 @@ const class16=R.normalizeEntry(sixClassWs,sixClassEntries[5],sixClassParser);
 assert.equal(class16.slotPeriod,3,'1/6 vẫn giữ tiết nguồn để truy vết');
 assert.equal(class16.teachingPeriod,4,'1/6 tràn xuống hàng dưới vẫn phải là Tiết 4');
 assert.equal(class16.rosterTeachingPeriod,4,'1/6 phải mang marker roster Tiết 4');
+
+
+
+// Regression HƯƠNG VINH: cả 3 điểm dạy đều có header "HỌC TIẾT 5 ... - MỖI GV/LỚP".
+// Các lớp ở cả hàng đầu và hàng sau vẫn phải nhận teachingPeriod=5.
+const huongVinhCells=new Map([
+  ['120,10',{text:'HỌC TIẾT 5 SÁNG THỨ 3 - MỖI GV/LỚP'}],
+  ['122,10',{text:'M.LINH'}],['122,14',{text:'DUNG'}],
+  ['125,10',{text:'HUỲNH'}],['125,14',{text:'NHƯ'}],
+
+  ['140,10',{text:'HỌC TIẾT 5 SÁNG THỨ 2 - MỖI GV/LỚP'}],
+  ['142,10',{text:'TÂM'}],['142,14',{text:'DUNG'}],
+  ['145,10',{text:'M.LINH'}],['145,14',{text:'CHI'}],
+
+  ['160,10',{text:'HỌC TIẾT 5 SÁNG THỨ 6 - MỖI GV/LỚP'}],
+  ['162,10',{text:'TÂM'}],['162,14',{text:'CHI'}],
+  ['165,10',{text:'NAM'}],['165,14',{text:'K.THI'}]
+]);
+const huongVinhWs={
+  rowCount:170,
+  model:{merges:['J120:N120','J140:N140','J160:N160']},
+  getCell(row,col){return huongVinhCells.get(`${row},${col}`)||{text:'',value:''}}
+};
+const huongVinhLocation=(sheet,row)=>{
+  if(row<135)return{locationKey:'HƯƠNG VINH|TRƯỜNG CHÍNH - HƯƠNG VINH 2 CŨ'};
+  if(row<155)return{locationKey:'HƯƠNG VINH|PHÂN HIỆU 1 - HƯƠNG VINH 1 CŨ'};
+  return{locationKey:'HƯƠNG VINH|PHÂN HIỆU 2 - HƯƠNG VINH 3 CŨ'};
+};
+const huongVinhCases=[
+  {row:122,col:10,className:'1/1',period:1,locationKey:'HƯƠNG VINH|TRƯỜNG CHÍNH - HƯƠNG VINH 2 CŨ'},
+  {row:125,col:14,className:'5/2',period:2,locationKey:'HƯƠNG VINH|TRƯỜNG CHÍNH - HƯƠNG VINH 2 CŨ'},
+  {row:142,col:10,className:'1/3',period:1,locationKey:'HƯƠNG VINH|PHÂN HIỆU 1 - HƯƠNG VINH 1 CŨ'},
+  {row:145,col:14,className:'5/4',period:3,locationKey:'HƯƠNG VINH|PHÂN HIỆU 1 - HƯƠNG VINH 1 CŨ'},
+  {row:162,col:10,className:'1/4',period:1,locationKey:'HƯƠNG VINH|PHÂN HIỆU 2 - HƯƠNG VINH 3 CŨ'},
+  {row:165,col:14,className:'5/5',period:3,locationKey:'HƯƠNG VINH|PHÂN HIỆU 2 - HƯƠNG VINH 3 CŨ'}
+];
+for(const item of huongVinhCases){
+  const hint=R.periodHintAt(huongVinhWs,item.row,item.col,huongVinhLocation,item.locationKey);
+  assert.equal(hint?.period,5,`${item.className} ở HƯƠNG VINH phải nhận Tiết 5 từ header của đúng điểm dạy`);
+  const fixed=R.applyHint({row:item.row,col:item.col,className:item.className,classRaw:item.className,classType:'single',period:item.period,slotPeriod:item.period,teachingPeriod:item.period,locationKey:item.locationKey},hint);
+  assert.equal(fixed.teachingPeriod,5,`${item.className} ở HƯƠNG VINH phải dạy Tiết 5`);
+  assert.equal(fixed.className,item.className);
+}
+assert.equal(R.periodHintAt(huongVinhWs,142,10,huongVinhLocation,'HƯƠNG VINH|TRƯỜNG CHÍNH - HƯƠNG VINH 2 CŨ'),null,'không được kéo header Tiết 5 qua ranh giới điểm dạy HƯƠNG VINH');
 
 const combined={className:'KHỐI 4 (6 LỚP)',classRaw:'KHỐI 4 (6 LỚP) - TIẾT 4',classType:'combined',period:1,teachingPeriod:4};
 assert.equal(R.applyHint(combined,{period:4}),combined,'legacy combined classes must not be rewritten');
