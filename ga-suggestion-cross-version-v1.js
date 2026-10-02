@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionCrossVersionV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260912.4';
+  const VERSION='20261001.1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -69,16 +69,35 @@
     const hasOperation=/(CO\s+MAT\s+O\s+TRUONG|VAO\s+TIET|QUAN\s+LY\s+HS|THE\s+DUC\s+DAU\s+GIO|7H\d*|13H\d*)/.test(raw);
     return looksGeneric&&hasSession&&hasOperation;
   }
+  function isPhuThuanOldMainSite(e){
+    const school=fold(e?.schoolName||e?.school||txt(e?.locationLabel).split(/\n/)[0]);
+    if(school!=='PHU THUAN')return false;
+    const site=fold([e?.siteRaw,e?.siteDisplay,e?.siteName].filter(Boolean).join(' '));
+    return /\bTRUONG\s+CHINH\b/.test(site)&&/\bPHU\s+THUAN\s+CU\b/.test(site);
+  }
   function normalizeHistoryEntry(e){
-    if(!e||!isOperationalNoteSite(e))return e;
+    if(!e)return e;
     const schoolName=txt(e.schoolName||e.school)||txt(e.locationLabel).split(/\n/)[0];
     const schoolKey=txt(e.schoolKey)||fold(schoolName);
+    if(isPhuThuanOldMainSite(e)){
+      const siteType='Trường chính',siteName='PHÚ THUẬN CŨ',siteDisplay=`${siteType}: ${siteName}`,siteKey='TRUONG CHINH|PHU THUAN CU';
+      return{
+        ...e,
+        siteRaw:'TRƯỜNG CHÍNH - PHÚ THUẬN CŨ',siteType,siteName,siteDisplay,siteKey,
+        locationLabel:`${schoolName}\n${siteDisplay}`,
+        locationKey:`${schoolKey}|${siteKey}`,
+        historyLocationNormalized:true,
+        historyLocationNormalization:'phu-thuan-old-main-site'
+      };
+    }
+    if(!isOperationalNoteSite(e))return e;
     return{
       ...e,
       siteRaw:'',siteType:'',siteName:'',siteDisplay:'',siteKey:'',
       locationLabel:schoolName||txt(e.locationLabel),
       locationKey:`${schoolKey}|`,
-      historyLocationNormalized:true
+      historyLocationNormalized:true,
+      historyLocationNormalization:'operational-note'
     };
   }
   function historyParser(baseParser){
@@ -182,7 +201,7 @@
 
   if(typeof module!=='undefined'&&module.exports){
     return{
-      VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
+      VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,isPhuThuanOldMainSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
       gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications
     };
   }
@@ -374,7 +393,7 @@
   }
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>300)clearInterval(timer)},100);bind();return true}
   return{
-    version:VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
+    version:VERSION,dateKey,selectWeekSheets,isOperationalNoteSite,isPhuThuanOldMainSite,normalizeHistoryEntry,historyParser,buildHistoryAcrossSources,
     gaTargetKey,normalizedGa,entryApplyTarget,resolveApplyTarget,currentGaRaw,planGaApplications,install
   };
 });

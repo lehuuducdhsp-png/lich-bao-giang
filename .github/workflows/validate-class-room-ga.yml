@@ -39,4 +39,4 @@ jobs:
         run: |
           grep -F 'tkb-parser-v2.js?v=20261001.1' app-runtime-v1.js
           grep -F 'ga-suggestion-v7.js?v=20261001.2' app-runtime-v1.js
-          grep -F 'app-runtime-v1.js?v=20261001.3' index.html
+          grep -F 'app-runtime-v1.js?v=20261001.4' index.html
