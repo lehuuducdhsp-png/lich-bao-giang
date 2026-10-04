@@ -1,0 +1,44 @@
+name: Validate GA progress dashboard
+
+on:
+  pull_request:
+    paths:
+      - 'ga-progress-dashboard-v1.js'
+      - 'tests/ga-progress-dashboard-v1.test.cjs'
+      - 'patch-runtime-loader-v1.js'
+      - 'index.html'
+      - '.github/workflows/validate-ga-progress-dashboard.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check ga-progress-dashboard-v1.js
+          node --check tests/ga-progress-dashboard-v1.test.cjs
+          node --check patch-runtime-loader-v1.js
+      - name: GA progress regressions
+        run: |
+          node tests/ga-progress-dashboard-v1.test.cjs
+      - name: Runtime and product contracts
+        run: |
+          grep -F "ga-progress-dashboard-v1.js?v=20261004.1" patch-runtime-loader-v1.js
+          grep -F "patch-runtime-loader-v1.js?v=20261004.1" index.html
+          grep -F "không bắt buộc 3 KNS : 1 STEM" ga-progress-dashboard-v1.js
+          grep -F "STEM có thể dạy trước KNS" ga-progress-dashboard-v1.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('patch-runtime-loader-v1.js').read_text()
+          a=s.index('ga-per-class-v2.js?v=20260930.1')
+          b=s.index('ga-progress-dashboard-v1.js?v=20261004.1')
+          c=s.index('ga-multi-selection-bridge-v1.js?v=20260914.2')
+          assert a < b < c, 'dashboard must load after canonical per-class GA and before the shared bridge'
+          PY
