@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261002.2';
+  const VERSION='20261004.1';
   const LOOKAHEAD=6;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -31,6 +31,7 @@
   const RUNTIME_PATCHES=[
     ['ga-suggestion-multi-apply-v1.js?v=20260920.3','lbgGaSuggestionMultiApplyV1Script'],
     ['ga-per-class-v2.js?v=20260930.1','lbgGaPerClassV2Script'],
+    ['ga-progress-dashboard-v1.js?v=20261004.1','lbgGaProgressDashboardV1Script'],
     ['ga-multi-selection-bridge-v1.js?v=20260914.2','lbgGaMultiSelectionBridgeV1Script'],
     ['sheets-ga-save-safe-v1.js?v=20260913.1','lbgSheetsGaSaveSafeV1Script'],
     ['report-branding-v1.js?v=20260925.2','lbgReportBrandingV1Script'],
