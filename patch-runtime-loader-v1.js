@@ -31,7 +31,6 @@
   const RUNTIME_PATCHES=[
     ['ga-suggestion-multi-apply-v1.js?v=20260920.3','lbgGaSuggestionMultiApplyV1Script'],
     ['ga-per-class-v2.js?v=20260930.1','lbgGaPerClassV2Script'],
-    ['ga-progress-dashboard-v1.js?v=20261004.1','lbgGaProgressDashboardV1Script'],
     ['ga-multi-selection-bridge-v1.js?v=20260914.2','lbgGaMultiSelectionBridgeV1Script'],
     ['sheets-ga-save-safe-v1.js?v=20260913.1','lbgSheetsGaSaveSafeV1Script'],
     ['report-branding-v1.js?v=20260925.2','lbgReportBrandingV1Script'],
@@ -76,6 +75,25 @@
       document.body.appendChild(s);
     });
   }
+  function installGaProgressLauncher(){
+    if(document.getElementById('lbgGaProgressLauncher')||document.getElementById('lbgGaProgressDashboard'))return;
+    const main=document.querySelector('main.shell');if(!main)return;
+    const card=document.createElement('article');card.id='lbgGaProgressLauncher';card.className='card';
+    card.innerHTML='<div class="head"><div><h3>📚 Theo dõi tiến độ KNS – STEM</h3><p>Tổng hợp GA theo từng trường, cơ sở và lớp; KNS/STEM tách riêng, không bắt buộc nhịp 3:1.</p></div><span class="badge">BẢN THỬ</span></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn" id="lbgGaProgressOpen">Mở bảng theo dõi tiến độ</button><small style="color:#75645b">Chỉ tải công cụ khi bạn cần để không làm nặng lúc mở trang.</small></div>';
+    const anchor=document.getElementById('previewCard');if(anchor?.parentNode===main)main.insertBefore(card,anchor);else main.appendChild(card);
+    const button=document.getElementById('lbgGaProgressOpen');if(!button)return;
+    button.addEventListener('click',async()=>{
+      const old=button.textContent;button.disabled=true;button.textContent='Đang mở bảng…';
+      try{
+        await add('ga-progress-dashboard-v1.js?v=20261004.1','lbgGaProgressDashboardV1Script');
+        card.remove();
+      }catch(error){
+        state.errors.push(String(error?.message||error));console.error('GA progress dashboard:',error);
+        button.disabled=false;button.textContent=old;
+      }
+    },{once:true});
+  }
+
   async function loadSequence(items){
     for(let i=0;i<items.length;i++){
       preloadWindow(items,i,LOOKAHEAD);
@@ -109,6 +127,7 @@
         await loadCore();
         await loadSequence(RUNTIME_PATCHES);
         state.runtimeReady=true;state.runtimeFinishedAt=now();
+        installGaProgressLauncher();
         document.dispatchEvent(new CustomEvent('lbg-patch-runtime-ready',{detail:{version:VERSION}}));
         armCheckin();
       }catch(error){state.errors.push(String(error?.message||error));console.error('Patch runtime:',error);throw error}
