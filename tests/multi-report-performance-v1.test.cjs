@@ -86,7 +86,6 @@ for(const required of [
   'tkb-roster-group-period-safe-v1.js?v=20261002.2',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
   'ga-per-class-v2.js?v=20260930.1',
-  'ga-progress-dashboard-v1.js?v=20261004.1',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
   'ga-role-track-stale-repair-v1.js?v=20260920.4',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
