@@ -218,3 +218,106 @@
     if([...el.options].some(x=>x.value===current))el.value=current;
   }
   function refreshSchoolOptions(rows,keep=true){
+    const el=q('lbgGpdSchool');if(!el)return;const current=keep?el.value:'__all',schools=[...new Set(rows.map(x=>x.school))].sort((a,b)=>fold(a).localeCompare(fold(b),'vi'));
+    el.innerHTML='<option value="__all">Tất cả trường</option>'+schools.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+    if([...el.options].some(x=>x.value===current))el.value=current;
+  }
+  let allRows=[],lastAnalysis=null;
+  function renderRows(){
+    const filtered=filterRows(allRows,currentFilters()),host=q('lbgGpdResults');renderSummary(filtered);
+    if(!host)return;
+    if(!filtered.length){host.innerHTML='<div class="lbg-gpd-empty">Không có lớp phù hợp với bộ lọc hiện tại.</div>';return}
+    const search=txt(q('lbgGpdSearch')?.value),schoolFilter=q('lbgGpdSchool')?.value||'__all',groups=schoolGroups(filtered);let counter=0;
+    host.innerHTML=groups.map(([school,rows],groupIndex)=>{
+      const stem=rows.filter(x=>x.stem.count>0).length,review=rows.filter(x=>x.status==='review').length,open=Boolean(search)||schoolFilter!=='__all'||groups.length===1||groupIndex===0;
+      const body=rows.map(row=>rowHtml(row,counter++)).join('');
+      return`<details class="lbg-gpd-school" ${open?'open':''}><summary><span><b>${esc(school)}</b><small>${rows.length} lớp • STEM ${stem}${review?` • ⚠ ${review} cần kiểm tra`:''}</small></span><span class="lbg-gpd-chevron">⌄</span></summary><div class="lbg-gpd-table-wrap"><table class="lbg-gpd-table"><thead><tr><th>Lớp</th><th>Cơ sở/điểm dạy</th><th>KNS</th><th>STEM</th><th>Nhịp gần đây</th><th>Phân STEM</th><th></th></tr></thead><tbody>${body}</tbody></table></div></details>`;
+    }).join('');
+    host.querySelectorAll('[data-detail]').forEach(btn=>btn.onclick=()=>{const row=host.querySelector(`[data-detail-row="${btn.dataset.detail}"]`);if(!row)return;row.hidden=!row.hidden;btn.textContent=row.hidden?'Chi tiết':'Thu gọn'});
+  }
+  function populateWeeks(book){
+    const el=q('lbgGpdWeek');if(!el)return;const current=el.value,sheets=weekSheets(book);
+    el.innerHTML=sheets.map(ws=>`<option value="${esc(ws.name)}">${esc(ws.name)}</option>`).join('');
+    const preferred=current&&sheets.some(x=>x.name===current)?current:latestWeekName(book);if(preferred)el.value=preferred;
+  }
+  async function runAnalysis(){
+    const book=bookNow(),button=q('lbgGpdScan'),status=q('lbgGpdStatus');
+    if(!book){status.innerHTML='<span class="warn">Chưa có file TKB. Hãy tải/chọn TKB trước.</span>';return}
+    populateWeeks(book);const sheet=q('lbgGpdWeek')?.value||latestWeekName(book);if(!sheet){status.innerHTML='<span class="warn">Không tìm thấy tuần TKB.</span>';return}
+    const old=button?.textContent;if(button){button.disabled=true;button.textContent='Đang quét…'}status.textContent='Đang quét lịch sử KNS – STEM của tất cả trường/lớp…';
+    try{
+      const out=await analyzeProgress(book,sheet);lastAnalysis=out;allRows=out.rows;refreshSchoolOptions(allRows,false);refreshStemNextOptions(allRows,false);renderRows();
+      const meta=out.history?.crossVersion||{};status.innerHTML=`Đã quét đến <b>${esc(sheet)}</b> • ${esc(meta.weekCount||1)} tuần • ${esc(meta.sourceCount||1)} phiên bản TKB • <b>${allRows.length} lớp/nhóm lớp</b>. Không áp quy tắc bắt buộc 3 KNS : 1 STEM.`;
+    }catch(error){console.error('GA progress dashboard:',error);status.innerHTML=`<span class="warn"><b>Không quét được tiến độ:</b> ${esc(error?.message||String(error))}</span>`}
+    finally{if(button){button.disabled=false;button.textContent=old||'Quét tiến độ'}}
+  }
+  function exportValue(track){return track.lastGa==null?(track.count?'Chưa xác định':'Chưa học'):`GA ${track.lastGa}`}
+  function exportHistory(track){return(track.history||[]).map(x=>`${x.sheet}: ${x.ga==null?'?':`GA${x.ga}`}`).join(' → ')}
+  async function exportExcel(){
+    const filtered=filterRows(allRows,currentFilters());if(!filtered.length){if(typeof toast==='function')toast('Không có dữ liệu để xuất.');return}
+    if(!root.ExcelJS?.Workbook){if(typeof toast==='function')toast('ExcelJS chưa sẵn sàng.');return}
+    const workbook=new root.ExcelJS.Workbook(),ws=workbook.addWorksheet('Tiến độ KNS-STEM');
+    ws.columns=[
+      {header:'Trường',key:'school',width:24},{header:'Cơ sở/điểm dạy',key:'site',width:30},{header:'Khối',key:'grade',width:8},{header:'Lớp',key:'className',width:12},
+      {header:'KNS đã học',key:'knsLast',width:14},{header:'KNS kế tiếp',key:'knsNext',width:14},{header:'STEM đã học',key:'stemLast',width:14},{header:'STEM kế tiếp',key:'stemNext',width:15},
+      {header:'Tuần gần nhất',key:'lastSheet',width:14},{header:'Nhịp gần đây',key:'rhythm',width:34},{header:'Tình trạng',key:'status',width:22},{header:'Lịch sử KNS',key:'knsHistory',width:55},{header:'Lịch sử STEM',key:'stemHistory',width:45}
+    ];
+    filtered.forEach(row=>ws.addRow({school:row.school,site:row.site||'',grade:row.grade,className:row.className,knsLast:exportValue(row.kns),knsNext:fmtNext(row.kns),stemLast:exportValue(row.stem),stemNext:fmtNext(row.stem),lastSheet:row.lastSheet,rhythm:row.rhythm.map(x=>`${x.track==='stem'?'STEM':'KNS'} ${x.ga==null?'?':`GA${x.ga}`}`).join(' → '),status:row.status==='review'?row.warnings.join('; '):'Ổn',knsHistory:exportHistory(row.kns),stemHistory:exportHistory(row.stem)}));
+    ws.views=[{state:'frozen',ySplit:1}];ws.autoFilter={from:'A1',to:'M1'};
+    ws.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF28C45'}};ws.getRow(1).alignment={vertical:'middle',horizontal:'center'};ws.getRow(1).height=24;
+    ws.eachRow((row,rowNumber)=>{if(rowNumber===1)return;row.alignment={vertical:'top',wrapText:true};if(rowNumber%2===0)row.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF9F4'}}});
+    const review=workbook.addWorksheet('Cần kiểm tra');review.columns=ws.columns.map(c=>({header:c.header,key:c.key,width:c.width}));filtered.filter(x=>x.status==='review').forEach(row=>review.addRow({school:row.school,site:row.site||'',grade:row.grade,className:row.className,knsLast:exportValue(row.kns),knsNext:fmtNext(row.kns),stemLast:exportValue(row.stem),stemNext:fmtNext(row.stem),lastSheet:row.lastSheet,rhythm:row.rhythm.map(x=>`${x.track==='stem'?'STEM':'KNS'} ${x.ga==null?'?':`GA${x.ga}`}`).join(' → '),status:row.warnings.join('; '),knsHistory:exportHistory(row.kns),stemHistory:exportHistory(row.stem)}));
+    review.views=[{state:'frozen',ySplit:1}];review.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};review.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFB45309'}};
+    const buffer=await workbook.xlsx.writeBuffer(),blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),url=URL.createObjectURL(blob),a=root.document.createElement('a');
+    a.href=url;a.download=`TIEN_DO_GA_KNS_STEM_${txt(q('lbgGpdWeek')?.value||'TKB')}.xlsx`;root.document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);if(typeof toast==='function')toast(`Đã xuất ${filtered.length} lớp ra Excel.`);
+  }
+  function ensureStyle(){
+    if(q('lbgGaProgressDashboardStyle'))return;const s=root.document.createElement('style');s.id='lbgGaProgressDashboardStyle';s.textContent=`
+      #lbgGaProgressDashboard{border:1px solid #f0d6c5;background:linear-gradient(180deg,#fffdfa 0%,#fff 100%)}
+      #lbgGaProgressDashboard .lbg-gpd-intro{padding:12px 14px;border:1px solid #fed7aa;border-radius:13px;background:#fff7ed;color:#7c2d12;line-height:1.55;margin-bottom:12px}
+      #lbgGaProgressDashboard .lbg-gpd-intro b{color:#9a3412}
+      .lbg-gpd-controls{display:grid;grid-template-columns:1.05fr 1.35fr .85fr 1fr 1.15fr;gap:10px;align-items:end;margin:12px 0}
+      .lbg-gpd-controls label{display:grid;gap:5px;font-weight:800;color:#5c463a}.lbg-gpd-controls input,.lbg-gpd-controls select{width:100%;min-height:42px;border:1px solid #dfc9bb;border-radius:10px;background:#fff;padding:8px 10px}
+      .lbg-gpd-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.lbg-gpd-actions button,.lbg-gpd-dist button,.lbg-gpd-detail-btn{border:1px solid #d49a72;border-radius:10px;background:#fff7ed;color:#8a4b2c;font-weight:850;cursor:pointer;padding:8px 11px}.lbg-gpd-actions .primary{background:#c76532;color:#fff;border-color:#c76532}
+      #lbgGpdStatus{font-size:13px;color:#6b5a50;margin:8px 0 12px}.warn{color:#b45309}
+      #lbgGpdSummary{display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:9px;margin:10px 0}.lbg-gpd-stat{border:1px solid #ead7cb;border-radius:13px;background:#fff;padding:11px 12px}.lbg-gpd-stat b{display:block;font-size:22px;color:#7c3f22}.lbg-gpd-stat span{font-size:12px;color:#74645b}.lbg-gpd-stat.warn{border-color:#fdba74;background:#fff7ed}
+      .lbg-gpd-dist{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 0 13px}.lbg-gpd-dist-label{font-weight:850;color:#5c463a}.lbg-gpd-dist button{padding:6px 9px;background:#fff}.lbg-gpd-dist button b{display:inline-grid;place-items:center;margin-left:6px;min-width:22px;height:22px;border-radius:999px;background:#f4d8c5;color:#7c2d12;font-size:11px}
+      .lbg-gpd-school{border:1px solid #ead9cf;border-radius:14px;background:#fff;margin:10px 0;overflow:hidden}.lbg-gpd-school>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#fffaf6}.lbg-gpd-school>summary::-webkit-details-marker{display:none}.lbg-gpd-school>summary b{font-size:15px;color:#4c3328}.lbg-gpd-school>summary small{display:block;margin-top:3px;color:#7b6b62}.lbg-gpd-chevron{font-size:18px}.lbg-gpd-school[open] .lbg-gpd-chevron{transform:rotate(180deg)}
+      .lbg-gpd-table-wrap{overflow:auto}.lbg-gpd-table{width:100%;border-collapse:collapse;min-width:1040px}.lbg-gpd-table th{position:sticky;top:0;background:#f8eee7;color:#5d4031;text-align:left;padding:9px 10px;border-bottom:1px solid #e6d3c7;font-size:12px}.lbg-gpd-table td{padding:10px;border-bottom:1px solid #f0e5de;vertical-align:top;font-size:13px}.lbg-gpd-table tr:last-child td{border-bottom:0}.lbg-gpd-row-review{background:#fffaf0}.lbg-gpd-table small{color:#7b6b62}
+      .lbg-gpd-rhythm-wrap{display:flex;gap:4px;flex-wrap:wrap}.lbg-gpd-rhythm{display:inline-block;border-radius:999px;padding:4px 7px;font-size:11px;font-weight:850}.lbg-gpd-rhythm.kns{background:#eff6ff;color:#1d4ed8}.lbg-gpd-rhythm.stem{background:#fef2f2;color:#b91c1c}.lbg-gpd-badge{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}.lbg-gpd-badge.stem{background:#fef2f2;color:#b91c1c}.lbg-gpd-badge.review{background:#fff7ed;color:#b45309}.lbg-gpd-badge.done{background:#ecfdf5;color:#047857}.lbg-gpd-warning-text{margin-top:5px;font-size:11px;color:#b45309}.lbg-gpd-muted,.lbg-gpd-history-empty{color:#8a7a71}
+      .lbg-gpd-detail-row td{background:#fffdfa!important}.lbg-gpd-detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:4px}.lbg-gpd-history-title{font-weight:900;color:#5d4031;margin-bottom:6px}.lbg-gpd-history-list{display:flex;flex-wrap:wrap;gap:5px}.lbg-gpd-history-list span{border:1px solid #ead7cb;border-radius:8px;padding:5px 7px;background:#fff;font-size:11px}.lbg-gpd-empty{padding:18px;border:1px dashed #decabc;border-radius:12px;color:#7b6b62;text-align:center}
+      @media(max-width:1200px){.lbg-gpd-controls{grid-template-columns:repeat(3,1fr)}#lbgGpdSummary{grid-template-columns:repeat(3,1fr)}.lbg-gpd-detail-grid{grid-template-columns:1fr 1fr}}
+      @media(max-width:720px){.lbg-gpd-controls{grid-template-columns:1fr 1fr}#lbgGpdSummary{grid-template-columns:1fr 1fr}.lbg-gpd-detail-grid{grid-template-columns:1fr}.lbg-gpd-actions button{flex:1 1 auto}}
+    `;root.document.head.appendChild(s);
+  }
+  function mount(){
+    if(q('lbgGaProgressDashboard'))return true;const main=root.document.querySelector('main.shell');if(!main)return false;
+    const card=root.document.createElement('article');card.className='card';card.id='lbgGaProgressDashboard';card.innerHTML=`
+      <div class="head"><div><h3>📚 Theo dõi tiến độ KNS – STEM</h3><p>Quét toàn bộ lịch sử TKB theo từng trường, cơ sở và lớp để biết GA đã học, GA kế tiếp và hỗ trợ phân tiết STEM.</p></div><span class="badge">BẢN THỬ</span></div>
+      <div class="lbg-gpd-intro"><b>Nguyên tắc:</b> KNS và STEM được theo dõi thành <b>hai tiến trình độc lập</b>. Hệ thống <b>không bắt buộc 3 KNS : 1 STEM</b>; STEM có thể dạy trước KNS hoặc KNS dạy trước STEM. Bảng chỉ cảnh báo khi dữ liệu GA mâu thuẫn/chưa xác định, không cảnh báo chỉ vì thứ tự KNS–STEM khác nhau.</div>
+      <div class="lbg-gpd-controls">
+        <label>Dữ liệu đến tuần<select id="lbgGpdWeek"></select></label>
+        <label>Trường<select id="lbgGpdSchool"><option value="__all">Tất cả trường</option></select></label>
+        <label>Khối<select id="lbgGpdGrade"><option value="__all">Tất cả khối</option><option value="1">Khối 1</option><option value="2">Khối 2</option><option value="3">Khối 3</option><option value="4">Khối 4</option><option value="5">Khối 5</option></select></label>
+        <label>STEM<select id="lbgGpdState"><option value="__all">Tất cả lớp</option><option value="stem-none">Chưa học STEM</option><option value="stem-has">Đã học STEM</option><option value="stem-finished">Đã hết chuỗi STEM</option><option value="review">⚠ Cần kiểm tra</option></select></label>
+        <label>STEM kế tiếp<select id="lbgGpdStemNext"><option value="__all">Tất cả GA STEM kế tiếp</option></select></label>
+        <label style="grid-column:span 2">Tìm nhanh<input id="lbgGpdSearch" placeholder="Gõ trường, cơ sở, lớp, GA..."></label>
+      </div>
+      <div class="lbg-gpd-actions"><button type="button" class="primary" id="lbgGpdScan">🔎 Quét tiến độ</button><button type="button" id="lbgGpdExport">📥 Xuất Excel</button><button type="button" id="lbgGpdOpenAll">Mở tất cả trường</button><button type="button" id="lbgGpdCloseAll">Thu gọn</button></div>
+      <div id="lbgGpdStatus">Đang chờ file TKB…</div><div id="lbgGpdSummary"></div><div id="lbgGpdStemDist" class="lbg-gpd-dist"></div><div id="lbgGpdResults"><div class="lbg-gpd-empty">Khi TKB sẵn sàng, bấm <b>Quét tiến độ</b> để tổng hợp.</div></div>`;
+    const anchor=q('previewCard');if(anchor?.parentNode===main)main.insertBefore(card,anchor);else main.appendChild(card);ensureStyle();
+    q('lbgGpdScan').onclick=runAnalysis;q('lbgGpdExport').onclick=exportExcel;
+    ['lbgGpdSchool','lbgGpdGrade','lbgGpdState','lbgGpdStemNext'].forEach(id=>q(id).addEventListener('change',renderRows));q('lbgGpdSearch').addEventListener('input',renderRows);
+    q('lbgGpdWeek').addEventListener('change',runAnalysis);
+    q('lbgGpdOpenAll').onclick=()=>q('lbgGpdResults')?.querySelectorAll('details.lbg-gpd-school').forEach(x=>x.open=true);q('lbgGpdCloseAll').onclick=()=>q('lbgGpdResults')?.querySelectorAll('details.lbg-gpd-school').forEach(x=>x.open=false);
+    q('lbgGpdStemDist').addEventListener('click',event=>{const b=event.target?.closest?.('[data-next-stem]');if(!b)return;const el=q('lbgGpdStemNext');if(el){el.value=b.dataset.nextStem;renderRows()}});
+    return true;
+  }
+  function install(){
+    let tries=0,bookSeen=null,autoDone=false;const timer=setInterval(()=>{tries++;if(mount()){
+      const book=bookNow();if(book&&book!==bookSeen){bookSeen=book;populateWeeks(book);q('lbgGpdStatus').textContent='TKB đã sẵn sàng. Đang chuẩn bị tổng hợp…';if(!autoDone){autoDone=true;setTimeout(runAnalysis,120)}}
+    }if(tries>600)clearInterval(timer)},100);
+    root.addEventListener?.('beforeunload',()=>clearInterval(timer),{once:true});return true;
+  }
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,classMember,isWholeGradeEvent,specificMembers,locationMeta,compactTrackEvents,summarizeTrack,buildKnownClasses,memberListForEvent,recentRhythm,buildClassProgress,filterRows,summarizeRows,nextStemDistribution,weekSheets,latestWeekName,loadVersionSources,analyzeProgress,install};
+});
