@@ -1,0 +1,37 @@
+name: Validate weekly stats teacher code
+
+on:
+  pull_request:
+    paths:
+      - 'teacher-intelligence-v6.js'
+      - 'analysis-fix-v2.js'
+      - 'teacher-fix-v2.js'
+      - 'index.html'
+      - 'tests/weekly-stats-teacher-code-accent-v1.test.cjs'
+      - '.github/workflows/validate-weekly-stats-teacher-code.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check teacher-intelligence-v6.js
+          node --check analysis-fix-v2.js
+          node --check teacher-fix-v2.js
+          node --check tests/weekly-stats-teacher-code-accent-v1.test.cjs
+      - name: Teacher code regression
+        run: |
+          node tests/weekly-stats-teacher-code-accent-v1.test.cjs
+      - name: Cache-bust chain
+        run: |
+          grep -F "teacher-fix-v2.js?v=20261005.1" index.html
+          grep -F "analysis-fix-v2.js?v=20261005.1" teacher-fix-v2.js
+          grep -F "teacher-intelligence-v6.js?v=20261005.1" analysis-fix-v2.js
