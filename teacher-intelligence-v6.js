@@ -2,6 +2,7 @@
 (function(){
   const STEM_GA=new Set([3,6,10,13,16,20,23,27,32]);
   const ROLE={KNS:'KNS',STEM:'STEM',CTV:'CTV',UNKNOWN:'UNKNOWN'};
+  const VERSION='20261005.1';
   const roleCache=new WeakMap(),scanCache=new WeakMap();
   let gaHistory=null,statsResult=null,lastResultSignature='',lastWorkbook=null,lastWeekSignature='';
   const q=id=>document.getElementById(id);
@@ -109,6 +110,19 @@
     }catch{}
     roleCache.set(ws,map);return map;
   }
+  function accentKey(value){return fold(value).replace(/\s+/g,'')}
+  function resolveRoleCode(roles,ws,rawCode){
+    const raw=text(rawCode).toUpperCase();if(!raw||raw==='OFF')return null;
+    if(roles?.has?.(raw))return{code:raw,sourceCode:raw,mapping:'exact'};
+    // Ưu tiên cùng bộ chuẩn hóa đang dùng trong parser chính (ví dụ HẠ trong TKB -> HÀ ở bảng tổng).
+    try{
+      const resolved=window.LBGTkbParserV2?.resolveTeacherCode?.(ws,raw),code=text(resolved?.code).toUpperCase();
+      if(code&&roles?.has?.(code))return{code,sourceCode:raw,mapping:resolved?.mapping||'parser'};
+    }catch{}
+    // Fallback an toàn khi parser chưa sẵn sàng: chỉ ghép nếu sau khi bỏ dấu có đúng 1 mã ứng viên.
+    const key=accentKey(raw),candidates=[...(roles?.keys?.()||[])].filter(code=>accentKey(code)===key);
+    return candidates.length===1?{code:candidates[0],sourceCode:raw,mapping:'accent-unique'}:null;
+  }
   function dateKey(d){return d instanceof Date&&!Number.isNaN(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:''}
   function dateFor(ws,dayNo){
     try{
@@ -129,12 +143,14 @@
     const roles=summaryRoles(ws),codes=new Set(roles.keys()),source=[];
     ws.eachRow({includeEmpty:false},row=>{
       for(let c=4;c<=73;c++){
-        const cell=row.getCell(c),code=text(cellText(cell)).toUpperCase();
-        if(!code||code==='OFF'||!codes.has(code))continue;
+        const cell=row.getCell(c),sourceCode=text(cellText(cell)).toUpperCase();
+        if(!sourceCode||sourceCode==='OFF')continue;
+        const resolved=resolveRoleCode(roles,ws,sourceCode),code=text(resolved?.code).toUpperCase();
+        if(!code||!codes.has(code))continue;
         const info=typeof colInfo==='function'?colInfo(c):null;
         if(!info)continue;
         const meta=roles.get(code),school=schoolAt(ws,row.number),className=classAt(ws,row.number,c,codes),date=dateFor(ws,info.day);
-        source.push({sheet:ws.name,code,teacherName:meta?.name||code,role:meta?.role||ROLE.UNKNOWN,makeUp:isBlue(cell),day:Number(info.day),session:info.session,period:Number(info.period),school,className,address:cell.address,row:row.number,col:c,date,dateKey:dateKey(date)});
+        source.push({sheet:ws.name,code,sourceCode,resolution:resolved?.mapping||'exact',teacherName:meta?.name||code,role:meta?.role||ROLE.UNKNOWN,makeUp:isBlue(cell),day:Number(info.day),session:info.session,period:Number(info.period),school,className,address:cell.address,row:row.number,col:c,date,dateKey:dateKey(date)});
       }
     });
     source.sort((a,b)=>(a.date?.getTime()||0)-(b.date?.getTime()||0)||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.period-b.period||a.row-b.row||a.col-b.col);
@@ -316,5 +332,5 @@
   function start(){addCss();initGaUi();statsCard();syncGaButton();syncStatsWeeks();}
   const timer=setInterval(start,700);start();
   window.addEventListener('beforeunload',()=>clearInterval(timer));
-  window.LBGTeacherIntelligenceV6={summaryRoles,scanSheet,buildHistory,STEM_GA:[...STEM_GA]};
+  window.LBGTeacherIntelligenceV6={version:VERSION,summaryRoles,resolveRoleCode,scanSheet,buildHistory,STEM_GA:[...STEM_GA]};
 })();
