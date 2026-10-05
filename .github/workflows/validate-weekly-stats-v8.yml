@@ -1,0 +1,39 @@
+name: Validate weekly stats V8
+
+on:
+  pull_request:
+    paths:
+      - 'weekly-stats-enhancement-v8.js'
+      - 'analysis-fix-v2.js'
+      - 'teacher-fix-v2.js'
+      - 'index.html'
+      - 'tests/weekly-stats-enhancement-v8.test.cjs'
+      - '.github/workflows/validate-weekly-stats-v8.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check weekly-stats-enhancement-v8.js
+          node --check tests/weekly-stats-enhancement-v8.test.cjs
+          node --check analysis-fix-v2.js
+          node --check teacher-fix-v2.js
+      - name: Exact teacher code regression
+        run: |
+          node tests/weekly-stats-enhancement-v8.test.cjs
+      - name: Load-chain and safety contracts
+        run: |
+          grep -F "teacher-fix-v2.js?v=20261005.2" index.html
+          grep -F "analysis-fix-v2.js?v=20261005.2" teacher-fix-v2.js
+          grep -F "weekly-stats-enhancement-v8.js?v=20261005.1" analysis-fix-v2.js
+          grep -F "HẠ ≠ HÀ" weekly-stats-enhancement-v8.js
+          ! grep -F "weekly-stats-enhancement-v7.js?v=20260803.2" analysis-fix-v2.js
