@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261011.3';
+  const VERSION='20261011.4';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -97,6 +97,17 @@
       locationRepairReason:reason
     };
   }
+  function isThuyPhu1ThreeClassHandoff(entry,teacherLoc,classSite,teacherSite,row,classRow){
+    const newSchool=fold(teacherLoc?.schoolName||teacherLoc?.school),newSite=fold(teacherLoc?.siteDisplay||teacherLoc?.siteName||teacherLoc?.locationLabel);
+    const cls=txt(entry?.className||entry?.classRaw).replace(/\s+/g,'').toUpperCase();
+    return Boolean(
+      row===classRow+1&&classSite?.direct&&teacherSite?.direct&&
+      Number(classSite.endRow)===classRow&&Number(teacherSite.startRow)===row&&
+      newSchool==='THUY PHU'&&/\bTHUY PHU\s*1\b/.test(newSite)&&
+      ['5/5','1/4','4/5'].includes(cls)
+    );
+  }
+
   function repairBoundaryLocation(ws,entry,parser=null){
     if(!ws||!entry||!parser?.locationAt)return entry;
     const row=Number(entry.row),classRow=Number(entry.classRow);
@@ -109,7 +120,10 @@
     const oldKey=txt(entry.locationKey||classLoc.locationKey),newKey=txt(teacherLoc.locationKey);
     if(!newKey||newKey===oldKey)return entry;
     const oldSchool=fold(entry.schoolName||entry.school||classLoc.schoolName||classLoc.school),newSchool=fold(teacherLoc.schoolName||teacherLoc.school);
-    if(oldSchool&&newSchool&&oldSchool!==newSchool)return entry;
+    const thuyPhu1Handoff=isThuyPhu1ThreeClassHandoff(entry,teacherLoc,classSite,teacherSite,row,classRow);
+    if(oldSchool&&newSchool&&oldSchool!==newSchool&&!thuyPhu1Handoff)return entry;
+    // THỦY PHÙ 1: 5/5, 1/4, 4/5 nằm ở dòng cuối block THỦY LƯƠNG,
+    // còn HUỆ2 nằm ngay dòng đầu THỦY PHÙ / THỦY PHÙ 1 -> neo theo hàng GV.
     // THỦY PHƯƠNG – 25 DẠ LÊ: hàng lớp 4/2, 4/1 nằm ngay trước vùng merge
     // "TRỤ SỞ CHÍNH - 25 DẠ LÊ", còn hàng ĐỨC nằm trực tiếp trong vùng merge đó.
     const start=Number(teacherSite.startRow)||row;
@@ -121,7 +135,8 @@
       row===classRow+1
     );
     if(!looseBoundary&&!exactHandoff)return entry;
-    return copyLocation(entry,teacherLoc,row,exactHandoff?'class-last-row-to-next-site-first-row':'class-row-before-direct-site-block');
+    const reason=thuyPhu1Handoff?'thuy-phu-1-three-class-row-spill':(exactHandoff?'class-last-row-to-next-site-first-row':'class-row-before-direct-site-block');
+    return copyLocation(entry,teacherLoc,row,reason);
   }
 
   function assignmentToken(parser,ws,value){
@@ -271,7 +286,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
@@ -302,5 +317,5 @@
     root.document.addEventListener('lbg-runtime-ready',installOnce);
     return true;
   }
-  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
+  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
 });
