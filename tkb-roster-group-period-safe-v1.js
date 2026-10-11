@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261011.2';
+  const VERSION='20261011.3';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -101,11 +101,8 @@
     if(!ws||!entry||!parser?.locationAt)return entry;
     const row=Number(entry.row),classRow=Number(entry.classRow);
     if(!Number.isFinite(row)||!Number.isFinite(classRow)||row<=0||classRow<=0||classRow>=row)return entry;
-    const classSite=directSiteAt(ws,classRow);
-    // Nếu hàng lớp thật sự nằm trong ô cơ sở/điểm dạy thì giữ hàng lớp làm mốc.
-    // Hàng rào này bảo vệ ca QUANG TRUNG 1/8 đã sửa trước đây.
-    if(classSite.direct)return entry;
-    const teacherSite=directSiteAt(ws,row);if(!teacherSite.direct)return entry;
+    const classSite=directSiteAt(ws,classRow),teacherSite=directSiteAt(ws,row);
+    if(!teacherSite.direct)return entry;
     let classLoc={},teacherLoc={};
     try{classLoc=parser.locationAt(ws,classRow)||{}}catch{}
     try{teacherLoc=parser.locationAt(ws,row)||{}}catch{}
@@ -116,8 +113,15 @@
     // THỦY PHƯƠNG – 25 DẠ LÊ: hàng lớp 4/2, 4/1 nằm ngay trước vùng merge
     // "TRỤ SỞ CHÍNH - 25 DẠ LÊ", còn hàng ĐỨC nằm trực tiếp trong vùng merge đó.
     const start=Number(teacherSite.startRow)||row;
-    if(start<=classRow||start>row)return entry;
-    return copyLocation(entry,teacherLoc,row,'class-row-before-direct-site-block');
+    const looseBoundary=!classSite.direct&&start>classRow&&start<=row;
+    const exactHandoff=Boolean(
+      classSite.direct&&teacherSite.direct&&
+      Number(classSite.endRow)===classRow&&
+      Number(teacherSite.startRow)===row&&
+      row===classRow+1
+    );
+    if(!looseBoundary&&!exactHandoff)return entry;
+    return copyLocation(entry,teacherLoc,row,exactHandoff?'class-last-row-to-next-site-first-row':'class-row-before-direct-site-block');
   }
 
   function assignmentToken(parser,ws,value){
