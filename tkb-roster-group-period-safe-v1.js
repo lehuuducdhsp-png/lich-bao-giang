@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261011.1';
+  const VERSION='20261011.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -29,11 +29,25 @@
   function mergeRanges(ws){
     if(!ws)return[];
     if(mergeCache.has(ws))return mergeCache.get(ws);
-    const out=[];
-    for(const range of ws?.model?.merges||[]){
-      const m=String(range).match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
-      if(m)out.push({c1:lettersCol(m[1]),r1:Number(m[2]),c2:lettersCol(m[3]),r2:Number(m[4]),ref:String(range)});
-    }
+    const out=[],seen=new Set(),add=range=>{
+      if(!range)return;
+      let c1=null,r1=null,c2=null,r2=null,ref='';
+      if(typeof range==='string'){
+        ref=range;const m=range.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+        if(m){c1=lettersCol(m[1]);r1=Number(m[2]);c2=lettersCol(m[3]);r2=Number(m[4])}
+      }else{
+        const model=range.model||range,top=Number(model?.top),left=Number(model?.left),bottom=Number(model?.bottom),right=Number(model?.right);
+        if([top,left,bottom,right].every(Number.isFinite)){r1=top;c1=left;r2=bottom;c2=right;ref=String(range.range||range.ref||'')}
+        if(c1==null){
+          const raw=String(range.range||range.ref||range._range||''),m=raw.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+          if(m){ref=raw;c1=lettersCol(m[1]);r1=Number(m[2]);c2=lettersCol(m[3]);r2=Number(m[4])}
+        }
+      }
+      if(![c1,r1,c2,r2].every(Number.isFinite))return;
+      const key=`${c1}|${r1}|${c2}|${r2}`;if(seen.has(key))return;seen.add(key);out.push({c1,r1,c2,r2,ref:ref||key});
+    };
+    for(const range of ws?.model?.merges||[])add(range);
+    try{for(const range of Object.values(ws?._merges||{}))add(range)}catch{}
     mergeCache.set(ws,out);return out;
   }
   function mergeFor(ws,row,col){for(const m of mergeRanges(ws))if(Number(row)>=m.r1&&Number(row)<=m.r2&&Number(col)>=m.c1&&Number(col)<=m.c2)return m;return null}
