@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'assist-p-preview-safe-v1.js'
+      - 'tkb-location-boundary-safe-v1.js'
       - 'tests/assist-p-class-pairing-v1.test.cjs'
+      - 'tests/tkb-location-boundary-safe-v1.test.cjs'
       - 'patch-runtime-loader-v1.js'
       - 'index.html'
       - '.github/workflows/validate-thuy-phuong-25-da-le-p.yml'
@@ -23,12 +25,16 @@ jobs:
       - name: Verify syntax
         run: |
           node --check assist-p-preview-safe-v1.js
+          node --check tkb-location-boundary-safe-v1.js
           node --check tests/assist-p-class-pairing-v1.test.cjs
+          node --check tests/tkb-location-boundary-safe-v1.test.cjs
           node --check patch-runtime-loader-v1.js
       - name: Regression tests
         run: |
           node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/tkb-location-boundary-safe-v1.test.cjs
       - name: Verify cache chain
         run: |
           grep -F "assist-p-preview-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
-          grep -F "patch-runtime-loader-v1.js?v=20261011.1" index.html
+          grep -F "tkb-location-boundary-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
+          grep -F "patch-runtime-loader-v1.js?v=20261011.2" index.html
