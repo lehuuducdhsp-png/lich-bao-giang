@@ -13,7 +13,7 @@ function scriptNames(blockName){
 }
 
 const expectedCore=[
-  'tkb-parser-v2.js?v=20261001.1',
+  'tkb-parser-v2.js?v=20261011.1',
   'tkb-parser-school-name-fix-v1.js?v=20261001.1',
   'tkb-atomic-teaching-v1.js?v=20260906.1',
   'tkb-parser-bridge-v2.js?v=20260906.3',
