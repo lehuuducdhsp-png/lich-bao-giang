@@ -36,5 +36,5 @@ jobs:
       - name: Verify cache chain
         run: |
           grep -F "assist-p-preview-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
-          grep -F "tkb-roster-group-period-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
-          grep -F "patch-runtime-loader-v1.js?v=20261011.2" index.html
+          grep -F "tkb-roster-group-period-safe-v1.js?v=20261011.2" patch-runtime-loader-v1.js
+          grep -F "patch-runtime-loader-v1.js?v=20261011.3" index.html
