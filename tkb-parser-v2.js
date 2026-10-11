@@ -30,15 +30,40 @@
 
   function mergeRanges(ws){
     if(mergeCache.has(ws))return mergeCache.get(ws);
-    const out=[];
-    for(const range of ws?.model?.merges||[]){
-      const m=String(range).match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
-      if(m)out.push({c1:lettersCol(m[1]),r1:+m[2],c2:lettersCol(m[3]),r2:+m[4],ref:String(range)})
-    }
+    const out=[],seen=new Set();
+    const add=range=>{
+      if(!range)return;
+      let c1=null,r1=null,c2=null,r2=null,ref='';
+      if(typeof range==='string'){
+        ref=range;const m=range.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+        if(m){c1=lettersCol(m[1]);r1=+m[2];c2=lettersCol(m[3]);r2=+m[4]}
+      }else{
+        const model=range.model||range;
+        const top=Number(model?.top),left=Number(model?.left),bottom=Number(model?.bottom),right=Number(model?.right);
+        if([top,left,bottom,right].every(Number.isFinite)){r1=top;c1=left;r2=bottom;c2=right;ref=String(range.range||range.ref||'')}
+        if(c1==null){
+          const raw=String(range.range||range.ref||range._range||'');
+          const m=raw.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+          if(m){ref=raw;c1=lettersCol(m[1]);r1=+m[2];c2=lettersCol(m[3]);r2=+m[4]}
+        }
+      }
+      if(![c1,r1,c2,r2].every(Number.isFinite))return;
+      const key=`${c1}|${r1}|${c2}|${r2}`;if(seen.has(key))return;seen.add(key);
+      out.push({c1,r1,c2,r2,ref:ref||key});
+    };
+    for(const range of ws?.model?.merges||[])add(range);
+    try{for(const range of Object.values(ws?._merges||{}))add(range)}catch{}
     mergeCache.set(ws,out);return out
   }
   function mergeFor(ws,row,col){for(const m of mergeRanges(ws))if(row>=m.r1&&row<=m.r2&&col>=m.c1&&col<=m.c2)return m;return null}
-  function master(ws,row,col){const m=mergeFor(ws,row,col);return m?ws.getCell(m.r1,m.c1):ws.getCell(row,col)}
+  function master(ws,row,col){
+    const cell=ws.getCell(row,col);
+    try{
+      const actual=cell?.master;
+      if(actual&&actual!==cell)return actual;
+    }catch{}
+    const m=mergeFor(ws,row,col);return m?ws.getCell(m.r1,m.c1):cell
+  }
   const masterText=(ws,row,col)=>txt(cellText(master(ws,row,col)));
 
   function dayNo(value){const f=fold(value);if(/CHU\s*NHAT/.test(f))return 8;const m=f.match(/THU\s*([2-7])/);return m?Number(m[1]):null}
@@ -363,7 +388,7 @@
     }catch(error){console.error('Parser V2: không làm mới được danh sách giáo viên',error)}
   }
 
-  const api={version:'2.2.1',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,roomText,singleClassRoom,classAt,scanAssignments,analyze,dayLabel};
+  const api={version:'2.2.3',buildHeader,colInfoFor,timetableColumns,teacherSummary,resolveTeacherCode,teachers,locationAt,parseSite,classMeta,roomText,singleClassRoom,classAt,scanAssignments,analyze,dayLabel};
   window.LBGTkbParserV2=api;window.teachers=teachers;window.analyzeNow=analyze;
   window.colInfo=function(c){const ws=currentWs();return ws?colInfoFor(ws,c):null};
   window.LBGAllTeachers=teachers;
