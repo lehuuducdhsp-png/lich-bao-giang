@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const L=require('../tkb-roster-group-period-safe-v1.js');
 
-assert.equal(L.VERSION,'20261011.3');
+assert.equal(L.VERSION,'20261011.4');
 
 function makeWs(cells,merges=[]){
   return{
@@ -69,6 +69,63 @@ const fixed41=L.repairBoundaryLocation(thuyWs,{...duc42,col:8,address:'H192',cla
 assert.equal(fixed41.siteName,'25 DẠ LÊ');
 assert.equal(fixed41.className,'4/1');
 
+// THỦY PHÙ 1 – cấu trúc THẬT trong file 12T10 người dùng gửi:
+ // B234:B237 = THUỶ LƯƠNG
+ // C234:C237 = ghi chú giờ học
+ // E237/F237/G237 = 5/5, 1/4, 4/5
+ // B238:B246 = THỦY PHÙ
+ // C238:C242 = THỦY PHÙ 1
+ // E238/F238/G238 = HUỆ2
+ // Ba lớp ở dòng cuối block trước nhưng là phân công của HUỆ2 tại THỦY PHÙ 1.
+const thuyPhuCells=new Map([
+  ['234,2','THUỶ LƯƠNG'],
+  ['234,3','+ Buổi sáng: 7h15 có mặt ở trường để quản lý HS lớp'],
+  ['238,2','THỦY PHÙ'],
+  ['238,3','THỦY PHÙ 1']
+]);
+const thuyPhuWs=makeWs(thuyPhuCells,['B234:B237','C234:C237','B238:B246','C238:C242']);
+const thuyPhuParser={
+  locationAt(ws,row){
+    if(row>=238)return{
+      schoolName:'THỦY PHÙ',school:'THỦY PHÙ',schoolKey:'THUY PHU',
+      siteRaw:'THỦY PHÙ 1',siteType:'Địa điểm',siteName:'THỦY PHÙ 1',
+      siteDisplay:'Địa điểm: THỦY PHÙ 1',siteKey:'THUY PHU 1',
+      locationLabel:'THỦY PHÙ\nĐịa điểm: THỦY PHÙ 1',
+      locationKey:'THUY PHU|THUY PHU 1',notes:[]
+    };
+    return{
+      schoolName:'THUỶ LƯƠNG',school:'THUỶ LƯƠNG',schoolKey:'THUY LUONG',
+      siteRaw:'+ Buổi sáng: 7h15 có mặt ở trường để quản lý HS lớp',
+      siteType:'Địa điểm',siteName:'+ Buổi sáng: 7h15 có mặt ở trường để quản lý HS lớp',
+      siteDisplay:'Địa điểm: + Buổi sáng: 7h15 có mặt ở trường để quản lý HS lớp',
+      siteKey:'GHI CHU',locationLabel:'THUỶ LƯƠNG\nGhi chú',locationKey:'THUY LUONG|GHI CHU',notes:[]
+    };
+  }
+};
+for(const [col,cls] of [[5,'5/5'],[6,'1/4'],[7,'4/5']]){
+  const raw={
+    row:238,col,classRow:237,address:`${String.fromCharCode(64+col)}238`,code:'HUỆ2',
+    className:cls,classRaw:cls,classType:'single',
+    school:'THUỶ LƯƠNG',schoolName:'THUỶ LƯƠNG',
+    siteDisplay:'Địa điểm: + Buổi sáng...',
+    locationKey:'THUY LUONG|GHI CHU'
+  };
+  const fixed=L.repairBoundaryLocation(thuyPhuWs,raw,thuyPhuParser);
+  assert.equal(fixed.schoolName,'THỦY PHÙ',`${cls} phải đổi sang trường THỦY PHÙ`);
+  assert.equal(fixed.siteName,'THỦY PHÙ 1',`${cls} phải thuộc THỦY PHÙ 1`);
+  assert.equal(fixed.locationKey,'THUY PHU|THUY PHU 1');
+  assert.equal(fixed.locationRepairReason,'thuy-phu-1-three-class-row-spill');
+  assert.equal(fixed.className,cls);
+  assert.equal(fixed.code,'HUỆ2');
+}
+
+// Chỉ đúng ba lớp đã xác nhận mới được vượt ranh giới trường theo ngoại lệ này.
+const notWhitelisted=L.repairBoundaryLocation(thuyPhuWs,{
+  row:238,col:8,classRow:237,className:'2/2',classRaw:'2/2',code:'HUỆ2',
+  schoolName:'THUỶ LƯƠNG',locationKey:'THUY LUONG|GHI CHU'
+},thuyPhuParser);
+assert.equal(notWhitelisted.locationKey,'THUY LUONG|GHI CHU');
+
 // Bảo vệ lỗi cũ QUANG TRUNG 1/8: nếu hàng lớp đang NẰM TRỰC TIẾP trong merge
 // của điểm dạy cũ, tuyệt đối không kéo xuống cơ sở ở hàng giáo viên bên dưới.
 const qtCells=new Map([
@@ -91,4 +148,4 @@ const otherParser={locationAt(ws,row){return row>=31?
 const protectedEntry=L.repairBoundaryLocation(thuyWs,duc42,otherParser);
 assert.equal(protectedEntry.locationKey,duc42.locationKey,'không tự kéo phân công sang trường khác');
 
-console.log('OK location boundary: THỦY PHƯƠNG 4/2 + 4/1 -> Trụ sở chính 25 Dạ Lê; QUANG TRUNG 1/8 remains protected');
+console.log('OK location boundary: THỦY PHƯƠNG 25 Dạ Lê + THỦY PHÙ 1 three-class spill; QUANG TRUNG 1/8 remains protected');

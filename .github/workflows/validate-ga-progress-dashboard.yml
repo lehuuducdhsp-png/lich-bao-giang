@@ -31,7 +31,7 @@ jobs:
       - name: Runtime and product contracts
         run: |
           grep -F "ga-progress-dashboard-v1.js?v=20261004.1" patch-runtime-loader-v1.js
-          grep -F "patch-runtime-loader-v1.js?v=20261011.4" index.html
+          grep -F "patch-runtime-loader-v1.js?v=20261011.5" index.html
           grep -F "không bắt buộc 3 KNS : 1 STEM" ga-progress-dashboard-v1.js
           grep -F "STEM có thể dạy trước KNS" ga-progress-dashboard-v1.js
           python - <<'PY'
