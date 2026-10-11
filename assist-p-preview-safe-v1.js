@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20260918.1';
+  const VERSION='20261011.1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -74,8 +74,38 @@
     return specialMain?classFromPairedMain(specialMain):emptyClass();
   }
 
+
+  // TKB có các cụm xếp xen kẽ: lớp 4/2 -> ĐỨC -> DƯƠNGP;
+  // lớp 4/5 -> THANH -> DƯƠNGP; lớp 4/3 -> DƯƠNG ở cột bên cạnh.
+  // Luôn lấy lớp ngay trong cột của P, không ghép P với lớp của GV chính cùng tên ở cột khác.
+  function strictClassForPColumn(ws,row,col,base,currentLoc,p){
+    if(!ws?.getCell||!p?.classMeta)return emptyClass();
+    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1);
+    const origin=Number(row),key=txt(currentLoc?.locationKey);
+    for(const step of [1,2]){
+      const r=origin-step;if(r<first)break;
+      let rowKey='';try{rowKey=txt(p.locationAt?.(ws,r)?.locationKey)}catch{}
+      if(key&&rowKey&&rowKey!==key)break;
+      let cell=null;try{cell=ws.getCell(r,col)}catch{}
+      const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();
+      if(!value)continue;
+      // Hàng sát trên có thể là giáo viên chính KHÁC với người P.
+      // Vượt đúng một hàng GV, không vượt qua cả một cụm/điểm trường mới.
+      if(isAssignmentCode(p,ws,value,base)){
+        if(step===1)continue;
+        return emptyClass();
+      }
+      if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
+      let meta=null;try{meta=p.classMeta(value)}catch{}
+      const known=classFromKnownSource(meta);
+      if(known.className||known.classRaw)return{...known,assistClassRow:r};
+      return emptyClass();
+    }
+    return emptyClass();
+  }
+
   if(typeof module!=='undefined'&&module.exports){
-    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,assistAppendFragment,sameRowMainCandidates,pairedMainAssignment,specialPairedMainAssignment,classFromPairedMain,selectAssistClass};
+    module.exports={VERSION,assistantCode,dayCellIndex,formatClassText,assistAppendFragment,sameRowMainCandidates,pairedMainAssignment,specialPairedMainAssignment,classFromPairedMain,selectAssistClass,strictClassForPColumn};
     return;
   }
 
@@ -108,29 +138,7 @@
   }
 
   function strictLocalClassAt(ws,row,col,base,currentLoc){
-    const p=parser();if(!ws||!p?.classMeta)return emptyClass();
-    const first=Math.max(1,Number(p.buildHeader?.(ws)?.headerRow||4)+1),origin=Number(row),currentKey=txt(currentLoc?.locationKey);
-    // Cấu trúc TKB thực tế có dạng: LỚP -> GV chính -> GV trợ (P).
-    // Chỉ nhìn lên tối đa 2 hàng trong CHÍNH CỘT của mã P; tuyệt đối không dò cột bên cạnh.
-    for(const step of[1,2]){
-      const r=origin-step;if(r<first)break;
-      let rowLoc={};try{rowLoc=p.locationAt?.(ws,r)||{}}catch{}
-      const rowKey=txt(rowLoc?.locationKey);
-      if(currentKey&&rowKey&&rowKey!==currentKey)break;
-      let cell=null;try{cell=ws.getCell(r,col)}catch{}
-      const value=txt(cellText(cell?.master||cell)).replace(/\s+/g,' ').trim();if(!value)continue;
-      // Hàng ngay trên thường là GV chính; cho phép đi xuyên qua đúng 1 hàng này để đọc lớp ở hàng kế trên.
-      if(isAssignmentCode(p,ws,value,base)){
-        if(step===1)continue;
-        return emptyClass();
-      }
-      if(/^(SÁNG|CHIỀU|TIẾT|THỨ|TÊN GV|TÊN GIÁO VIÊN|BUỔI|TRƯỜNG|PHÂN HIỆU|ĐIỂM TRƯỜNG|CƠ SỞ)$/i.test(value)||/^(GHI\s*CHÚ|CÓ\s*DI\s*CHUYỂN|DI\s*CHUYỂN\b)/i.test(value))continue;
-      let meta=null;try{meta=p.classMeta(value)}catch{}
-      const known=classFromKnownSource(meta);
-      if(known.className||known.classRaw)return known;
-      return emptyClass();
-    }
-    return emptyClass();
+    return strictClassForPColumn(ws,row,col,base,currentLoc,parser());
   }
 
   function scanAssist(ws,teacherCode){
@@ -166,6 +174,7 @@
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
           pairedMainAddress:txt((anchor||main)?.address),pairedMainCode:txt((anchor||main)?.code),
           assistClassSource:localKnown?'same-column-class':anchor?'special-roster-paired-main':'unresolved',
+          assistClassRow:Number(localMeta.assistClassRow)||null,
           rosterTeachingPeriod:rosterPeriod||null
         });
       }
@@ -231,7 +240,7 @@
     if(installed)return;installed=true;
     document.addEventListener('click',onClick,false);
     document.addEventListener('change',onChange,false);
-    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,assistAppendFragment,sameRowMainCandidates,pairedMainAssignment,specialPairedMainAssignment,classFromPairedMain,selectAssistClass,scanAssist,placeAssist};
+    window.LBGAssistPPreviewSafe={version:VERSION,assistantCode,dayCellIndex,formatClassText,assistAppendFragment,sameRowMainCandidates,pairedMainAssignment,specialPairedMainAssignment,classFromPairedMain,selectAssistClass,strictClassForPColumn,scanAssist,placeAssist};
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
