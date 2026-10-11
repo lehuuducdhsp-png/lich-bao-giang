@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'assist-p-preview-safe-v1.js'
-      - 'tkb-location-boundary-safe-v1.js'
+      - 'tkb-roster-group-period-safe-v1.js'
       - 'tests/assist-p-class-pairing-v1.test.cjs'
       - 'tests/tkb-location-boundary-safe-v1.test.cjs'
       - 'patch-runtime-loader-v1.js'
@@ -25,7 +25,7 @@ jobs:
       - name: Verify syntax
         run: |
           node --check assist-p-preview-safe-v1.js
-          node --check tkb-location-boundary-safe-v1.js
+          node --check tkb-roster-group-period-safe-v1.js
           node --check tests/assist-p-class-pairing-v1.test.cjs
           node --check tests/tkb-location-boundary-safe-v1.test.cjs
           node --check patch-runtime-loader-v1.js
@@ -36,5 +36,5 @@ jobs:
       - name: Verify cache chain
         run: |
           grep -F "assist-p-preview-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
-          grep -F "tkb-location-boundary-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
+          grep -F "tkb-roster-group-period-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
           grep -F "patch-runtime-loader-v1.js?v=20261011.2" index.html
