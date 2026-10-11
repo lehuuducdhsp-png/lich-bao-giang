@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const L=require('../tkb-location-boundary-safe-v1.js');
+const L=require('../tkb-roster-group-period-safe-v1.js');
 
 assert.equal(L.VERSION,'20261011.1');
 
@@ -50,7 +50,7 @@ const duc42={
   siteDisplay:'Phân hiệu: THANH LÂM CŨ',
   locationKey:'THUY PHUONG|PHAN HIEU|THANH LAM CU'
 };
-const fixed=L.repairEntryLocation(thuyWs,duc42,parser);
+const fixed=L.repairBoundaryLocation(thuyWs,duc42,parser);
 assert.equal(fixed.locationKey,'THUY PHUONG|TRU SO CHINH|25 DA LE');
 assert.equal(fixed.siteType,'Trụ sở chính');
 assert.equal(fixed.siteName,'25 DẠ LÊ');
@@ -61,7 +61,7 @@ assert.equal(fixed.className,'4/2','sửa địa điểm không được đổi 
 assert.equal(fixed.code,'ĐỨC','sửa địa điểm không được đổi giáo viên');
 
 // 4/1 cùng hàng nguồn phải được sửa giống 4/2.
-const fixed41=L.repairEntryLocation(thuyWs,{...duc42,col:11,address:'K31',className:'4/1',classRaw:'4/1'},parser);
+const fixed41=L.repairBoundaryLocation(thuyWs,{...duc42,col:11,address:'K31',className:'4/1',classRaw:'4/1'},parser);
 assert.equal(fixed41.siteName,'25 DẠ LÊ');
 assert.equal(fixed41.className,'4/1');
 
@@ -76,7 +76,7 @@ const qtParser={locationAt(ws,row){return row<=50?
   {schoolName:'QUANG TRUNG',siteDisplay:'',locationKey:'QUANG TRUNG|'}:
   {schoolName:'VỸ DẠ',siteDisplay:'',locationKey:'VY DA|'};}};
 const qt={row:51,col:10,classRow:50,className:'1/8',classRaw:'1/8',code:'PHƯƠNG CTV',schoolName:'QUANG TRUNG',locationKey:'QUANG TRUNG|'};
-const qtFixed=L.repairEntryLocation(qtWs,qt,qtParser);
+const qtFixed=L.repairBoundaryLocation(qtWs,qt,qtParser);
 assert.equal(qtFixed.locationKey,'QUANG TRUNG|','1/8 phải tiếp tục neo vào QUANG TRUNG');
 assert.equal(qtFixed.locationBoundaryRepaired,undefined);
 
@@ -84,7 +84,7 @@ assert.equal(qtFixed.locationBoundaryRepaired,undefined);
 const otherParser={locationAt(ws,row){return row>=31?
   {schoolName:'TRƯỜNG KHÁC',siteDisplay:'Cơ sở B',locationKey:'TRUONG KHAC|B'}:
   parser.locationAt(ws,row);}};
-const protectedEntry=L.repairEntryLocation(thuyWs,duc42,otherParser);
+const protectedEntry=L.repairBoundaryLocation(thuyWs,duc42,otherParser);
 assert.equal(protectedEntry.locationKey,duc42.locationKey,'không tự kéo phân công sang trường khác');
 
 console.log('OK location boundary: THỦY PHƯƠNG 4/2 + 4/1 -> Trụ sở chính 25 Dạ Lê; QUANG TRUNG 1/8 remains protected');
