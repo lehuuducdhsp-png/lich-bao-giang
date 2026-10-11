@@ -66,7 +66,7 @@ assert.deepEqual(V.classMembers('2/A - P 2/2',2),['2/A'],'P 2/2 là phòng, khô
 
 
 
-assert.equal(P.version,'2.2.2');
+assert.equal(P.version,'2.2.3');
 
 // Regression THỦY PHƯƠNG – 25 DẠ LÊ:
 // một số workbook ExcelJS vẫn có cell.master đúng dù ws.model.merges không đủ/không có.
@@ -90,6 +90,29 @@ assert.equal(daLe.siteType,'Trụ sở chính');
 assert.equal(daLe.siteName,'25 DẠ LÊ');
 assert.equal(daLe.siteDisplay,'Trụ sở chính: 25 DẠ LÊ');
 assert.equal(daLe.locationKey,'THUY PHUONG|TRU SO CHINH|25 DA LE');
+
+
+// Trường hợp còn khó hơn: model.merges trống, cell.master không cung cấp master,
+// nhưng ExcelJS vẫn giữ merge trong worksheet._merges.
+const privateMergeWs={
+  model:{merges:[]},
+  _merges:{
+    B20:{model:{top:20,left:2,bottom:45,right:2}},
+    C20:{model:{top:20,left:3,bottom:29,right:3}},
+    C30:{model:{top:30,left:3,bottom:45,right:3}}
+  },
+  getCell(row,col){
+    if(row===20&&col===2)return{value:'THỦY PHƯƠNG'};
+    if(row===20&&col===3)return{value:'PHÂN HIỆU - THANH LÂM CŨ'};
+    if(row===30&&col===3)return{value:'TRỤ SỞ CHÍNH\n- 25 DẠ LÊ'};
+    return{value:''};
+  }
+};
+const privateDaLe=P.locationAt(privateMergeWs,31);
+assert.equal(privateDaLe.schoolName,'THỦY PHƯƠNG');
+assert.equal(privateDaLe.siteDisplay,'Trụ sở chính: 25 DẠ LÊ');
+assert.equal(privateDaLe.locationKey,'THUY PHUONG|TRU SO CHINH|25 DA LE',
+  'phải đọc được vùng 25 Dạ Lê từ worksheet._merges khi model.merges/cell.master không giúp được');
 
 const thanhLam=P.locationAt(locationWs,29);
 assert.equal(thanhLam.siteType,'Phân hiệu');
