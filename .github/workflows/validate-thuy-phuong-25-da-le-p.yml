@@ -1,0 +1,34 @@
+name: Validate 25 Da Le assistant P context
+
+on:
+  pull_request:
+    paths:
+      - 'assist-p-preview-safe-v1.js'
+      - 'tests/assist-p-class-pairing-v1.test.cjs'
+      - 'patch-runtime-loader-v1.js'
+      - 'index.html'
+      - '.github/workflows/validate-thuy-phuong-25-da-le-p.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify syntax
+        run: |
+          node --check assist-p-preview-safe-v1.js
+          node --check tests/assist-p-class-pairing-v1.test.cjs
+          node --check patch-runtime-loader-v1.js
+      - name: Regression tests
+        run: |
+          node tests/assist-p-class-pairing-v1.test.cjs
+      - name: Verify cache chain
+        run: |
+          grep -F "assist-p-preview-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
+          grep -F "patch-runtime-loader-v1.js?v=20261011.1" index.html
