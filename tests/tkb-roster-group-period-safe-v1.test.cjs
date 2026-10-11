@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 
-assert.equal(R.VERSION,'20261002.2');
+assert.equal(R.VERSION,'20261011.1');
 
 // Đúng cấu trúc TKB mới ở TRẦN QUỐC TOẢN, sheet 21T9.
 assert.equal(R.periodHintFromText('KHỐI 1  - DẠY TIẾT 4'),4);
