@@ -96,8 +96,7 @@ function patchNames(blockName){
 const expectedCorePatches=[
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'class-typo-report-path-safe-v1.js?v=20260916.1',
-  'tkb-roster-group-period-safe-v1.js?v=20261002.2',
-  'tkb-location-boundary-safe-v1.js?v=20261011.1',
+  'tkb-roster-group-period-safe-v1.js?v=20261011.1',
   'tkb-assignment-cache-safe-v1.js?v=20260913.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
