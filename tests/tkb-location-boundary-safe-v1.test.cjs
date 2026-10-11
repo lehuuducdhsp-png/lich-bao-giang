@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const L=require('../tkb-roster-group-period-safe-v1.js');
 
-assert.equal(L.VERSION,'20261011.2');
+assert.equal(L.VERSION,'20261011.3');
 
 function makeWs(cells,merges=[]){
   return{
@@ -16,18 +16,22 @@ function makeWs(cells,merges=[]){
   };
 }
 
-// THỦY PHƯƠNG: hàng lớp 4/2, 4/1 nằm ngay trước merge của cơ sở mới.
-// Parser cũ lấy ngược PHÂN HIỆU THANH LÂM CŨ từ phía trên.
-// Hàng GV ĐỨC nằm trực tiếp trong "TRỤ SỞ CHÍNH - 25 DẠ LÊ".
+// THỦY PHƯƠNG – cấu trúc THẬT trong file 12T10:
+ // B189:B199 = THỦY PHƯƠNG
+ // C189:C191 = PHÂN HIỆU - THANH LAM CŨ
+ // C192:C199 = TRỤ SỞ CHÍNH - 25 DẠ LÊ
+ // G191/H191 = 4/2, 4/1; G192/H192 = ĐỨC, ĐỨC.
+ // Hàng lớp là dòng CUỐI site cũ nhưng hàng GV ngay dưới là dòng ĐẦU site mới,
+ // cùng một trường -> phân công phải neo vào site mới 25 Dạ Lê.
 const thuyCells=new Map([
-  ['20,2','THỦY PHƯƠNG'],
-  ['20,3','PHÂN HIỆU - THANH LÂM CŨ'],
-  ['31,3','TRỤ SỞ CHÍNH\n- 25 DẠ LÊ']
+  ['189,2','THỦY PHƯƠNG'],
+  ['189,3','PHÂN HIỆU - THANH LAM CŨ'],
+  ['192,3','TRỤ SỞ CHÍNH\n- 25 DẠ LÊ']
 ]);
-const thuyWs=makeWs(thuyCells,['B20:B45','C20:C29','C31:C45']);
+const thuyWs=makeWs(thuyCells,['B189:B199','C189:C191','C192:C199']);
 const parser={
   locationAt(ws,row){
-    if(row>=31)return{
+    if(row>=192)return{
       schoolName:'THỦY PHƯƠNG',school:'THỦY PHƯƠNG',schoolKey:'THUY PHUONG',
       siteRaw:'TRỤ SỞ CHÍNH - 25 DẠ LÊ',siteType:'Trụ sở chính',siteName:'25 DẠ LÊ',
       siteDisplay:'Trụ sở chính: 25 DẠ LÊ',siteKey:'TRU SO CHINH|25 DA LE',
@@ -36,18 +40,18 @@ const parser={
     };
     return{
       schoolName:'THỦY PHƯƠNG',school:'THỦY PHƯƠNG',schoolKey:'THUY PHUONG',
-      siteRaw:'PHÂN HIỆU - THANH LÂM CŨ',siteType:'Phân hiệu',siteName:'THANH LÂM CŨ',
-      siteDisplay:'Phân hiệu: THANH LÂM CŨ',siteKey:'PHAN HIEU|THANH LAM CU',
-      locationLabel:'THỦY PHƯƠNG\nPhân hiệu: THANH LÂM CŨ',
+      siteRaw:'PHÂN HIỆU - THANH LAM CŨ',siteType:'Phân hiệu',siteName:'THANH LAM CŨ',
+      siteDisplay:'Phân hiệu: THANH LAM CŨ',siteKey:'PHAN HIEU|THANH LAM CU',
+      locationLabel:'THỦY PHƯƠNG\nPhân hiệu: THANH LAM CŨ',
       locationKey:'THUY PHUONG|PHAN HIEU|THANH LAM CU',notes:[]
     };
   }
 };
 const duc42={
-  row:31,col:10,classRow:30,address:'J31',code:'ĐỨC',
+  row:192,col:7,classRow:191,address:'G192',code:'ĐỨC',
   className:'4/2',classRaw:'4/2',classType:'single',
   school:'THỦY PHƯƠNG',schoolName:'THỦY PHƯƠNG',
-  siteDisplay:'Phân hiệu: THANH LÂM CŨ',
+  siteDisplay:'Phân hiệu: THANH LAM CŨ',
   locationKey:'THUY PHUONG|PHAN HIEU|THANH LAM CU'
 };
 const fixed=L.repairBoundaryLocation(thuyWs,duc42,parser);
@@ -56,12 +60,12 @@ assert.equal(fixed.siteType,'Trụ sở chính');
 assert.equal(fixed.siteName,'25 DẠ LÊ');
 assert.equal(fixed.siteDisplay,'Trụ sở chính: 25 DẠ LÊ');
 assert.equal(fixed.locationBoundaryRepaired,true);
-assert.equal(fixed.locationAnchorRow,31);
-assert.equal(fixed.className,'4/2','sửa địa điểm không được đổi lớp');
-assert.equal(fixed.code,'ĐỨC','sửa địa điểm không được đổi giáo viên');
+assert.equal(fixed.locationAnchorRow,192);
+assert.equal(fixed.locationRepairReason,'class-last-row-to-next-site-first-row');
+assert.equal(fixed.className,'4/2');
+assert.equal(fixed.code,'ĐỨC');
 
-// 4/1 cùng hàng nguồn phải được sửa giống 4/2.
-const fixed41=L.repairBoundaryLocation(thuyWs,{...duc42,col:11,address:'K31',className:'4/1',classRaw:'4/1'},parser);
+const fixed41=L.repairBoundaryLocation(thuyWs,{...duc42,col:8,address:'H192',className:'4/1',classRaw:'4/1'},parser);
 assert.equal(fixed41.siteName,'25 DẠ LÊ');
 assert.equal(fixed41.className,'4/1');
 
