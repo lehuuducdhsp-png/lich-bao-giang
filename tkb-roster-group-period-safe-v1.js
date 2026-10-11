@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261002.2';
+  const VERSION='20261011.1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -60,6 +60,52 @@
       return !a||!b||a===b;
     }catch{return true}
   }
+  function directSiteAt(ws,row){
+    const r=Number(row);if(!ws?.getCell||!Number.isFinite(r)||r<1)return{direct:false,row:r,text:'',merge:null};
+    const merge=mergeFor(ws,r,3);
+    if(merge){
+      const value=txt(cellText(ws.getCell(merge.r1,merge.c1)));
+      return{direct:Boolean(value),row:r,text:value,merge,startRow:merge.r1,endRow:merge.r2};
+    }
+    const value=txt(cellText(ws.getCell(r,3)));
+    return{direct:Boolean(value),row:r,text:value,merge:null,startRow:r,endRow:r};
+  }
+  function copyLocation(entry,loc,row,reason){
+    return{
+      ...entry,
+      school:txt(loc?.schoolName||loc?.school),
+      schoolName:txt(loc?.schoolName||loc?.school),
+      schoolNote:txt(loc?.schoolNote),
+      schoolKey:txt(loc?.schoolKey),
+      siteRaw:txt(loc?.siteRaw),siteType:txt(loc?.siteType),siteName:txt(loc?.siteName),siteDisplay:txt(loc?.siteDisplay),siteKey:txt(loc?.siteKey),
+      locationLabel:txt(loc?.locationLabel),locationKey:txt(loc?.locationKey),locationNotes:Array.isArray(loc?.notes)?loc.notes:[],
+      locationOriginalKey:txt(entry?.locationKey),locationAnchorRow:Number(row)||null,locationBoundaryRepaired:true,
+      locationRepairReason:reason
+    };
+  }
+  function repairBoundaryLocation(ws,entry,parser=null){
+    if(!ws||!entry||!parser?.locationAt)return entry;
+    const row=Number(entry.row),classRow=Number(entry.classRow);
+    if(!Number.isFinite(row)||!Number.isFinite(classRow)||row<=0||classRow<=0||classRow>=row)return entry;
+    const classSite=directSiteAt(ws,classRow);
+    // Nếu hàng lớp thật sự nằm trong ô cơ sở/điểm dạy thì giữ hàng lớp làm mốc.
+    // Hàng rào này bảo vệ ca QUANG TRUNG 1/8 đã sửa trước đây.
+    if(classSite.direct)return entry;
+    const teacherSite=directSiteAt(ws,row);if(!teacherSite.direct)return entry;
+    let classLoc={},teacherLoc={};
+    try{classLoc=parser.locationAt(ws,classRow)||{}}catch{}
+    try{teacherLoc=parser.locationAt(ws,row)||{}}catch{}
+    const oldKey=txt(entry.locationKey||classLoc.locationKey),newKey=txt(teacherLoc.locationKey);
+    if(!newKey||newKey===oldKey)return entry;
+    const oldSchool=fold(entry.schoolName||entry.school||classLoc.schoolName||classLoc.school),newSchool=fold(teacherLoc.schoolName||teacherLoc.school);
+    if(oldSchool&&newSchool&&oldSchool!==newSchool)return entry;
+    // THỦY PHƯƠNG – 25 DẠ LÊ: hàng lớp 4/2, 4/1 nằm ngay trước vùng merge
+    // "TRỤ SỞ CHÍNH - 25 DẠ LÊ", còn hàng ĐỨC nằm trực tiếp trong vùng merge đó.
+    const start=Number(teacherSite.startRow)||row;
+    if(start<=classRow||start>row)return entry;
+    return copyLocation(entry,teacherLoc,row,'class-row-before-direct-site-block');
+  }
+
   function assignmentToken(parser,ws,value){
     const raw=txt(value).toUpperCase();if(!raw)return null;
     let kind='main',base=raw;
@@ -169,8 +215,9 @@
     };
   }
   function normalizeEntry(ws,entry,parser=null){
-    const locKey=txt(entry?.locationKey),anchor=explicitGroupAnchorAt(ws,entry?.row,entry?.col,parser,locKey);
-    const repaired=applyGroupContinuation(entry,anchor);
+    const located=repairBoundaryLocation(ws,entry,parser);
+    const locKey=txt(located?.locationKey),anchor=explicitGroupAnchorAt(ws,located?.row,located?.col,parser,locKey);
+    const repaired=applyGroupContinuation(located,anchor);
     const resolver=parser?.locationAt?(w,r)=>parser.locationAt(w,r):null;
     return applyHint(repaired,periodHintAt(ws,repaired?.row,repaired?.col,resolver,repaired?.locationKey));
   }
@@ -206,7 +253,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
@@ -237,5 +284,5 @@
     root.document.addEventListener('lbg-runtime-ready',installOnce);
     return true;
   }
-  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
+  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
 });
