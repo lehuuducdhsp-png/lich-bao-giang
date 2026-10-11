@@ -46,7 +46,7 @@ jobs:
         run: |
           grep -F 'tkb-roster-group-period-safe-v1.js?v=20261002.2' patch-runtime-loader-v1.js
           grep -F 'grouped-plus-report-safe-v1.js?v=20260919.1' patch-runtime-loader-v1.js
-          grep -F 'assist-p-preview-safe-v1.js?v=20260918.1' patch-runtime-loader-v1.js
+          grep -F 'assist-p-preview-safe-v1.js?v=20261011.1' patch-runtime-loader-v1.js
           grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' patch-runtime-loader-v1.js
           grep -F "KHỐI" tests/tkb-roster-group-period-safe-v1.test.cjs
           grep -F "MỖI NGƯỜI 1 LỚP" tests/tkb-roster-group-period-safe-v1.test.cjs
