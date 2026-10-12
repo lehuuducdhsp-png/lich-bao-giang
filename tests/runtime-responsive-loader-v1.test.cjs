@@ -100,7 +100,7 @@ const expectedCorePatches=[
   'tkb-assignment-cache-safe-v1.js?v=20260913.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
-  'ga-group-split-history-safe-v1.js?v=20260920.1',
+  'ga-group-split-history-safe-v1.js?v=20261012.1',
   'ga-group-split-stale-repair-v1.js?v=20260920.1',
   'ga-role-track-stale-repair-v1.js?v=20260920.4'
 ];
@@ -125,7 +125,7 @@ const expectedRuntimePatches=[
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
 assert.match(index,/app-runtime-v1\.js\?v=20261011\.2/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20261011\.5/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20261012\.1/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
 assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');

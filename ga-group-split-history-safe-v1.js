@@ -5,7 +5,7 @@
   if(root)root.LBGGaGroupSplitHistorySafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260920.1';
+  const VERSION='20261012.1';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -33,6 +33,39 @@
     }
     return out;
   }
+  const KHUC_THUA_DU_158_TRANSFER=new Map([
+    ['1/6','1/1'],['1/7','1/2'],['1/8','1/3'],
+    ['3/5','3/1'],['3/6','3/2'],['3/7','3/3'],
+    ['4/6','4/1'],['4/7','4/2'],['4/8','4/3'],['4/9','4/4'],
+    ['5/5','5/1'],['5/6','5/2'],['5/7','5/3']
+  ]);
+  function isKhucThuaDu158(event){
+    const hay=fold([
+      event?.school,event?.schoolName,event?.locationKey,event?.locationLabel,
+      event?.siteDisplay,event?.siteName
+    ].filter(Boolean).join(' | '));
+    return hay.includes('THUY DUONG')&&hay.includes('158 KHUC THUA DU');
+  }
+  function historyIdentity(event,member){
+    const raw=txt(member).replace(/\s+/g,'');
+    if(!isKhucThuaDu158(event))return raw;
+    return KHUC_THUA_DU_158_TRANSFER.get(raw)||raw;
+  }
+  function historyMembers(event){
+    const raw=specificMembers(event),out=[],transfers=[];
+    for(const member of raw){
+      const identity=historyIdentity(event,member);
+      if(identity&&!out.includes(identity))out.push(identity);
+      if(identity&&identity!==member)transfers.push({from:identity,to:member});
+    }
+    if(transfers.length)event.__lbgTransferredClassHistory=transfers;
+    return out;
+  }
+  function isKhucThuaDu158TransferEvent(event){
+    if(!isKhucThuaDu158(event))return false;
+    return specificMembers(event).some(member=>KHUC_THUA_DU_158_TRANSFER.has(member));
+  }
+
   function scopeKey(event){return`${txt(event?.locationKey)}|${Number(event?.grade)}|${txt(event?.track)}`}
   function manualValues(event,sequence){
     let values=[];try{values=[...(event?.manualValues||[])]}catch{}
@@ -50,22 +83,24 @@
     if(!history||!Array.isArray(history.events)||!history.events.length)return history;
     const events=[...history.events].sort((a,b)=>(a?.date-b?.date)||dayRank(a?.session)-dayRank(b?.session)||Number(a?.period||0)-Number(b?.period||0)||txt(a?.id).localeCompare(txt(b?.id)));
     const groupScopes=new Set(events.filter(isWholeGradeGroup).map(scopeKey));
-    if(!groupScopes.size)return history;
+    const transferScopes=new Set(events.filter(isKhucThuaDu158TransferEvent).map(scopeKey));
+    const activeScopes=new Set([...groupScopes,...transferScopes]);
+    if(!activeScopes.size)return history;
 
     // Thu thập các lớp thành viên nhìn thấy trong toàn bộ lịch sử đến tuần đang chọn.
     // Việc này chỉ xác định tên lớp (1/1, 1/2...), không lấy GA từ tương lai.
     const knownByScope=new Map();
     for(const ev of events){
-      const scope=scopeKey(ev);if(!groupScopes.has(scope))continue;
-      const members=specificMembers(ev);if(!members.length)continue;
+      const scope=scopeKey(ev);if(!activeScopes.has(scope))continue;
+      const members=historyMembers(ev);if(!members.length)continue;
       if(!knownByScope.has(scope))knownByScope.set(scope,new Set());
       for(const member of members)knownByScope.get(scope).add(member);
     }
 
     const states=new Map(),gradeStates=new Map();
     for(const ev of events){
-      const scope=scopeKey(ev);if(!groupScopes.has(scope))continue;
-      const group=isWholeGradeGroup(ev),known=[...(knownByScope.get(scope)||[])],specific=specificMembers(ev);
+      const scope=scopeKey(ev);if(!activeScopes.has(scope))continue;
+      const group=isWholeGradeGroup(ev),known=[...(knownByScope.get(scope)||[])],specific=historyMembers(ev);
       if(!group&&!specific.length)continue;
       const members=group?known:specific;
       const seq=seqFor(ev.track),manual=manualValues(ev,seq),prior=[];
@@ -108,7 +143,7 @@
         if(prior.some(x=>x.event?.__lbgWholeGradeHistory))ev.__lbgInheritedFromWholeGrade=true;
       }
     }
-    history.__lbgGroupSplitHistory=VERSION;
+    history.__lbgGroupSplitHistory=VERSION;history.__lbgClassTransfer158KhucThuaDu=transferScopes.size?VERSION:history.__lbgClassTransfer158KhucThuaDu;
     return history;
   }
 
@@ -126,5 +161,5 @@
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
 
-  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,expectedFromState,wholeGradeFromText,isWholeGradeGroup,specificMembers,scopeKey,reconcileHistory,wrapBuildHistory,install};
+  return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,KHUC_THUA_DU_158_TRANSFER,expectedFromState,wholeGradeFromText,isWholeGradeGroup,specificMembers,isKhucThuaDu158,historyIdentity,historyMembers,isKhucThuaDu158TransferEvent,scopeKey,reconcileHistory,wrapBuildHistory,install};
 });
