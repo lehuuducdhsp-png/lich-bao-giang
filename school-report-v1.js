@@ -5,7 +5,7 @@
   if(root)root.LBGSchoolReportV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260930.1';
+  const VERSION='20261017.2';
   const MODES={class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'};
   const TARGET_SEP='::LBG_SITE::';
   const PERIODS=5;
@@ -89,16 +89,25 @@
     const fn=typeof root.LBGAllTeachers==='function'?root.LBGAllTeachers:(typeof root.teachers==='function'?root.teachers:null);
     try{return fn?(fn(ws)||[]):[]}catch{return[]}
   }
-  function normalizeMain(e){return{...(e||{}),isAssist:false,teachingPeriod:Number(e?.teachingPeriod??e?.period)||0}}
-  function normalizeAssist(e,t){return{...(e||{}),code:txt(t?.code),teacherName:txt(t?.name||t?.teacherName||t?.code),isAssist:true,teachingPeriod:Number(e?.teachingPeriod??e?.period)||0}}
+  function validatedExtraPeriod(ws,e){
+    // Lớp báo cáo có cache riêng: kiểm tra lại tiết Phú Tân tại điểm tạo báo cáo.
+    // Không dùng riêng số cột vật lý của Excel (Y=tiết 1, BB=tiết 5).
+    const extra=root.LBGTkbPhuTanExtraPeriodV1,p=root.LBGTkbParserV2;
+    const header=extra?.findHeader?.(ws,e,p)||null;
+    return header?Number(header.period)||Number(e?.teachingPeriod??e?.period)||0:Number(e?.teachingPeriod??e?.period)||0;
+  }
+  function normalizeMain(e,ws){return{...(e||{}),isAssist:false,teachingPeriod:validatedExtraPeriod(ws,e)}}
+  function normalizeAssist(e,t,ws){return{...(e||{}),code:txt(t?.code),teacherName:txt(t?.name||t?.teacherName||t?.code),isAssist:true,teachingPeriod:validatedExtraPeriod(ws,e)}}
   function cellText(cell){
     try{const c=cell?.master||cell,t=txt(c?.text);if(t)return t;const v=c?.value;if(v==null)return'';if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')return txt(v);if(Array.isArray(v?.richText))return txt(v.richText.map(x=>x?.text??'').join(''));if(v?.result!=null)return txt(v.result);if(typeof v?.text==='string')return txt(v.text)}catch{}return'';
   }
   function mainEvents(ws){
-    if(!ws)return[];if(mainCache.has(ws))return mainCache.get(ws);
+    if(!ws)return[];
+    const stamp=txt(root.LBGTkbPhuTanExtraPeriodV1?.VERSION)||'not-loaded';
+    const cached=mainCache.get(ws);if(cached?.stamp===stamp)return cached.entries;
     const parser=root.LBGTkbParserV2;if(!parser?.scanAssignments)throw new Error('Bộ đọc TKB chưa sẵn sàng.');
     const teachers=allTeachers(ws),allowed=new Set(teachers.map(t=>txt(t?.code).toUpperCase()).filter(Boolean));
-    const out=(parser.scanAssignments(ws)||[]).filter(e=>allowed.has(txt(e?.code).toUpperCase())).map(normalizeMain);mainCache.set(ws,out);return out;
+    const out=(parser.scanAssignments(ws)||[]).filter(e=>allowed.has(txt(e?.code).toUpperCase())).map(e=>normalizeMain(e,ws));mainCache.set(ws,{stamp,entries:out});return out;
   }
   function assistTeacherCodesPresent(ws,teachers){
     const parser=root.LBGTkbParserV2,map=new Map((teachers||[]).map(t=>[`${txt(t?.code).toUpperCase()}P`,txt(t?.code).toUpperCase()]).filter(x=>x[0]!=='P')),found=new Set();
@@ -108,11 +117,14 @@
     return found;
   }
   function assistEvents(ws){
-    if(!ws)return[];if(assistCache.has(ws))return assistCache.get(ws);
-    const api=root.LBGAssistPPreviewSafe,teachers=allTeachers(ws),byCode=new Map(teachers.map(t=>[txt(t?.code).toUpperCase(),t]));if(!api?.scanAssist){assistCache.set(ws,[]);return[]}
+    if(!ws)return[];
+    const api=root.LBGAssistPPreviewSafe;
+    const stamp=[txt(root.LBGTkbPhuTanExtraPeriodV1?.VERSION)||'not-loaded',txt(api?.version)||'not-loaded'].join('|');
+    const cached=assistCache.get(ws);if(cached?.stamp===stamp)return cached.entries;
+    const teachers=allTeachers(ws),byCode=new Map(teachers.map(t=>[txt(t?.code).toUpperCase(),t]));if(!api?.scanAssist){assistCache.set(ws,{stamp,entries:[]});return[]}
     const present=assistTeacherCodesPresent(ws,teachers),out=[],seen=new Set();
-    for(const code of present){const t=byCode.get(code);if(!t)continue;for(const e of api.scanAssist(ws,code)||[]){const id=txt(e?.address)||`${code}|${slotKey(e)}|${txt(e?.schoolName)}|${siteText(e)}|${txt(e?.className)}`;if(seen.has(id))continue;seen.add(id);out.push(normalizeAssist(e,t))}}
-    assistCache.set(ws,out);return out;
+    for(const code of present){const t=byCode.get(code);if(!t)continue;for(const e of api.scanAssist(ws,code)||[]){const id=txt(e?.address)||`${code}|${slotKey(e)}|${txt(e?.schoolName)}|${siteText(e)}|${txt(e?.className)}`;if(seen.has(id))continue;seen.add(id);out.push(normalizeAssist(e,t,ws))}}
+    assistCache.set(ws,{stamp,entries:out});return out;
   }
   function allEvents(ws){return[...mainEvents(ws),...assistEvents(ws)]}
   function activeVersion(){try{return typeof activeId!=='undefined'&&activeId?txt(activeId):'active'}catch{return'active'}}

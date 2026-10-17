@@ -1,0 +1,44 @@
+{
+  "id": "20261017.3-phutan",
+  "project": "Lịch Báo giảng",
+  "week": "19T10",
+  "kind": "production-release",
+  "blocks": [
+    {
+      "day": 2,
+      "session": "Chiều",
+      "period": 4,
+      "main": 6,
+      "assist": 4
+    },
+    {
+      "day": 3,
+      "session": "Chiều",
+      "period": 4,
+      "main": 6,
+      "assist": 5
+    },
+    {
+      "day": 4,
+      "session": "Sáng",
+      "period": 5,
+      "main": 9,
+      "assist": 9
+    },
+    {
+      "day": 5,
+      "session": "Chiều",
+      "period": 4,
+      "main": 3,
+      "assist": 3
+    },
+    {
+      "day": 6,
+      "session": "Chiều",
+      "period": 4,
+      "main": 6,
+      "assist": 6
+    }
+  ],
+  "description": "Dữ liệu này chỉ xác minh phiên bản triển khai, không liên quan tài khoản hoặc cơ sở dữ liệu."
+}

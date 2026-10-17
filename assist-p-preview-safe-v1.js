@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261011.1';
+  const VERSION='20261017.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -156,9 +156,17 @@
         const candidates=sameRowMainCandidates(assignments,row,col,base,info);
         const main=pairedMainAssignment(assignments,row,col,base,info);
         const localMeta=strictLocalClassAt(ws,row,col,base,loc);
-        const ownRosterPeriod=Number(p.rosterTeachingPeriodAt?.(ws,row,col))||0;
+        // Tiết bổ sung Phú Tân: P phải học đúng tiết in trên nhãn cụm,
+        // kể cả P nằm ở cột bên cạnh hay xuống dòng 159/160 (BB160 = tiết 4, không phải 5).
+        const extra=window.LBGTkbPhuTanExtraPeriodV1;
+        const extraHeader=extra?.findHeader?.(ws,{row,col,day:info.day,session:info.session},p)||null;
+        const ownRosterPeriod=Number(extraHeader?.period)||Number(p.rosterTeachingPeriodAt?.(ws,row,col))||0;
         const specialMain=ownRosterPeriod?null:specialPairedMainAssignment(assignments,row,col,base,p,ws);
-        const meta=selectAssistClass(candidates,main,localMeta,specialMain);
+        // Với riêng cụm MỖI GV/LỚP, nếu P đặt ngay cạnh GV chính (ví dụ AR155,
+        // BB160), được mượn lớp từ CHÍNH GIÁO VIÊN CÙNG MÃ trên cùng hàng.
+        // Không mở rộng việc mượn lớp cho các nhóm khác, tránh sai lệch giáo án.
+        const rosterPairedMain=extraHeader&&main?.phuTanExtraPeriod?main:null;
+        const meta=selectAssistClass(candidates,main,localMeta,specialMain||rosterPairedMain);
         const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
@@ -175,7 +183,9 @@
           pairedMainAddress:txt((anchor||main)?.address),pairedMainCode:txt((anchor||main)?.code),
           assistClassSource:localKnown?'same-column-class':anchor?'special-roster-paired-main':'unresolved',
           assistClassRow:Number(localMeta.assistClassRow)||null,
-          rosterTeachingPeriod:rosterPeriod||null
+          rosterTeachingPeriod:rosterPeriod||null,
+          phuTanExtraPeriodAssist:Boolean(extraHeader),
+          phuTanExtraPeriodHeaderRow:extraHeader?.row||null
         });
       }
     }

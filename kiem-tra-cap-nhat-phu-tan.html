@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Xác minh bản cập nhật Phú Tân</title>
+<style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;background:#f7fafc;color:#1e293b;margin:0}main{max-width:720px;margin:6vh auto;padding:28px;background:white;border-radius:16px;box-shadow:0 8px 36px #0001}h1{font-size:24px}li{padding:8px;border-bottom:1px solid #eee}#result{margin:20px 0;padding:14px;border-radius:10px;background:#eff6ff;font-weight:bold}button{padding:10px 16px;background:#2563eb;color:white;border:0;border-radius:8px;cursor:pointer}</style></head>
+<body><main><h1>Kiểm tra cập nhật Phú Tân</h1><p>Phiên bản dự kiến: <strong>20261017.3-phutan</strong></p><p>Trang này chỉ kiểm tra tệp triển khai, không đăng nhập hoặc đọc dữ liệu cá nhân.</p><ol id="checks"></ol><div id="result">Đang kiểm tra...</div><button onclick="check()">Kiểm tra lại</button> <a href="./">Về Lịch Báo giảng</a>
+</main><script>
+async function get(n){const r=await fetch('./'+n+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status+' '+n);return await r.text()}
+async function check(){
+ const list=document.getElementById('checks'),result=document.getElementById('result');list.textContent='';let ok=true;
+ const tests=[
+ ['Thông tin phiên bản',async()=>JSON.parse(await get('phu-tan-release-20261017.json')).id==='20261017.3-phutan'],
+ ['Trang chính mới',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261017.3-phutan'")],
+ ['Bộ đọc tiết học Phú Tân',async()=>(await get('tkb-phu-tan-extra-period-v1.js')).includes('findHeader')],
+ ['Báo cáo trường và trợ giảng',async()=>{const a=await get('school-report-v1.js'),b=await get('assist-p-preview-safe-v1.js');return a.includes('validatedExtraPeriod')&&b.includes('extraHeader')}],
+ ['Bộ tải mã mới',async()=>{const t=await get('patch-runtime-loader-v1.js');return t.includes("const VERSION='20261017.3'")&&t.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3')&&t.includes('school-report-v1.js?v=20261017.3')}]
+ ];
+ for(const [name,fn] of tests){let pass=false;try{pass=await fn()}catch(e){console.warn(name,e)}const li=document.createElement('li');li.textContent=(pass?'✅ ':'❌ ')+name;list.appendChild(li);ok=ok&&pass}
+ result.textContent=ok?'ĐÚNG PHIÊN BẢN – Các tệp đã được triển khai. Hãy kiểm tra dữ liệu TKB tuần 19T10 trong hệ thống.':'CHƯA ĐỒNG BỘ – Website có tệp cũ hoặc thiếu tệp mới. Xem lại triển khai GitHub Pages.';result.style.color=ok?'#166534':'#9a3412';
+}check();
+</script></body></html>
