@@ -23,13 +23,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Verify Phu Tan release and JavaScript syntax
+      - name: Verify Phu Tan and Thanh Lam release
         run: |
+          node --check tkb-parser-v2.js
+          node --check app-runtime-v1.js
           node --check tkb-phu-tan-extra-period-v1.js
           node --check assist-p-preview-safe-v1.js
           node --check school-report-v1.js
           node --check patch-runtime-loader-v1.js
           node tests/release-integrity-phu-tan-20261017.test.cjs
+          node tests/thanh-lam-release-20261018.test.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

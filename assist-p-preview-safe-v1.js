@@ -64,6 +64,18 @@
 
   function classFromPairedMain(main){return classFromKnownSource(main)}
 
+  function thanhLamSplitPairedMain(main,base,row,col){
+    // Ngoại lệ RẤT HẸP: từ TKB tách 19 lớp tại THỦY PHƯƠNG – Thanh Lam cũ.
+    // Nhãn lớp nằm trong cột GV chính ngay sát bên trái mã P cùng hàng.
+    // Không áp dụng cho Phú Mỹ, 25 Dạ Lê hoặc các nơi khác cũng có lớp 1/6, 2/6...
+    if(!main||txt(main.code).toUpperCase()!==txt(base).toUpperCase()||
+       Number(main.row)!==Number(row)||Math.abs(Number(main.col)-Number(col))!==1||
+       txt(main.classType)!=='single'||!/^([1-5])\/(?:6|7|8|9)$/.test(txt(main.className)))return null;
+    const fold=s=>txt(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase();
+    if(fold(main.schoolName)!=='THUY PHUONG'||!fold(main.siteRaw||main.siteDisplay).includes('THANH LAM CU'))return null;
+    return main;
+  }
+
   function selectAssistClass(mainCandidates,pairedMain,localMeta,specialMain=null){
     // Mặc định vẫn giữ quy tắc nghiệp vụ cũ: lớp (P) lấy từ CHÍNH CỘT có mã P.
     // Ngoại lệ hẹp duy nhất: TKB dạng "KHỐI ... - DẠY TIẾT N" xếp P ngay cạnh GV chính
@@ -166,14 +178,18 @@
         // BB160), được mượn lớp từ CHÍNH GIÁO VIÊN CÙNG MÃ trên cùng hàng.
         // Không mở rộng việc mượn lớp cho các nhóm khác, tránh sai lệch giáo án.
         const rosterPairedMain=extraHeader&&main?.phuTanExtraPeriod?main:null;
-        const meta=selectAssistClass(candidates,main,localMeta,specialMain||rosterPairedMain);
+        const thanhLamMain=thanhLamSplitPairedMain(main,base,row,col);
+        const meta=selectAssistClass(candidates,main,localMeta,specialMain||rosterPairedMain||thanhLamMain);
         const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
         const localKnown=Boolean(localMeta.className||localMeta.classRaw),anchor=specialMain||null;
-        const sourceInfo=anchor?{day:anchor.day,session:anchor.session,period:anchor.period}:info;
-        const sourceLoc=anchor||loc;
-        const rosterPeriod=ownRosterPeriod||Number(anchor?.teachingPeriod||anchor?.rosterTeachingPeriod)||0;
+        const sourceInfo=(thanhLamMain||anchor)?{
+          day:(thanhLamMain||anchor).day,session:(thanhLamMain||anchor).session,
+          period:(thanhLamMain||anchor).period
+        }:info;
+        const sourceLoc=thanhLamMain||anchor||loc;
+        const rosterPeriod=ownRosterPeriod||Number((thanhLamMain||anchor)?.teachingPeriod||(thanhLamMain||anchor)?.rosterTeachingPeriod)||0;
         out.push({
           day:Number(sourceInfo.day),session:txt(sourceInfo.session),period:Number(sourceInfo.period),
           teachingPeriod:rosterPeriod||(explicit?Number(explicit[1]):Number(sourceInfo.period)),
@@ -181,7 +197,7 @@
           className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
           pairedMainAddress:txt((anchor||main)?.address),pairedMainCode:txt((anchor||main)?.code),
-          assistClassSource:localKnown?'same-column-class':anchor?'special-roster-paired-main':'unresolved',
+          assistClassSource:localKnown?'same-column-class':anchor?'special-roster-paired-main':thanhLamMain?'thanh-lam-paired-main':'unresolved',
           assistClassRow:Number(localMeta.assistClassRow)||null,
           rosterTeachingPeriod:rosterPeriod||null,
           phuTanExtraPeriodAssist:Boolean(extraHeader),

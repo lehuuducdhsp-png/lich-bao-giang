@@ -90,7 +90,7 @@ for(const required of [
   'ga-per-class-history-safe-v1.js?v=20260913.1',
   'ga-role-track-stale-repair-v1.js?v=20260920.4',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
-  'assist-p-preview-safe-v1.js?v=20261011.1',
+  'assist-p-preview-safe-v1.js?v=20261018.1',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
   'assist-p-sheets-label-safe-v1.js?v=20260912.3'
 ])assert.ok(patchLoader.includes(required),`missing protected runtime module: ${required}`);

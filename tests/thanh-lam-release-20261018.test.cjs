@@ -1,0 +1,22 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),read=n=>fs.readFileSync(path.join(root,n),'utf8');
+const meta=JSON.parse(read('thanh-lam-release-20261018.json'));
+assert.equal(meta.id,'20261018.1-thanh-lam');
+assert.equal(meta.effectiveWeek,'19T10');
+const cls=Object.values(meta.classes).flat();
+assert.equal(cls.length,19);
+assert.equal(new Set(cls).size,19);
+for(const name of cls)assert.match(name,new RegExp('^[1-5]/[6-9]$'));
+assert.equal(meta.mainCount,19);assert.equal(meta.assistCount,19);
+const parser=read('tkb-parser-v2.js'),assist=read('assist-p-preview-safe-v1.js'),
+ runtime=read('app-runtime-v1.js'),loader=read('patch-runtime-loader-v1.js'),index=read('index.html');
+assert.ok(parser.includes('teacherSite.includes(\'THANH LAM CU\')'));
+assert.ok(parser.includes("fold(teacherLoc.schoolName)==='THUY PHUONG'"));
+assert.ok(assist.includes('function thanhLamSplitPairedMain'));
+assert.ok(assist.includes("'thanh-lam-paired-main'"));
+assert.ok(runtime.includes('tkb-parser-v2.js?v=20261018.1'));
+assert.ok(loader.includes('assist-p-preview-safe-v1.js?v=20261018.1'));
+assert.ok(loader.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3'));
+assert.ok(index.includes("window.LBG_RELEASE_ID='20261018.1-thanh-lam'"));
+console.log('PASS: Thanh Lam release, 19 lớp + 19 P và Phú Tân được bảo toàn.');

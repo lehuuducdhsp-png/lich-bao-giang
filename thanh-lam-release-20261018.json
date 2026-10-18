@@ -1,0 +1,42 @@
+{
+  "id": "20261018.1-thanh-lam",
+  "status": "approved",
+  "description": "Thanh Lam cũ, Thủy Phương – tách nhóm KHỐI cũ thành 19 lớp riêng ở tuần 19T10, giữ nguyên các sửa lỗi Phú Tân.",
+  "originalWeek": "12T10",
+  "effectiveWeek": "19T10",
+  "campus": "THỦY PHƯƠNG | PHÂN HIỆU THANH LAM CŨ",
+  "classes": {
+    "1": [
+      "1/6",
+      "1/7",
+      "1/8",
+      "1/9"
+    ],
+    "2": [
+      "2/6",
+      "2/7",
+      "2/8",
+      "2/9"
+    ],
+    "3": [
+      "3/6",
+      "3/7",
+      "3/8"
+    ],
+    "4": [
+      "4/6",
+      "4/7",
+      "4/8",
+      "4/9"
+    ],
+    "5": [
+      "5/6",
+      "5/7",
+      "5/8",
+      "5/9"
+    ]
+  },
+  "mainCount": 19,
+  "assistCount": 19,
+  "lessonHistory": "preserve separate KNS/STEM by campus"
+}

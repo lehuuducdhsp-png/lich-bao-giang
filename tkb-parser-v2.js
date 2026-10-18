@@ -302,7 +302,20 @@
       const cell=ws.getCell(r,c),sourceCode=txt(cellText(cell)).toUpperCase();if(!sourceCode)continue;
       const resolved=resolveTeacherCode(ws,sourceCode);if(!resolved||!allowed.has(resolved.code)||(want&&resolved.code!==want))continue;
       const info=colInfoFor(ws,c);if(!info)continue;
-      const cm=classAt(ws,r,c),classRow=Number(cm?.classRow),loc=locationAt(ws,Number.isFinite(classRow)&&classRow>0?classRow:r);
+      const cm=classAt(ws,r,c),classRow=Number(cm?.classRow);
+      let loc=locationAt(ws,Number.isFinite(classRow)&&classRow>0?classRow:r);
+      // Thanh Lam cũ (từ tuần 19T10): các lớp 1/6,2/6,4/6,5/6 được
+      // ghi ở hàng NGAY TRƯỚC nhãn trường Thủy Phương; hàng GV mới thuộc
+      // Phân hiệu Thanh Lam cũ. Không lấy địa điểm Phú Mỹ cho những ô này.
+      // Giữ nguyên quy tắc dùng hàng lớp cho các lớp cuối (*/9), vì hàng GV
+      // của chúng đã đi sang mục Trụ sở chính 25 Dạ Lê.
+      if(Number.isFinite(classRow)&&classRow===r-1&&cm.classType==='single'){
+        const teacherLoc=locationAt(ws,r);
+        const teacherSite=fold(teacherLoc.siteRaw);
+        if(fold(teacherLoc.schoolName)==='THUY PHUONG' &&
+           teacherSite.includes('THANH LAM CU') &&
+           fold(loc.schoolName)!==fold(teacherLoc.schoolName))loc=teacherLoc;
+      }
       entries.push({...info,
         school:loc.schoolName,schoolName:loc.schoolName,schoolNote:loc.schoolNote,
         siteRaw:loc.siteRaw,siteType:loc.siteType,siteName:loc.siteName,siteDisplay:loc.siteDisplay,

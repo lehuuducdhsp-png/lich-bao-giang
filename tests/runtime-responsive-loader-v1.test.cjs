@@ -13,7 +13,7 @@ function scriptNames(blockName){
 }
 
 const expectedCore=[
-  'tkb-parser-v2.js?v=20261011.2',
+  'tkb-parser-v2.js?v=20261018.1',
   'tkb-parser-school-name-fix-v1.js?v=20261001.1',
   'tkb-atomic-teaching-v1.js?v=20260906.1',
   'tkb-parser-bridge-v2.js?v=20260906.3',
@@ -97,6 +97,7 @@ const expectedCorePatches=[
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'class-typo-report-path-safe-v1.js?v=20260916.1',
   'tkb-roster-group-period-safe-v1.js?v=20261011.4',
+  'tkb-phu-tan-extra-period-v1.js?v=20261017.3',
   'tkb-assignment-cache-safe-v1.js?v=20260913.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
   'ga-per-class-history-safe-v1.js?v=20260913.1',
@@ -110,13 +111,13 @@ const expectedRuntimePatches=[
   'ga-multi-selection-bridge-v1.js?v=20260914.2',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'report-branding-v1.js?v=20260925.2',
-  'assist-p-preview-safe-v1.js?v=20261011.1',
+  'assist-p-preview-safe-v1.js?v=20261018.1',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
   'assist-p-web-footer-safe-v1.js?v=20260912.1',
   'multi-preview-assist-sync-v1.js?v=20260914.1',
   'assist-p-excel-export-parity-v1.js?v=20260918.1',
   'assist-p-export-safe-v1.js?v=20260912.1',
-  'school-report-v1.js?v=20260930.1',
+  'school-report-v1.js?v=20261017.3',
   'account-bulk-handoff-v1.js?v=20260927.1',
   'assist-p-sheets-label-safe-v1.js?v=20260912.3',
   'assist-p-sheets-location-safe-v1.js?v=20260912.1',
@@ -124,8 +125,8 @@ const expectedRuntimePatches=[
 ];
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
-assert.match(index,/app-runtime-v1\.js\?v=20261011\.2/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20261012\.1/);
+assert.match(index,/app-runtime-v1\.js\?v=20261018\.1/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20261018\.1/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
 assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');
