@@ -33,6 +33,13 @@ jobs:
           node --check patch-runtime-loader-v1.js
           node tests/release-integrity-phu-tan-20261017.test.cjs
           node tests/thanh-lam-release-20261018.test.cjs
+          node --check tkb-parser-school-name-fix-v1.js
+          node --check tkb-roster-group-period-safe-v1.js
+          node tests/tkb-location-boundary-safe-v1.test.cjs
+          node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/grouped-plus-report-safe-v1.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/production-runtime-performance.test.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

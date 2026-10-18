@@ -1,7 +1,7 @@
 {
-  "id": "20261018.1-thanh-lam",
+  "id": "20261018.2-thanh-lam-fix",
   "status": "approved",
-  "description": "Thanh Lam cũ, Thủy Phương – tách nhóm KHỐI cũ thành 19 lớp riêng ở tuần 19T10, giữ nguyên các sửa lỗi Phú Tân.",
+  "description": "BẢN CHÍNH: đã sửa đúng 19 lớp và 19 trợ giảng Thanh Lam cũ ở tuần 19T10, đặc biệt 8 lớp đầu/cuối nhóm bị nhầm địa điểm.",
   "originalWeek": "12T10",
   "effectiveWeek": "19T10",
   "campus": "THỦY PHƯƠNG | PHÂN HIỆU THANH LAM CŨ",
@@ -38,5 +38,10 @@
   },
   "mainCount": 19,
   "assistCount": 19,
-  "lessonHistory": "preserve separate KNS/STEM by campus"
+  "lessonHistory": "preserve separate KNS/STEM by campus",
+  "fix": [
+    "Bảo vệ 1/6,2/6,4/6,5/6 khỏi bị chuyển sang Phú Mỹ",
+    "Bảo vệ 1/9,2/9,4/9,5/9 khỏi bị chuyển sang trụ sở 25 Dạ Lê",
+    "Giữ đúng 19 giáo viên chính, 19 trợ giảng và tiếp nối GA KNS/STEM"
+  ]
 }

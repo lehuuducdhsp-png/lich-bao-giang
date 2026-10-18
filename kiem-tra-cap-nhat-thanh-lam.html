@@ -2,17 +2,19 @@
 <html lang="vi">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Xác minh bản cập nhật Thanh Lam cũ</title>
 <style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;background:#f7fafc;color:#1e293b;margin:0}main{max-width:720px;margin:6vh auto;padding:28px;background:white;border-radius:16px;box-shadow:0 8px 36px #0001}h1{font-size:24px}li{padding:8px;border-bottom:1px solid #eee}#result{margin:20px 0;padding:14px;border-radius:10px;background:#eff6ff;font-weight:bold}button{padding:10px 16px;background:#2563eb;color:white;border:0;border-radius:8px;cursor:pointer}</style></head>
-<body><main><h1>Kiểm tra cập nhật Thanh Lam cũ</h1><p>Phiên bản dự kiến: <strong>20261018.1-thanh-lam</strong></p><p>Trang này chỉ kiểm tra tệp triển khai, không đăng nhập hoặc đọc dữ liệu cá nhân.</p><ol id="checks"></ol><div id="result">Đang kiểm tra...</div><button onclick="check()">Kiểm tra lại</button> <a href="./">Về Lịch Báo giảng</a>
+<body><main><h1>Kiểm tra cập nhật Thanh Lam cũ</h1><p>Phiên bản dự kiến: <strong>20261018.2-thanh-lam-fix</strong></p><p>Trang này chỉ kiểm tra tệp triển khai, không đăng nhập hoặc đọc dữ liệu cá nhân.</p><ol id="checks"></ol><div id="result">Đang kiểm tra...</div><button onclick="check()">Kiểm tra lại</button> <a href="./">Về Lịch Báo giảng</a>
 </main><script>
 async function get(n){const r=await fetch('./'+n+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status+' '+n);return await r.text()}
 async function check(){
  const list=document.getElementById('checks'),result=document.getElementById('result');list.textContent='';let ok=true;
  const tests=[
- ['Thông tin phiên bản',async()=>{const d=JSON.parse(await get('thanh-lam-release-20261018.json'));return d.id==='20261018.1-thanh-lam'&&d.mainCount===19&&d.assistCount===19}],
- ['Trang chính mới',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261018.1-thanh-lam'")],
+ ['Thông tin phiên bản',async()=>{const d=JSON.parse(await get('thanh-lam-release-20261018.json'));return d.id==='20261018.2-thanh-lam-fix'&&d.mainCount===19&&d.assistCount===19}],
+ ['Trang chính mới',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261018.2-thanh-lam-fix'")],
  ['Bộ đọc phân hiệu Thanh Lam cũ',async()=>(await get('tkb-parser-v2.js')).includes('teacherSite.includes')],
+ ['Lớp đầu nhóm không nhầm sang Phú Mỹ',async()=>(await get('tkb-parser-school-name-fix-v1.js')).includes('actualSchool')],
+ ['Lớp cuối nhóm không nhầm sang 25 Dạ Lê',async()=>(await get('tkb-roster-group-period-safe-v1.js')).includes('thanhLamLastRow')],
  ['Trợ giảng nhận đúng lớp',async()=>(await get('assist-p-preview-safe-v1.js')).includes('thanhLamSplitPairedMain')],
- ['Bộ tải mã mới',async()=>{const t=await get('patch-runtime-loader-v1.js');return t.includes("const VERSION='20261018.1'")&&t.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3')&&t.includes('school-report-v1.js?v=20261017.3')}]
+ ['Bộ tải mã mới',async()=>{const t=await get('patch-runtime-loader-v1.js');return t.includes("const VERSION='20261018.1'")&&t.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3')&&t.includes('school-report-v1.js?v=20261017.3')&&t.includes('tkb-roster-group-period-safe-v1.js?v=20261018.2')}]
  ];
  for(const [name,fn] of tests){let pass=false;try{pass=await fn()}catch(e){console.warn(name,e)}const li=document.createElement('li');li.textContent=(pass?'✅ ':'❌ ')+name;list.appendChild(li);ok=ok&&pass}
  result.textContent=ok?'ĐÚNG PHIÊN BẢN – Các tệp đã được triển khai. Hãy kiểm tra dữ liệu TKB tuần 19T10 trong hệ thống.':'CHƯA ĐỒNG BỘ – Website có tệp cũ hoặc thiếu tệp mới. Xem lại triển khai GitHub Pages.';result.style.color=ok?'#166534':'#9a3412';

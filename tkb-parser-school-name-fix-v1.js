@@ -14,7 +14,17 @@
     return lines[0];
   }
   function patchEntry(ws,e){
-    const anchorRow=Number(e?.classRow)||Number(e?.row);const school=schoolNameAt(ws,anchorRow);if(!school||school===e.schoolName)return e;
+    const anchorRow=Number(e?.classRow)||Number(e?.row);
+    // Thanh Lam cũ: lớp */6 đặt cuối PHÚ MỸ (r-1), nhưng GV ở hàng mở đầu
+    // THỦY PHƯƠNG / THANH LAM CŨ. Tên trường phải lấy từ hàng GV mới,
+    // không ghi đè kết quả đúng của parser bằng trường ở hàng lớp cũ.
+    const row=Number(e?.row),cls=txt(e?.className||e?.classRaw).replace(/\s+/g,'');
+    const actualSchool=schoolNameAt(ws,row);
+    if(row===anchorRow+1&&/^[1245]\/6$/.test(cls)&&
+       fold(e?.schoolName)==='THUY PHUONG'&&
+       fold(e?.siteRaw||e?.siteDisplay).includes('THANH LAM CU')&&
+       fold(actualSchool)==='THUY PHUONG')return e;
+    const school=schoolNameAt(ws,anchorRow);if(!school||school===e.schoolName)return e;
     const site=txt(e.siteDisplay||e.siteName),schoolKey=fold(school),locationLabel=site?`${school}\n${site}`:school,locationKey=`${schoolKey}|${fold(site)}`;
     return{...e,school,schoolName:school,schoolKey,locationLabel,locationKey};
   }
@@ -30,7 +40,7 @@
       for(const[k,a]of slots)if(a.length>1){const places=new Set(a.map(x=>x.locationKey).filter(Boolean)),[d,s,p]=k.split('|');const label=Number(d)===8?'Chủ nhật':`Thứ ${Number(d)}`;const msg=places.size>1?`CẢNH BÁO: ${a.length} phân công cùng khung ${label} ${s}, tiết ${p} nhưng khác điểm dạy/cơ sở.`:`Có ${a.length} phân công cùng khung ${label} ${s}, tiết ${p}; cần xác nhận đây có phải lớp gộp/ghép hợp lệ.`;if(!warnings.includes(msg))warnings.push(msg)}
       return{...base,entries,total:entries.length,warnings:[...new Set(warnings)]};
     }
-    api.analyze=analyze;window.analyzeNow=analyze;api.__lbgSchoolNameFixV1=true;
+    api.analyze=analyze;window.analyzeNow=analyze;api.__lbgSchoolNameFixV1='20261018.2';
     const btn=document.getElementById('analyze');if(btn){btn.dataset.lbgParserV2='1';btn.onclick=function(){const sel=document.getElementById('teacher'),week=document.getElementById('week'),opt=sel?.selectedOptions?.[0],code=sel?.value||'',name=opt?.dataset?.name||code,old=btn.textContent;btn.disabled=true;btn.textContent='Đang kiểm tra…';try{const localBook=typeof wb!=='undefined'?wb:null,ws=localBook?.getWorksheet(week?.value);window.result=analyze(ws,code,name);window.render?.(window.result);const ex=document.getElementById('export');if(ex)ex.disabled=!window.result.total;if(typeof window.toast==='function')window.toast(`Đã kiểm tra ${window.result.total} tiết.`)}catch(error){console.error(error);alert('Không kiểm tra được lịch: '+(error?.message||error))}finally{btn.textContent=old;btn.disabled=!sel?.value}}}
     document.dispatchEvent(new CustomEvent('lbg-tkb-school-name-fix-ready'));return true;
   }

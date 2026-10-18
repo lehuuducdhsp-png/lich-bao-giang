@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261011.4';
+  const VERSION='20261018.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -120,6 +120,19 @@
     const oldKey=txt(entry.locationKey||classLoc.locationKey),newKey=txt(teacherLoc.locationKey);
     if(!newKey||newKey===oldKey)return entry;
     const oldSchool=fold(entry.schoolName||entry.school||classLoc.schoolName||classLoc.school),newSchool=fold(teacherLoc.schoolName||teacherLoc.school);
+    // Thanh Lam cũ: lớp */9 đứng ở hàng CUỐI phân hiệu (ví dụ W198),
+    // mã GV ở hàng đầu TRỤ SỞ CHÍNH (W199). Đây vẫn là lớp Thanh Lam,
+    // KHÔNG được chuyển sang trụ sở. Chỉ mở khóa đúng 4 lớp này.
+    const cls=txt(entry?.className||entry?.classRaw).replace(/\s+/g,'');
+    const thanhLamLastRow=Boolean(
+      row===classRow+1 && /^[1245]\/9$/.test(cls) &&
+      fold(entry?.schoolName||entry?.school)==='THUY PHUONG' &&
+      fold(entry?.siteRaw||entry?.siteDisplay).includes('THANH LAM CU') &&
+      fold(classLoc?.siteRaw||classLoc?.siteDisplay).includes('THANH LAM CU') &&
+      fold(teacherLoc?.siteRaw||teacherLoc?.siteDisplay).includes('25 DA LE') &&
+      classSite.direct && teacherSite.direct
+    );
+    if(thanhLamLastRow)return entry;
     const thuyPhu1Handoff=isThuyPhu1ThreeClassHandoff(entry,teacherLoc,classSite,teacherSite,row,classRow);
     if(oldSchool&&newSchool&&oldSchool!==newSchool&&!thuyPhu1Handoff)return entry;
     // THỦY PHÙ 1: 5/5, 1/4, 4/5 nằm ở dòng cuối block THỦY LƯƠNG,
