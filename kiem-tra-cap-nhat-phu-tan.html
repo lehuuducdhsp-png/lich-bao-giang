@@ -9,10 +9,10 @@ async function check(){
  const list=document.getElementById('checks'),result=document.getElementById('result');list.textContent='';let ok=true;
  const tests=[
  ['Thông tin phiên bản',async()=>JSON.parse(await get('phu-tan-release-20261017.json')).id==='20261017.3-phutan'],
- ['Trang chính mới',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261018.1-thanh-lam'")],
+ ['Trang chính mới',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261029.1-PHU-BINH-GA8-CHINH-THUC'")],
  ['Bộ đọc tiết học Phú Tân',async()=>(await get('tkb-phu-tan-extra-period-v1.js')).includes('findHeader')],
  ['Báo cáo trường và trợ giảng',async()=>{const a=await get('school-report-v1.js'),b=await get('assist-p-preview-safe-v1.js');return a.includes('validatedExtraPeriod')&&b.includes('extraHeader')}],
- ['Bộ tải mã mới',async()=>{const t=await get('patch-runtime-loader-v1.js');return t.includes("const VERSION='20261018.1'")&&t.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3')&&t.includes('school-report-v1.js?v=20261017.3')}]
+ ['Bộ tải mã mới',async()=>{const t=await get('patch-runtime-loader-v1.js');return t.includes("const VERSION='20261018.2'")&&t.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3')&&t.includes('school-report-v1.js?v=20261017.3')}]
  ];
  for(const [name,fn] of tests){let pass=false;try{pass=await fn()}catch(e){console.warn(name,e)}const li=document.createElement('li');li.textContent=(pass?'✅ ':'❌ ')+name;list.appendChild(li);ok=ok&&pass}
  result.textContent=ok?'ĐÚNG PHIÊN BẢN – Các tệp đã được triển khai. Hãy kiểm tra dữ liệu TKB tuần 19T10 trong hệ thống.':'CHƯA ĐỒNG BỘ – Website có tệp cũ hoặc thiếu tệp mới. Xem lại triển khai GitHub Pages.';result.style.color=ok?'#166534':'#9a3412';

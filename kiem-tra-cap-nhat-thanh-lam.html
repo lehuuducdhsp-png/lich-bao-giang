@@ -9,12 +9,12 @@ async function check(){
  const list=document.getElementById('checks'),result=document.getElementById('result');list.textContent='';let ok=true;
  const tests=[
  ['Thông tin phiên bản',async()=>{const d=JSON.parse(await get('thanh-lam-release-20261018.json'));return d.id==='20261018.2-thanh-lam-fix'&&d.mainCount===19&&d.assistCount===19}],
- ['Trang chính mới',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261018.2-thanh-lam-fix'")],
+ ['Trang chính mới',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261029.1-PHU-BINH-GA8-CHINH-THUC'")],
  ['Bộ đọc phân hiệu Thanh Lam cũ',async()=>(await get('tkb-parser-v2.js')).includes('teacherSite.includes')],
  ['Lớp đầu nhóm không nhầm sang Phú Mỹ',async()=>(await get('tkb-parser-school-name-fix-v1.js')).includes('actualSchool')],
  ['Lớp cuối nhóm không nhầm sang 25 Dạ Lê',async()=>(await get('tkb-roster-group-period-safe-v1.js')).includes('thanhLamLastRow')],
  ['Trợ giảng nhận đúng lớp',async()=>(await get('assist-p-preview-safe-v1.js')).includes('thanhLamSplitPairedMain')],
- ['Bộ tải mã mới',async()=>{const t=await get('patch-runtime-loader-v1.js');return t.includes("const VERSION='20261018.1'")&&t.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3')&&t.includes('school-report-v1.js?v=20261017.3')&&t.includes('tkb-roster-group-period-safe-v1.js?v=20261018.2')}]
+ ['Bộ tải mã mới',async()=>{const t=await get('patch-runtime-loader-v1.js');return t.includes("const VERSION='20261018.2'")&&t.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3')&&t.includes('school-report-v1.js?v=20261017.3')&&t.includes('tkb-roster-group-period-safe-v1.js?v=20261018.2')}]
  ];
  for(const [name,fn] of tests){let pass=false;try{pass=await fn()}catch(e){console.warn(name,e)}const li=document.createElement('li');li.textContent=(pass?'✅ ':'❌ ')+name;list.appendChild(li);ok=ok&&pass}
  result.textContent=ok?'ĐÚNG PHIÊN BẢN – Các tệp đã được triển khai. Hãy kiểm tra dữ liệu TKB tuần 19T10 trong hệ thống.':'CHƯA ĐỒNG BỘ – Website có tệp cũ hoặc thiếu tệp mới. Xem lại triển khai GitHub Pages.';result.style.color=ok?'#166534':'#9a3412';

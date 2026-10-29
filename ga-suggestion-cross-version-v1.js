@@ -258,6 +258,7 @@
     return{title:ev?.ga==null?'Chưa xác định GA':'Chưa có tên bài trong kế hoạch',kind:'unknown'};
   }
   function basisText(ev,meta){
+    if(ev?.gaSource==='phu-binh-cs2-26t10-ga8-anchor')return'Mốc xác nhận tại Cơ sở 2 - Phú Bình cũ: lớp 1/6, 5/7 và 4/4 cùng dùng GA 8 trong tuần 26T10.';
     if(ev?.gaSource==='first')return`Không tìm thấy lần dạy ${trackText(ev)} trước đó của đúng lớp/nhóm lớp tại điểm dạy này trong ${meta?.weekCount||1} tuần TKB đã lưu đến tuần hiện tại; dùng GA đầu chuỗi.`;
     return v7()?.basisText?.(ev)||'Dò theo lịch sử các phiên bản TKB đã lưu.';
   }

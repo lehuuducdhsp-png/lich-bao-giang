@@ -24,7 +24,7 @@
     ['tkb-assignment-cache-safe-v1.js?v=20260913.1','lbgTkbAssignmentCacheSafeV1Script'],
     ['grouped-plus-report-safe-v1.js?v=20260919.1','lbgGroupedPlusReportSafeV1Script'],
     ['ga-per-class-history-safe-v1.js?v=20260913.1','lbgGaPerClassHistorySafeV1Script'],
-    ['ga-group-split-history-safe-v1.js?v=20261012.1','lbgGaGroupSplitHistorySafeV1Script'],
+    ['ga-group-split-history-safe-v1.js?v=20261029.1','lbgGaGroupSplitHistorySafeV1Script'],
     ['ga-group-split-stale-repair-v1.js?v=20260920.1','lbgGaGroupSplitStaleRepairV1Script'],
     ['ga-role-track-stale-repair-v1.js?v=20260920.4','lbgGaRoleTrackStaleRepairV1Script']
   ];

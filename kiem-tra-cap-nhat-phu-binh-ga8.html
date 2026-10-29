@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiểm tra cập nhật GA8 – Phú Bình</title>
+<style>body{font:16px/1.55 system-ui,Arial,sans-serif;background:#f6faf8;color:#25392d;margin:0}
+main{max-width:720px;margin:8vh auto;padding:24px;background:#fff;border:1px solid #d9e4dd;border-radius:14px}
+h1{font-size:23px}li{padding:8px;border-bottom:1px solid #eee}p{margin:12px 0}
+#result{background:#eef6f0;border-radius:8px;padding:15px;font-weight:bold}button{padding:10px 15px;background:#2d674f;color:white;border:0;border-radius:8px;cursor:pointer}</style></head>
+<body><main><h1>Kiểm tra phiên bản Giáo án 8 – Phú Bình</h1>
+<p><strong>26T10 · Cơ sở 2 – Phú Bình cũ</strong><br>Lớp 1/6, 5/7 và 4/4 (KNS) dùng GA8, các lượt tiếp theo gợi ý GA9.</p>
+<p>Trang chỉ kiểm tra mã đã xuất bản, không truy cập dữ liệu tài khoản hoặc tự sửa GA đã lưu.</p>
+<ol id="checks"></ol><p id="result">Đang kiểm tra...</p>
+<button onclick="check()">Kiểm tra lại</button> <a href="./">Quay về Lịch Báo giảng</a>
+<script>
+async function get(p){const r=await fetch('./'+p+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(p+' HTTP '+r.status);return r.text()}
+async function check(){
+ const list=document.getElementById('checks');list.textContent='';let ok=true;
+ const items=[
+ ['Thông tin GA8 đúng 3 lớp',async()=>{const d=JSON.parse(await get('phu-binh-ga8-release-20261029.json'));return d.id==='20261029.1-PHU-BINH-GA8-CHINH-THUC'&&d.classes.join(',')==='1/6,5/7,4/4'&&d.ga===8}],
+ ['Trang chính đã cập nhật',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261029.1-PHU-BINH-GA8-CHINH-THUC'")],
+ ['Bộ phân tích Giáo án GA8',async()=>(await get('ga-suggestion-v7.js')).includes('phuBinhCs2Week26Ga8')],
+ ['Lịch sử các lớp và phiên bản TKB',async()=>{const [a,b]=await Promise.all([get('ga-group-split-history-safe-v1.js'),get('ga-suggestion-cross-version-v1.js')]);return a.includes('phu-binh-cs2-26t10-ga8-anchor')&&b.includes('phu-binh-cs2-26t10-ga8-anchor')}],
+ ['Bảng theo dõi tiến độ',async()=>(await get('teaching-plan-progress-v1.js')).includes('phu-binh-cs2-26t10-ga8-anchor')],
+ ['Phiên bản JS mới',async()=>{const [a,b]=await Promise.all([get('app-runtime-v1.js'),get('patch-runtime-loader-v1.js')]);return a.includes('ga-suggestion-v7.js?v=20261029.1')&&b.includes('ga-group-split-history-safe-v1.js?v=20261029.1')}]
+ ];
+ for(const [name,fn] of items){let pass=false;try{pass=Boolean(await fn())}catch(err){console.warn(name,err)}const li=document.createElement('li');li.textContent=(pass?'✅ ':'❌ ')+name;list.appendChild(li);ok=ok&&pass}
+ const target=document.getElementById('result');target.textContent=ok?'ĐÚNG PHIÊN BẢN – Mã GA8 đã triển khai; hãy kiểm tra gợi ý và GA lưu trong ứng dụng.':'CHƯA ĐỒNG BỘ – Một hoặc nhiều tệp chưa đúng bản mới.';target.style.color=ok?'#166534':'#b45309';
+}check();
+</script></main></body></html>

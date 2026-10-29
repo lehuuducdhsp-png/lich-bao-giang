@@ -1,0 +1,16 @@
+{
+  "id": "20261029.1-PHU-BINH-GA8-CHINH-THUC",
+  "status": "production",
+  "school": "PHÚ BÌNH",
+  "campus": "CƠ SỞ 2 - PHÚ BÌNH CŨ",
+  "week": "26T10",
+  "track": "KNS",
+  "ga": 8,
+  "classes": [
+    "1/6",
+    "5/7",
+    "4/4"
+  ],
+  "nextKnsGa": 9,
+  "note": "Chỉ gợi ý GA8 đúng 3 lớp tại cơ sở và tuần xác nhận; không tự ghi đè GA nhập tay."
+}

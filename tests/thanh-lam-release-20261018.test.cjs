@@ -23,5 +23,5 @@ assert.ok(assist.includes("'thanh-lam-paired-main'"));
 assert.ok(runtime.includes('tkb-parser-v2.js?v=20261018.1'));
 assert.ok(loader.includes('assist-p-preview-safe-v1.js?v=20261018.1'));
 assert.ok(loader.includes('tkb-phu-tan-extra-period-v1.js?v=20261017.3'));
-assert.ok(index.includes("window.LBG_RELEASE_ID='20261018.2-thanh-lam-fix'"));
+assert.ok(index.includes("window.LBG_RELEASE_ID='20261029.1-PHU-BINH-GA8-CHINH-THUC'"));
 console.log('PASS: Thanh Lam release, 19 lớp + 19 P và Phú Tân được bảo toàn.');

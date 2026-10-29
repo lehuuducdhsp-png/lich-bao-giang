@@ -116,7 +116,8 @@
       ev.previousEvents=uniqueEvents(prior);
       ev.partialHistory=members.length>0&&new Set(prior.map(x=>x.member)).size<members.length;
       ev.historyMismatch=false;
-      if(manual.length===1){ev.ga=manual[0];ev.gaSource='manual'}
+      if(ev.gaSource==='phu-binh-cs2-26t10-ga8-anchor'&&Number(ev.ga)===8){ev.ga=8;}
+      else if(manual.length===1){ev.ga=manual[0];ev.gaSource='manual'}
       else if(manual.length>1){
         ev.ga=null;ev.gaSource='conflict';ev.historyMismatch=true;
         addWarning(history,`Mâu thuẫn GA đã nhập tại ${txt(ev.dateKey)}, ${txt(ev.school)}, ${txt(ev.classDisplay)}.`);

@@ -9,9 +9,9 @@ assert.equal(meta.id,'20261017.3-phutan');
 assert.equal(meta.blocks.reduce((s,b)=>s+b.main,0),30);
 assert.equal(meta.blocks.reduce((s,b)=>s+b.assist,0),27);
 const html=read('index.html'),loader=read('patch-runtime-loader-v1.js');
-assert.ok(html.includes("window.LBG_RELEASE_ID='20261018.2-thanh-lam-fix'"));
+assert.ok(html.includes("window.LBG_RELEASE_ID='20261029.1-PHU-BINH-GA8-CHINH-THUC'"));
 assert.ok(html.includes('index-core.html?v=20261018.1'));
-assert.ok(html.includes('patch-runtime-loader-v1.js?v=20261018.2'));
+assert.ok(html.includes('patch-runtime-loader-v1.js?v=20261029.1'));
 assert.ok(loader.includes("const VERSION='20261018.2'"));
 for(const file of ['tkb-phu-tan-extra-period-v1.js','school-report-v1.js']){
  assert.ok(loader.includes(file+'?v=20261017.3'));

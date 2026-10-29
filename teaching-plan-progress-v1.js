@@ -114,7 +114,20 @@
     }
     for(const cycle of cycles.values()){if(cycle.anchorValues.size===1)cycle.anchorGa=[...cycle.anchorValues][0];else if(cycle.anchorValues.size>1){cycle.anchorConflict=true;warnings.push(`Mâu thuẫn số GA tại ${cycle.dateKey}, khối ${cycle.grade}, ${cycle.locationKey}.`)}if(!progressions.has(cycle.progressionKey))progressions.set(cycle.progressionKey,[]);progressions.get(cycle.progressionKey).push(cycle)}
     for(const list of progressions.values())assignProgression(list,list[0]?.track||'kns');
-    for(const event of events.values()){const cid=[event.locationKey,event.grade,event.track,event.dateKey].join('|'),cycle=cycles.get(cid);event.ga=cycle?.ga??null;event.gaSource=cycle?.gaSource||'unknown';event.gaConfidence=cycle?.gaConfidence||'unknown';event.participants=[...event.participants.values()];event.addresses=[...event.addresses].filter(Boolean)}
+    for(const event of events.values()){
+      const cid=[event.locationKey,event.grade,event.track,event.dateKey].join('|'),cycle=cycles.get(cid);
+      event.ga=cycle?.ga??null;event.gaSource=cycle?.gaSource||'unknown';event.gaConfidence=cycle?.gaConfidence||'unknown';
+      // Chỉ thống nhất số GA HIỂN THỊ cho đúng ba lớp của tuần 26T10.
+      // Không sửa cycle cấp khối, không ảnh hưởng lớp khác hoặc GA lưu thủ công.
+      const site=fold((event.atoms||[]).map(a=>[a.siteRaw,a.siteDisplay,a.siteName].filter(Boolean).join(' ')).join(' '));
+      const school=fold((event.atoms||[])[0]?.schoolName||(event.atoms||[])[0]?.school||'');
+      if(event.sheet==='26T10'&&event.track==='kns'&&school==='PHU BINH'&&
+         site.includes('CO SO 2')&&site.includes('PHU BINH CU')&&
+         ['1/6','5/7','4/4'].includes(txt(event.classKey).replace(/\s+/g,''))){
+        event.ga=8;event.gaSource='phu-binh-cs2-26t10-ga8-anchor';event.gaConfidence='confirmed';
+      }
+      event.participants=[...event.participants.values()];event.addresses=[...event.addresses].filter(Boolean);
+    }
     return{version:VERSION,events:[...events.values()].sort((a,b)=>a.date-b.date||String(a.session).localeCompare(String(b.session))||a.teachingPeriod-b.teachingPeriod),cycles:[...cycles.values()],byAddress,warnings};
   }
 

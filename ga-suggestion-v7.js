@@ -46,6 +46,22 @@
     if((ev?.atoms||[]).some(e=>fold(e?.schoolName||e?.school||txt(e?.locationLabel).split(/\n/)[0])==='QUANG TRUNG'))return true;
     return fold(txt(ev?.school).split(/\n/)[0])==='QUANG TRUNG'
   }
+  // Mốc xác nhận thực tế, không phải quy tắc mặc định của cả trường.
+  const PHU_BINH_CS2_WEEK26_GA8=new Set(['1/6','5/7','4/4']);
+  function phuBinhCs2Week26Ga8(ev){
+    if(txt(ev?.sheet).toUpperCase()!=='26T10'||ev?.track!=='kns')return null;
+    const members=[...(ev?.members||[])].map(x=>txt(x).replace(/\s+/g,'').toUpperCase());
+    if(members.length!==1||!PHU_BINH_CS2_WEEK26_GA8.has(members[0]))return null;
+    // Chặn sai địa điểm: phải đúng PHÚ BÌNH và CƠ SỞ 2 - PHÚ BÌNH CŨ.
+    const atoms=Array.isArray(ev?.atoms)?ev.atoms:[];
+    const valid=atoms.some(atom=>{
+      const school=fold(atom?.schoolName||atom?.school||'');
+      const site=fold([atom?.siteRaw,atom?.siteDisplay,atom?.siteName].filter(Boolean).join(' '));
+      return school==='PHU BINH'&&site.includes('CO SO 2')&&site.includes('PHU BINH CU');
+    });
+    return valid?8:null;
+  }
+
   function quangTrungWeek21Ga(ev){
     if(txt(ev?.sheet).toUpperCase()!==QUANG_TRUNG_WEEK21_SHEET||ev?.track!=='kns'||!isQuangTrungEvent(ev))return null;
     const members=[...(ev?.members||[])].map(x=>fold(x).replace(/\s+/g,'')).filter(Boolean).sort(),key=members.join('+');
@@ -98,8 +114,10 @@
       const seq=seqFor(ev.track),manual=[...ev.manualValues].filter(x=>seq.includes(Number(x))),prior=[];
       for(const member of ev.members){const st=states.get([ev.locationKey,ev.grade,ev.track,member].join('|'));if(st)prior.push(st)}
       ev.previousEvents=[...new Map(prior.map(x=>[x.event.id,x.event])).values()];
+      const phuBinhAnchor=phuBinhCs2Week26Ga8(ev);
       const quangTrungAnchor=quangTrungWeek21Ga(ev);
-      if(quangTrungAnchor!==null){ev.ga=quangTrungAnchor;ev.gaSource='quang-trung-21t9-anchor'}
+      if(phuBinhAnchor!==null){ev.ga=phuBinhAnchor;ev.gaSource='phu-binh-cs2-26t10-ga8-anchor'}
+      else if(quangTrungAnchor!==null){ev.ga=quangTrungAnchor;ev.gaSource='quang-trung-21t9-anchor'}
       else if(manual.length===1){ev.ga=manual[0];ev.gaSource='manual'}
       else if(manual.length>1){ev.ga=null;ev.gaSource='conflict';ev.historyMismatch=true;warnings.push(`Mâu thuẫn GA đã nhập tại ${ev.dateKey}, ${ev.school}, ${ev.classDisplay}.`)}
       else if(!prior.length){ev.ga=seq[0]??null;ev.gaSource='first'}
@@ -126,6 +144,7 @@
   function trackText(ev){return ev.track==='stem'?'STEM':'Kỹ năng sống'}
   function participantText(ev){return(ev.participants||[]).map(p=>`${p.name||p.code} (${p.code})${p.role==='CTV'?' – CTV KNS':''}`).join(' + ')}
   function basisText(ev){
+    if(ev.gaSource==='phu-binh-cs2-26t10-ga8-anchor')return'Mốc thực tế CƠ SỞ 2 - PHÚ BÌNH CŨ, tuần 26T10: ba lớp 1/6, 5/7, 4/4 cùng học GA 8 (KNS).';
     if(ev.gaSource==='quang-trung-21t9-anchor')return ev.ga===1?'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/3, lớp 1/4+1/5, lớp 2/5 và lớp 2/6 dùng GA 1.':'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/8 được khóa GA 2; các lớp KNS còn lại ngoài nhóm GA 1 cũng dùng GA 2.';
     if(ev.gaSource==='manual')return'GA đã được nhập/xác nhận thủ công cho sự kiện này.';
     if(ev.gaSource==='conflict')return'Lịch sử hoặc mốc GA đang mâu thuẫn — cần xác nhận trước khi dùng.';
@@ -146,5 +165,5 @@
   }
   function bind(){const b=root.document?.getElementById('gaSuggestV6');if(!b||!root.LBGTkbParserV2||!root.LBGTeacherIntelligenceV6)return false;if(b.dataset.gaV7==='1')return true;b.dataset.gaV7='1';b.onclick=run;b.textContent='💡 Phân tích giáo án gợi ý';return true}
   function install(){let tries=0;const timer=setInterval(()=>{tries++;if(bind()||tries>240)clearInterval(timer)},100);bind();return true}
-  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,QUANG_TRUNG_GA_START,QUANG_TRUNG_WEEK21_SHEET,QUANG_TRUNG_WEEK21_GA1_KEYS,QUANG_TRUNG_WEEK21_GA2_KEYS,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,weekStart,isGaEligibleEntry,isQuangTrungEvent,quangTrungWeek21Ga,buildHistory,basisText,install};
+  return{version:VERSION,KNS_SEQUENCE,STEM_SEQUENCE,QUANG_TRUNG_GA_START,QUANG_TRUNG_WEEK21_SHEET,QUANG_TRUNG_WEEK21_GA1_KEYS,QUANG_TRUNG_WEEK21_GA2_KEYS,PHU_BINH_CS2_WEEK26_GA8,phuBinhCs2Week26Ga8,seqFor,nextGa,classOnly,gradesOf,normalizeClass,classMembers,actualPeriod,roleTrack,weekStart,isGaEligibleEntry,isQuangTrungEvent,quangTrungWeek21Ga,buildHistory,basisText,install};
 });
