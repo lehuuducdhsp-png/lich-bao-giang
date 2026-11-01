@@ -55,6 +55,14 @@ jobs:
           node tests/thanh-lam-release-20261018.test.cjs
           node tests/runtime-stability-budget-v1.test.cjs
           node tests/sheets-class-label-preserve.test.cjs
+      - name: Verify November KNS GA10 and STEM makeup
+        run: |
+          node --check ga-kns-november-2026-safe-v1.js
+          node --check ga-progress-dashboard-v1.js
+          node --check patch-runtime-loader-v1.js
+          node tests/ga-kns-november-production.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/runtime-stability-budget-v1.test.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

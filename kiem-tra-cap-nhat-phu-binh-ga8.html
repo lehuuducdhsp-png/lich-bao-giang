@@ -16,7 +16,7 @@ async function check(){
  const list=document.getElementById('checks');list.textContent='';let ok=true;
  const items=[
  ['Thông tin GA8 đúng 3 lớp',async()=>{const d=JSON.parse(await get('phu-binh-ga8-release-20261029.json'));return d.id==='20261029.1-PHU-BINH-GA8-CHINH-THUC'&&d.classes.join(',')==='1/6,5/7,4/4'&&d.ga===8}],
- ['Trang chính đã cập nhật',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261029.1-PHU-BINH-GA8-CHINH-THUC'")],
+ ['Trang chính đã cập nhật',async()=>(await get('index.html')).includes("window.LBG_RELEASE_ID='20261101.2-KNS-NOVEMBER-GA10-CHINH-THUC'")],
  ['Bộ phân tích Giáo án GA8',async()=>(await get('ga-suggestion-v7.js')).includes('phuBinhCs2Week26Ga8')],
  ['Lịch sử các lớp và phiên bản TKB',async()=>{const [a,b]=await Promise.all([get('ga-group-split-history-safe-v1.js'),get('ga-suggestion-cross-version-v1.js')]);return a.includes('phu-binh-cs2-26t10-ga8-anchor')&&b.includes('phu-binh-cs2-26t10-ga8-anchor')}],
  ['Bảng theo dõi tiến độ',async()=>(await get('teaching-plan-progress-v1.js')).includes('phu-binh-cs2-26t10-ga8-anchor')],

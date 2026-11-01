@@ -62,7 +62,16 @@
   }
   function summarizeTrack(events,track){
     const compact=compactTrackEvents(events,track),known=compact.filter(e=>Number.isFinite(Number(e?.ga))),lastEvent=compact[compact.length-1]||null,lastKnown=known[known.length-1]||null;
-    const lastGa=lastKnown?Number(lastKnown.ga):null,next=nextGa(track,lastGa);
+    const lastGa=lastKnown?Number(lastKnown.ga):null;
+    let next=nextGa(track,lastGa);
+    // Sau mốc GA10 tháng 11: giáo án KNS kế tiếp là BÀI CHƯA HỌC,
+    // tránh phát GA11 lần thứ hai nếu lớp đã học GA11 tuần 02T11.
+    if(track==='kns'&&known.some(e=>['02T11','2T11','09T11','9T11'].includes(txt(e.sheet))&&
+       /^kns-nov-/.test(txt(e.gaSource)))){
+      const learned=new Set(known.map(e=>Number(e.ga)));
+      const seq=KNS_SEQUENCE.slice(KNS_SEQUENCE.indexOf(10));
+      next=seq.find(ga=>!learned.has(ga))??null;
+    }
     return{
       track,count:compact.length,lastGa,nextGa:next,lastSheet:txt(lastEvent?.sheet),lastDate:txt(lastEvent?.dateKey),done:lastGa!==null&&next===null,
       history:compact.map(ev=>({sheet:txt(ev?.sheet),dateKey:txt(ev?.dateKey),ga:Number.isFinite(Number(ev?.ga))?Number(ev.ga):null,source:txt(ev?.gaSource),period:Number(ev?.period)||null}))
@@ -105,6 +114,17 @@
         if(!rows.has(key))rows.set(key,{key,locationKey:meta.locationKey,school:meta.school,site:meta.site,grade:Number(ev?.grade)||null,className:member,events:[],warnings:[],notes:[]});
         const row=rows.get(key);row.events.push(ev);if(!row.site&&meta.site)row.site=meta.site;if((ev?.gaSource==='conflict'||ev?.historyMismatch===true)&&!row.warnings.includes('Mâu thuẫn lịch sử GA'))row.warnings.push('Mâu thuẫn lịch sử GA');if(ev?.ga===null||ev?.ga===undefined){if(!row.warnings.includes('Có lần dạy chưa xác định GA'))row.warnings.push('Có lần dạy chưa xác định GA')}if(ev?.partialHistory===true&&!row.notes.includes('Có giai đoạn lớp gộp/tách được nối theo lịch sử'))row.notes.push('Có giai đoạn lớp gộp/tách được nối theo lịch sử');
       }
+    }
+    // Các lớp có STEM tuần 09T11 nhưng không thể học GA10 KNS tuần 16T11
+    // phải xuất hiện ở danh sách "Cần kiểm tra", thay vì bị xem là hoàn thành.
+    const nov=history?.__lbgGaKnsNovemberStats||{};
+    for(const item of nov.missingKns16||[]){
+      const row=rows.get(item.key);if(row&&!row.warnings.includes('Thiếu tiết KNS GA10 tuần 16T11 (tuần 09T11 học STEM)'))
+        row.warnings.push('Thiếu tiết KNS GA10 tuần 16T11 (tuần 09T11 học STEM)');
+    }
+    for(const item of nov.unresolvedGa10At16||[]){
+      const row=rows.get(item.key);if(row&&!row.warnings.includes('GA10 KNS tuần 16T11 chưa xác định (09T11 học STEM)'))
+        row.warnings.push('GA10 KNS tuần 16T11 chưa xác định (09T11 học STEM)');
     }
     const out=[];
     for(const row of rows.values()){
