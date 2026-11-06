@@ -86,7 +86,7 @@ jobs:
           node --check groups-test-loader-v1.js
       - name: Check active test loaders
         run: |
-          grep -Fq 'groups-test-loader-v1.js' group-auth-test.html
+          grep -Fq "location.replace('./')" group-auth-test.html
           grep -Fq 'self-access-guarantee-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-select-refresh-v1.js' groups-test-loader-v1.js
           grep -Fq 'teacher-code-linking-v2.js' groups-test-loader-v1.js
