@@ -22,9 +22,9 @@ on:
       - 'orange-theme-v1.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
-      - 'supabase/migrations/20260804_groups_permissions.sql'
-      - 'supabase/migrations/20260805_branding_settings.sql'
-      - 'supabase/migrations/20260806_teacher_code_linking.sql'
+      - 'supabase/migration-archive-prebaseline/20260804_groups_permissions.sql'
+      - 'supabase/migration-archive-prebaseline/20260805_branding_settings.sql'
+      - 'supabase/migration-archive-prebaseline/20260806_teacher_code_linking.sql'
       - 'supabase/migrations/20260806_global_head_specialist.sql'
       - 'supabase/migration-archive-prebaseline/20260808_manager_permissions.sql'
       - '.github/workflows/validate-static.yml'
@@ -48,9 +48,9 @@ on:
       - 'orange-theme-v1.js'
       - 'groups-test-loader-v1.js'
       - 'group-auth-test.html'
-      - 'supabase/migrations/20260804_groups_permissions.sql'
-      - 'supabase/migrations/20260805_branding_settings.sql'
-      - 'supabase/migrations/20260806_teacher_code_linking.sql'
+      - 'supabase/migration-archive-prebaseline/20260804_groups_permissions.sql'
+      - 'supabase/migration-archive-prebaseline/20260805_branding_settings.sql'
+      - 'supabase/migration-archive-prebaseline/20260806_teacher_code_linking.sql'
       - 'supabase/migrations/20260806_global_head_specialist.sql'
       - 'supabase/migration-archive-prebaseline/20260808_manager_permissions.sql'
 
@@ -129,11 +129,11 @@ jobs:
           grep -Fq 'lbg-auth-gate' mobile-polish-v2.js
       - name: Check migration transactions
         run: |
-          grep -Eq '^begin;' supabase/migrations/20260804_groups_permissions.sql
-          grep -Eq '^commit;' supabase/migrations/20260804_groups_permissions.sql
-          grep -Eq '^begin;' supabase/migrations/20260805_branding_settings.sql
-          grep -Eq '^commit;' supabase/migrations/20260805_branding_settings.sql
-          grep -Eq '^begin;' supabase/migrations/20260806_teacher_code_linking.sql
-          grep -Eq '^commit;' supabase/migrations/20260806_teacher_code_linking.sql
+          grep -Eq '^begin;' supabase/migration-archive-prebaseline/20260804_groups_permissions.sql
+          grep -Eq '^commit;' supabase/migration-archive-prebaseline/20260804_groups_permissions.sql
+          grep -Eq '^begin;' supabase/migration-archive-prebaseline/20260805_branding_settings.sql
+          grep -Eq '^commit;' supabase/migration-archive-prebaseline/20260805_branding_settings.sql
+          grep -Eq '^begin;' supabase/migration-archive-prebaseline/20260806_teacher_code_linking.sql
+          grep -Eq '^commit;' supabase/migration-archive-prebaseline/20260806_teacher_code_linking.sql
           grep -Eq '^begin;' supabase/migration-archive-prebaseline/20260808_manager_permissions.sql
           grep -Eq '^commit;' supabase/migration-archive-prebaseline/20260808_manager_permissions.sql
