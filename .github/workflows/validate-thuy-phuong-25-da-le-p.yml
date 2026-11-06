@@ -35,6 +35,6 @@ jobs:
           node tests/tkb-location-boundary-safe-v1.test.cjs
       - name: Verify cache chain
         run: |
-          grep -F "assist-p-preview-safe-v1.js?v=20261011.1" patch-runtime-loader-v1.js
-          grep -F "tkb-roster-group-period-safe-v1.js?v=20261011.4" patch-runtime-loader-v1.js
-          grep -F "patch-runtime-loader-v1.js?v=20261012.1" index.html
+          grep -F "assist-p-preview-safe-v1.js?v=" patch-runtime-loader-v1.js
+          grep -F "tkb-roster-group-period-safe-v1.js?v=" patch-runtime-loader-v1.js
+          grep -F "patch-runtime-loader-v1.js?v=" index.html

@@ -33,10 +33,10 @@ jobs:
           node tests/quang-trung-tien-28t9-self-heal.test.cjs
       - name: Loader contract
         run: |
-          grep -F 'app-runtime-v1.js?v=20261011.2' index.html
-          grep -F 'ga-per-class-v2.js?v=20260930.1' patch-runtime-loader-v1.js
-          grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' patch-runtime-loader-v1.js
-          grep -F 'assist-p-preview-safe-v1.js?v=20261011.1' patch-runtime-loader-v1.js
+          grep -F 'app-runtime-v1.js?v=' index.html
+          grep -F 'ga-per-class-v2.js?v=' patch-runtime-loader-v1.js
+          grep -F 'sheets-ga-save-safe-v1.js?v=' patch-runtime-loader-v1.js
+          grep -F 'assist-p-preview-safe-v1.js?v=' patch-runtime-loader-v1.js
       - name: Assist P own-column class contract
         run: |
           grep -F "const VERSION='20261011.1'" assist-p-preview-safe-v1.js

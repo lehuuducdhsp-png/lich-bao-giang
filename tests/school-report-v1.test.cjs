@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('fs');
 const api=require('../school-report-v1.js');
 
-assert.equal(api.VERSION,'20260930.1');
+assert.equal(api.VERSION,'20261017.2');
 assert.deepEqual(api.MODES,{class:'Lớp',teacher:'Giáo viên','teacher-class':'Giáo viên - lớp','teacher-class-ga':'Giáo viên - lớp - GA'});
 
 assert.equal(api.stemGaOrdinal(3),1);

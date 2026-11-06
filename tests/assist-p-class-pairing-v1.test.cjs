@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const P=require('../assist-p-preview-safe-v1.js');
 
-assert.equal(P.VERSION,'20261011.1');
+assert.equal(P.VERSION,'20261017.2');
 
 // Quy tắc mới: lớp của (P) chỉ được lấy từ CHÍNH CỘT có mã P.
 // Không được mượn lớp ở cột kế bên, kể cả đó là lượt dạy chính của cùng giáo viên.
