@@ -25,7 +25,7 @@
     hideTrialBanner();
     try{
       await load('assist-p-trial-v1.js?v=20260911.2','lbgAssistPOfficialCore');
-      await load('assist-p-preview-position-hotfix-v1.js?v=20260911.1','lbgAssistPOfficialPositionFix');
+      await load('assist-p-preview-position-hotfix-v1.js?v=20261106.1','lbgAssistPOfficialPositionFix');
       hideTrialBanner();
       let tries=0;
       const t=setInterval(()=>{

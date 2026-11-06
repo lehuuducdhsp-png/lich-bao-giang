@@ -105,7 +105,7 @@
       const modules=[
         ['sheets-sync-security-v1.js?v=20260909.2','lbgSheetsSyncSecurityV1Script'],
         ['sheets-classraw-hotfix-v1.js?v=20260907.1','lbgSheetsClassRawHotfixV1Script'],
-        ['branding-runtime-v2.js?v=20260805.2','lbgBrandingRuntimeV2'],
+        ['branding-runtime-v2.js?v=20261106.1','lbgBrandingRuntimeV2'],
         ['access-control-v1.js?v=20260806.2','lbgAccessControlV1'],
         ['self-access-guarantee-v1.js?v=20260806.1','lbgSelfAccessGuaranteeV1'],
         ['teacher-select-refresh-v1.js?v=20260807.3','lbgTeacherSelectRefreshV1'],
@@ -123,7 +123,7 @@
         ['manager-cloud-bridge-v1.js?v=20260808.2','lbgManagerCloudBridgeV1'],
         ['branding-settings-v1.js?v=20260805.1','lbgBrandingSettingsV1'],
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
-        ['ui-redesign-v1.js?v=20260806.1','lbgUiRedesignV1'],
+        ['ui-redesign-v1.js?v=20261106.1','lbgUiRedesignV1'],
         ['report-pay-rules-v1.js?v=20260908.1','lbgReportPayRulesV1Script'],
         ['report-engine-v4.js?v=20260930.1','lbgReportEngineV4Script'],
         ['sheets-ga-sync-compat-v1.js?v=20260906.1','lbgSheetsGaSyncCompatV1Script'],

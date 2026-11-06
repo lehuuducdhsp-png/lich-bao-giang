@@ -26,7 +26,7 @@ const expectedCore=[
 const expectedModules=[
   'sheets-sync-security-v1.js?v=20260909.2',
   'sheets-classraw-hotfix-v1.js?v=20260907.1',
-  'branding-runtime-v2.js?v=20260805.2',
+  'branding-runtime-v2.js?v=20261106.1',
   'access-control-v1.js?v=20260806.2',
   'self-access-guarantee-v1.js?v=20260806.1',
   'teacher-select-refresh-v1.js?v=20260807.3',
@@ -44,7 +44,7 @@ const expectedModules=[
   'manager-cloud-bridge-v1.js?v=20260808.2',
   'branding-settings-v1.js?v=20260805.1',
   'branding-header-fix-v1.js?v=20260805.1',
-  'ui-redesign-v1.js?v=20260806.1',
+  'ui-redesign-v1.js?v=20261106.1',
   'report-pay-rules-v1.js?v=20260908.1',
   'report-engine-v4.js?v=20260930.1',
   'sheets-ga-sync-compat-v1.js?v=20260906.1',
@@ -126,7 +126,7 @@ const expectedRuntimePatches=[
 ];
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
-assert.match(index,/app-runtime-v1\.js\?v=20261029\.1/);
+assert.match(index,/app-runtime-v1\.js\?v=20261106\.1/);
 assert.match(index,/patch-runtime-loader-v1\.js\?v=20261101\.2/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');

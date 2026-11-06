@@ -5,7 +5,7 @@
   if(root)root.LBGWeeklyStatsEnhancementV8=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261005.1';
+  const VERSION='20261106.1';
   const ROLE_LABEL={KNS:'GV KNS',STEM:'GV STEM',CTV:'CTV',UNKNOWN:'Chưa xác định'};
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
@@ -283,6 +283,26 @@
     if(key!==lastKey){lastKey=key;current=null;populateDays();const p=q('weeklyStatsV8Panel');if(p)p.hidden=true;setTimeout(renderOverview,80)}
     const exp=q('weeklyStatsExport');if(exp&&exp.onclick!==exportExcel)exp.onclick=exportExcel;
   }
-  function install(){let tries=0;const timer=setInterval(()=>{tries++;tick();if(tries>1400)clearInterval(timer)},500);tick();root.addEventListener?.('beforeunload',()=>clearInterval(timer),{once:true});return true}
+  function install(){
+    // The old 500 ms ticker scanned UI state 120 times a minute for ~12 minutes.
+    // Input changes now refresh immediately. The slower safety check still
+    // catches workbook replacements made by older modules without events.
+    let queued=false;
+    const queueTick=()=>{
+      if(queued)return;
+      queued=true;
+      setTimeout(()=>{queued=false;if(!root.document?.hidden)tick()},0);
+    };
+    root.document?.addEventListener('change',event=>{
+      if(['week','weeklyStatsWeek','year'].includes(event.target?.id))queueTick();
+    },true);
+    root.document?.addEventListener('lbg-runtime-ready',queueTick);
+    root.document?.addEventListener('lbg-access-ready',queueTick);
+    root.document?.addEventListener('visibilitychange',()=>{if(!root.document.hidden)queueTick()});
+    const timer=setInterval(()=>{if(!root.document?.hidden)tick()},4000);
+    tick();
+    root.addEventListener?.('beforeunload',()=>clearInterval(timer),{once:true});
+    return true;
+  }
   return{VERSION,exactCode,codeLike,splitTokens,roleBuckets,rawCodeAudit,sessionData,buildData,install};
 });

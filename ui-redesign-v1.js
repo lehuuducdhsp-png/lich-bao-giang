@@ -167,9 +167,27 @@
   }
   function queueScan(){if(scanQueued)return;scanQueued=true;requestAnimationFrame(scan)}
 
+  function structureChanged(records){
+    // A report table can update hundreds of cells without changing sidebar
+    // navigation. Ignore those row/cell mutations; still watch added/removed
+    // sections and edited headings so every navigation item stays available.
+    for(const record of records){
+      if(record.type!=='childList')continue;
+      const target=record.target?.nodeType===1?record.target:record.target?.parentElement;
+      if(!target)continue;
+      if(target===main||target.classList?.contains('grid')||target.classList?.contains('head')||target.closest?.('h2,h3'))return true;
+      for(const node of [...record.addedNodes,...record.removedNodes]){
+        if(node.nodeType!==1)continue;
+        if(node.matches?.('section,article,.lbg-owner-card,.lbg-scope-card,.lbg-branding-card,.lbg-groups-card')||
+           node.querySelector?.('section,article.card,.lbg-owner-card,.lbg-scope-card,.lbg-branding-card,.lbg-groups-card'))return true;
+      }
+    }
+    return false;
+  }
+
   function start(){
     addStyle();
-    const wait=setInterval(()=>{if(ensureLayout()){clearInterval(wait);scan();observer=new MutationObserver(queueScan);observer.observe(main,{childList:true,subtree:true});statusTimer=setInterval(refreshStatus,1400)}},100);
+    const wait=setInterval(()=>{if(ensureLayout()){clearInterval(wait);scan();observer=new MutationObserver(records=>{if(structureChanged(records))queueScan()});observer.observe(main,{childList:true,subtree:true});statusTimer=setInterval(refreshStatus,1400)}},100);
     setTimeout(()=>clearInterval(wait),30000);
     window.addEventListener('beforeunload',()=>{observer?.disconnect();sectionObserver?.disconnect();clearInterval(statusTimer);clearInterval(wait)},{once:true});
   }
