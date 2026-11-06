@@ -125,7 +125,12 @@
     if(document.title.includes('Kiểm thử')&&document.title!==next)document.title=next;
   }
 
-  function sync(){syncQueued=false;syncHeader();syncLogin();syncDocument()}
+  function sync(){
+    syncQueued=false;
+    observer?.disconnect();
+    try{syncHeader();syncLogin();syncDocument()}
+    finally{observer?.observe(document.body,{childList:true,subtree:true})}
+  }
   function queueSync(){
     if(syncQueued)return;
     syncQueued=true;
@@ -146,19 +151,40 @@
     queueSync();
   }
 
+  function brandingDomChanged(records){
+    // Branding only concerns the header and the login form. Table/report
+    // changes should not trigger a full logo/login/title refresh.
+    const important='header.top,#lbgLoginForm,#lbgLoginBrand';
+    for(const record of records){
+      const target=record.target?.nodeType===1?record.target:record.target?.parentElement;
+      if(target?.closest?.(important))return true;
+      for(const node of [...record.addedNodes,...record.removedNodes]){
+        if(node.nodeType===1&&(node.matches?.(important)||node.querySelector?.(important)))return true;
+      }
+    }
+    return false;
+  }
   function watch(){
     if(observer)return;
-    observer=new MutationObserver(queueSync);
+    observer=new MutationObserver(records=>{if(brandingDomChanged(records))queueSync()});
     observer.observe(document.body,{childList:true,subtree:true});
     window.addEventListener('lbg-branding-changed',event=>{
       settings={...defaults,...(event.detail||window.LBGBranding?.settings||{})};
       queueSync();
     });
+    // Keep compatibility with modules that update settings without emitting
+    // events, but do not rerender the page while the value is unchanged.
+    let lastLiveSignature='';
     setInterval(()=>{
       const live=window.LBGBranding?.settings;
-      if(live)settings={...defaults,...live};
+      if(!live)return;
+      let signature='';
+      try{signature=JSON.stringify(live)}catch{return}
+      if(signature===lastLiveSignature)return;
+      lastLiveSignature=signature;
+      settings={...defaults,...live};
       queueSync();
-    },1600);
+    },5000);
   }
 
   function start(){

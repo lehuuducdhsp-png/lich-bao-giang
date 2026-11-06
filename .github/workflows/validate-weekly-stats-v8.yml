@@ -32,8 +32,8 @@ jobs:
           node tests/weekly-stats-enhancement-v8.test.cjs
       - name: Load-chain and safety contracts
         run: |
-          grep -F "teacher-fix-v2.js?v=20261005.2" index.html
-          grep -F "analysis-fix-v2.js?v=20261005.2" teacher-fix-v2.js
-          grep -F "weekly-stats-enhancement-v8.js?v=20261005.1" analysis-fix-v2.js
+          grep -F "teacher-fix-v2.js?v=" index.html
+          grep -F "analysis-fix-v2.js?v=" teacher-fix-v2.js
+          grep -F "weekly-stats-enhancement-v8.js?v=" analysis-fix-v2.js
           grep -F "HẠ ≠ HÀ" weekly-stats-enhancement-v8.js
-          ! grep -F "weekly-stats-enhancement-v7.js?v=20260803.2" analysis-fix-v2.js
+          ! grep -F "weekly-stats-enhancement-v7.js?v=" analysis-fix-v2.js

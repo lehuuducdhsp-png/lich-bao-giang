@@ -30,3 +30,4 @@ jobs:
           node tests/runtime-stability-budget-v1.test.cjs
           node tests/production-runtime-performance.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/performance-20261106.test.cjs

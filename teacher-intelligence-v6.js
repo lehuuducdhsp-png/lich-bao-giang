@@ -314,7 +314,25 @@
     const buffer=await b.xlsx.writeBuffer();saveAs(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`THONG_KE_GIAO_VIEN_TIET_DAY_${fileSafe(r.sheet)}.xlsx`);toast('Đã xuất thống kê tuần ra Excel.');
   }
   function start(){addCss();initGaUi();statsCard();syncGaButton();syncStatsWeeks();}
-  const timer=setInterval(start,700);start();
+  // Updating a report/file is event-driven; keep a low-frequency safety refresh
+  // for older workflows that replace the workbook without dispatching change.
+  let queuedStart=false;
+  function queueStart(){
+    if(queuedStart)return;
+    queuedStart=true;
+    setTimeout(()=>{queuedStart=false;start()},0);
+  }
+  document.addEventListener('change',event=>{
+    if(['week','teacher','year','weeklyStatsWeek'].includes(event.target?.id))queueStart();
+  },true);
+  document.addEventListener('click',event=>{
+    if(event.target?.closest?.('#analyze'))setTimeout(queueStart,110);
+  },true);
+  document.addEventListener('lbg-access-ready',queueStart);
+  document.addEventListener('lbg-runtime-ready',queueStart);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)queueStart()});
+  const timer=setInterval(()=>{if(!document.hidden)start()},3500);
+  start();
   window.addEventListener('beforeunload',()=>clearInterval(timer));
   window.LBGTeacherIntelligenceV6={summaryRoles,scanSheet,buildHistory,STEM_GA:[...STEM_GA]};
 })();

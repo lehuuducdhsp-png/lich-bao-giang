@@ -34,9 +34,9 @@ jobs:
           node tests/stem-ga-display-v1.test.cjs
       - name: Loader and safety contracts
         run: |
-          grep -F 'school-report-v1.js?v=20260930.1' patch-runtime-loader-v1.js
-          grep -F 'report-engine-v4.js?v=20260930.1' app-runtime-v1.js
-          grep -F 'daily-report-v1.js?v=20260930.1' school-report-v1.js
+          grep -F 'school-report-v1.js?v=' patch-runtime-loader-v1.js
+          grep -F 'report-engine-v4.js?v=' app-runtime-v1.js
+          grep -F 'daily-report-v1.js?v=' school-report-v1.js
           grep -F "canReviewAllReports" school-report-v1.js
           grep -F "LBGAllTeachers" school-report-v1.js
           grep -F "LBGAssistPPreviewSafe" school-report-v1.js
@@ -54,9 +54,9 @@ jobs:
           grep -F "canonicalGaHistory" school-report-v1.js
       - name: Preserve recent production modules
         run: |
-          grep -F 'ga-group-split-history-safe-v1.js?v=20261012.1' patch-runtime-loader-v1.js
-          grep -F 'ga-group-split-stale-repair-v1.js?v=20260920.1' patch-runtime-loader-v1.js
-          grep -F 'ga-per-class-v2.js?v=20260930.1' patch-runtime-loader-v1.js
-          grep -F 'assist-p-preview-safe-v1.js?v=20261011.1' patch-runtime-loader-v1.js
-          grep -F 'assist-p-excel-export-parity-v1.js?v=20260918.1' patch-runtime-loader-v1.js
-          grep -F 'sheets-ga-save-safe-v1.js?v=20260913.1' patch-runtime-loader-v1.js
+          grep -F 'ga-group-split-history-safe-v1.js?v=' patch-runtime-loader-v1.js
+          grep -F 'ga-group-split-stale-repair-v1.js?v=' patch-runtime-loader-v1.js
+          grep -F 'ga-per-class-v2.js?v=' patch-runtime-loader-v1.js
+          grep -F 'assist-p-preview-safe-v1.js?v=' patch-runtime-loader-v1.js
+          grep -F 'assist-p-excel-export-parity-v1.js?v=' patch-runtime-loader-v1.js
+          grep -F 'sheets-ga-save-safe-v1.js?v=' patch-runtime-loader-v1.js

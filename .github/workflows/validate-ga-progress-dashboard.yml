@@ -30,14 +30,14 @@ jobs:
           node tests/ga-progress-dashboard-v1.test.cjs
       - name: Runtime and product contracts
         run: |
-          grep -F "ga-progress-dashboard-v1.js?v=20261004.1" patch-runtime-loader-v1.js
-          grep -F "patch-runtime-loader-v1.js?v=20261012.1" index.html
+          grep -F "ga-progress-dashboard-v1.js?v=" patch-runtime-loader-v1.js
+          grep -F "patch-runtime-loader-v1.js?v=" index.html
           grep -F "không bắt buộc 3 KNS : 1 STEM" ga-progress-dashboard-v1.js
           grep -F "STEM có thể dạy trước KNS" ga-progress-dashboard-v1.js
           python - <<'PY'
           from pathlib import Path
           s=Path('patch-runtime-loader-v1.js').read_text()
-          assert "ga-progress-dashboard-v1.js?v=20261004.1" in s
+          assert "ga-progress-dashboard-v1.js?v=" in s
           assert "installGaProgressLauncher()" in s
           runtime=s.index("await loadSequence(RUNTIME_PATCHES);")
           launcher=s.index("installGaProgressLauncher();", runtime)

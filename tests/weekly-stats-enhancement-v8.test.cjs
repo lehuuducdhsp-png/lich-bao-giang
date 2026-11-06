@@ -10,7 +10,7 @@ globalThis.LBGTkbParserV2={
 };
 const V8=require('../weekly-stats-enhancement-v8.js');
 
-assert.equal(V8.VERSION,'20261005.1');
+assert.equal(V8.VERSION,'20261106.1');
 assert.equal(V8.exactCode(' hạ '),'HẠ');
 assert.equal(V8.exactCode(' hà '),'HÀ');
 assert.notEqual(V8.exactCode('HẠ'),V8.exactCode('HÀ'),'HẠ và HÀ phải luôn là hai mã khác nhau');
