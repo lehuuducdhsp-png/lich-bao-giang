@@ -98,7 +98,7 @@ jobs:
           grep -Fq 'ui-redesign-v1.js' groups-test-loader-v1.js
           grep -Fq 'report-engine-v3.js' groups-test-loader-v1.js
           grep -Fq 'mobile-polish-v2.js' groups-test-loader-v1.js
-          grep -Fq 'orange-theme-v1.js' groups-test-loader-v1.js
+          grep -Fq 'light-orange-theme-v2.js' groups-test-loader-v1.js
           ! grep -Fq 'report-engine-v2.js' groups-test-loader-v1.js
           ! grep -Fq 'sunday-dynamic-v1.js' groups-test-loader-v1.js
           ! grep -Fq 'group-roster-tkb-v1.js' groups-test-loader-v1.js
