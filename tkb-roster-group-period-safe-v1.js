@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261113.1';
+  const VERSION='20261113.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -243,8 +243,44 @@
     if(!m)return null;
     return{period:Number(m[1]),session:m[2]==='SANG'?'Sáng':'Chiều',day:Number(m[3]),sourceText:txt(value)};
   }
+
+  // Phú Bình (16T11): hai khối dạy song song theo chiều NGANG.
+  // Nhãn site nằm ở AB81:AC94 và AQ81:AR94, chứ không phải cột C.
+  // Dòng 95 chứa mã P cuối khối dù B95 đã bắt đầu trường Hương Vinh.
+  function mergedPhuBinhSiteAt(ws,row,col,parser=null){
+    if(!ws?.getCell||!parser?.locationAt)return null;
+    const r=Number(row),c=Number(col);
+    if(!Number.isInteger(r)||!Number.isInteger(c))return null;
+    for(const m of mergeRanges(ws)){
+      if(c<=m.c2||c>m.c2+4||r<m.r1||r>m.r2+1)continue;
+      const sourceText=cellText(ws.getCell(m.r1,m.c1)),f=fold(sourceText);
+      const match=f.match(/^CO SO PHU (BINH|HAU)\s+HOC\s+TIET\s*[1-5]/);
+      if(!match)continue;
+      const schedule=explicitScheduleFromText(sourceText);
+      if(!schedule)continue;
+      if(r===m.r2+1 && !/P$/i.test(txt(cellText(ws.getCell(r,c)))))continue;
+      let schoolLoc={};try{schoolLoc=parser.locationAt(ws,m.r1)||{}}catch{}
+      if(fold(schoolLoc.schoolName||schoolLoc.school)!=='PHU BINH')continue;
+      const siteName=match[1]==='BINH'?'Phú Bình':'Phú Hậu';
+      const siteRaw='CƠ SỞ '+siteName.toUpperCase(),siteKey=fold('Cơ sở|'+siteName);
+      const location={
+        ...schoolLoc,school:'PHÚ BÌNH',schoolName:'PHÚ BÌNH',
+        schoolKey:fold('PHÚ BÌNH'),
+        siteRaw,siteType:'Cơ sở',siteName,
+        siteDisplay:'Cơ sở: '+siteName,siteKey,
+        locationKey:fold('PHÚ BÌNH')+'|'+siteKey,
+        locationLabel:'PHÚ BÌNH\\nCơ sở: '+siteName
+      };
+      return{...schedule,row:m.r1,col:c,source:'phu-binh-merged-site',
+        blockEndRow:m.r2,blockFirstClassCol:m.c2+1,blockLastClassCol:m.c2+4,
+        sourceText,location};
+    }
+    return null;
+  }
   function specialScheduleHintAt(ws,row,col,parser=null,entryOrLocation=null){
     if(!ws||!Number.isInteger(Number(row))||!Number.isInteger(Number(col)))return null;
+    const mergedSite=mergedPhuBinhSiteAt(ws,row,col,parser);
+    if(mergedSite)return mergedSite;
     let loc=entryOrLocation||{};
     if(!loc.siteRaw&&parser?.locationAt){try{loc=parser.locationAt(ws,Number(row))||{}}catch{}}
     const place=fold([loc.schoolName||loc.school,loc.siteRaw,loc.siteDisplay].filter(Boolean).join(' '));
@@ -303,7 +339,13 @@
     const repaired=applyGroupContinuation(located,anchor);
     const resolver=parser?.locationAt?(w,r)=>parser.locationAt(w,r):null;
     const normalized=applyHint(repaired,periodHintAt(ws,repaired?.row,repaired?.col,resolver,repaired?.locationKey));
-    return applySpecialScheduleHint(normalized,specialScheduleHintAt(ws,normalized?.row,normalized?.col,parser,normalized));
+    const hint=specialScheduleHintAt(ws,normalized?.row,normalized?.col,parser,normalized);
+    const timed=applySpecialScheduleHint(normalized,hint);
+    // Chỉ với 2 khối Phú Bình, field period cũng phải phản ánh tiết thực;
+    // slotPeriod vẫn bảo toàn tiết/cột nguồn Excel để truy vết.
+    return hint?.source==='phu-binh-merged-site'
+      ?{...timed,...hint.location,period:Number(hint.period)}
+      :timed;
   }
 
   function scanPlusGroupedAssignments(ws,onlyCode='',parser=null){
@@ -337,7 +379,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,mergedPhuBinhSiteAt,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){

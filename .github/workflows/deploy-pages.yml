@@ -37,6 +37,7 @@ jobs:
           node --check tkb-roster-group-period-safe-v1.js
           node tests/tkb-location-boundary-safe-v1.test.cjs
           node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/phu-binh-phu-hau-16t11-real-layout.test.cjs
           node tests/grouped-plus-report-safe-v1.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
           node tests/production-runtime-performance.test.cjs

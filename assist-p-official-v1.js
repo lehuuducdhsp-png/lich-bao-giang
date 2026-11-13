@@ -24,7 +24,7 @@
   async function start(){
     hideTrialBanner();
     try{
-      await load('assist-p-trial-v1.js?v=20261113.1','lbgAssistPOfficialCore');
+      await load('assist-p-trial-v1.js?v=20261113.2','lbgAssistPOfficialCore');
       await load('assist-p-preview-position-hotfix-v1.js?v=20261106.1','lbgAssistPOfficialPositionFix');
       hideTrialBanner();
       let tries=0;

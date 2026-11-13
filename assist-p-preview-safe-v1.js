@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261017.2';
+  const VERSION='20261113.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -165,10 +165,15 @@
         const cell=ws.getCell(row,col);
         if(cellText(cell).toUpperCase()!==target)continue;
         const loc=p.locationAt?.(ws,row)||{};
+        const specialSchedule=p.specialScheduleHintAt?.(ws,row,col)||null;
+        // Hàng P cuối (95) có ô trường B95 chuyển sang Hương Vinh;
+        // lấy lớp từ hàng nguồn trước đó, nhưng địa điểm lấy theo nhãn gộp.
+        const classLoc=specialSchedule?.source==='phu-binh-merged-site'&&
+          Number(row)===Number(specialSchedule.blockEndRow)+1
+            ?(p.locationAt?.(ws,row-1)||loc):loc;
         const candidates=sameRowMainCandidates(assignments,row,col,base,info);
         const main=pairedMainAssignment(assignments,row,col,base,info);
-        const localMeta=strictLocalClassAt(ws,row,col,base,loc);
-        const specialSchedule=p.specialScheduleHintAt?.(ws,row,col)||null;
+        const localMeta=strictLocalClassAt(ws,row,col,base,classLoc);
         // Tiết bổ sung Phú Tân: P phải học đúng tiết in trên nhãn cụm,
         // kể cả P nằm ở cột bên cạnh hay xuống dòng 159/160 (BB160 = tiết 4, không phải 5).
         const extra=window.LBGTkbPhuTanExtraPeriodV1;
@@ -188,13 +193,13 @@
         const sourceInfo=(thanhLamMain||anchor)?{
           day:(thanhLamMain||anchor).day,session:(thanhLamMain||anchor).session,
           period:(thanhLamMain||anchor).period
-        }:(specialSchedule?{...info,day:specialSchedule.day,session:specialSchedule.session}:info);
-        const sourceLoc=thanhLamMain||anchor||loc;
+        }:(specialSchedule?{...info,day:specialSchedule.day,session:specialSchedule.session,period:specialSchedule.period}:info);
+        const sourceLoc=thanhLamMain||anchor||specialSchedule?.location||loc;
         const rosterPeriod=ownRosterPeriod||Number((thanhLamMain||anchor)?.teachingPeriod||(thanhLamMain||anchor)?.rosterTeachingPeriod)||0;
         out.push({
           day:Number(sourceInfo.day),session:txt(sourceInfo.session),period:Number(sourceInfo.period),
           teachingPeriod:rosterPeriod||(explicit?Number(explicit[1]):Number(sourceInfo.period)),
-          schoolName:txt(sourceLoc.schoolName||sourceLoc.school),siteDisplay:txt(sourceLoc.siteDisplay||sourceLoc.siteName),
+          schoolName:txt(sourceLoc.schoolName||sourceLoc.school),siteDisplay:txt(sourceLoc.siteDisplay||sourceLoc.siteName),locationKey:txt(sourceLoc.locationKey),siteRaw:txt(sourceLoc.siteRaw),
           className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
           pairedMainAddress:txt((anchor||main)?.address),pairedMainCode:txt((anchor||main)?.code),
