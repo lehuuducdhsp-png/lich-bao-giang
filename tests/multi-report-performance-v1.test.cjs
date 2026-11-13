@@ -76,7 +76,7 @@ assert.match(per,/addEventListener\('lbg-analyze-now-ready'/,'per-class GA must 
 assert.doesNotMatch(per,/if\(analyzeInstalled\)return true/,'per-class installer must verify the current wrapper instead of trusting stale state');
 assert.match(patchLoader,/tkb-assignment-cache-safe-v1\.js\?v=20260913\.1/);
 assert.match(patchLoader,/ga-suggestion-multi-apply-v1\.js\?v=20260920\.3/);
-assert.match(patchLoader,/ga-per-class-v2\.js\?v=20260930\.1/);
+assert.match(patchLoader,/ga-per-class-v2\.js\?v=20261113\.3/);
 assert.match(patchLoader,/ga-multi-selection-bridge-v1\.js\?v=20260914\.2/);
 assert.ok(patchLoader.indexOf('ga-per-class-v2.js?v=20261113.3')<patchLoader.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'stable bridge must load after per-class GA');
 assert.ok(patchLoader.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<patchLoader.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'role-track repair must load before stable bridge');
