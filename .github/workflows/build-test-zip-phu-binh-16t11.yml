@@ -1,0 +1,49 @@
+name: Build TEST ZIP - Phu Binh real 16T11
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tkb-roster-group-period-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'assist-p-trial-v1.js'
+      - 'patch-runtime-loader-v1.js'
+      - 'index.html'
+      - 'tests/phu-binh-phu-hau-16t11-real-layout.test.cjs'
+      - '.github/workflows/build-test-zip-phu-binh-16t11.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package-test:
+    if: ${{ github.head_ref == 'test/phu-binh-phu-hau-real-xlsx-16t11-20261113' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout TEST source (no production deployment)
+        uses: actions/checkout@v4
+      - name: Verify merged school blocks and assistant P
+        run: |
+          node --check tkb-roster-group-period-safe-v1.js
+          node --check assist-p-preview-safe-v1.js
+          node --check assist-p-trial-v1.js
+          node tests/phu-binh-phu-hau-16t11-real-layout.test.cjs
+          node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/tkb-location-boundary-safe-v1.test.cjs
+          node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/release-integrity-phu-tan-20261017.test.cjs
+          node tests/thanh-lam-release-20261018.test.cjs
+          node tests/ga-kns-november-production.test.cjs
+          node tests/production-runtime-performance.test.cjs
+      - name: Archive self-contained TEST code only
+        run: |
+          mkdir -p dist
+          git archive --format=zip --output dist/Lich_Bao_Giang_TEST_Phu_Binh_16T11.zip HEAD
+          unzip -t dist/Lich_Bao_Giang_TEST_Phu_Binh_16T11.zip | tail -1
+      - name: Publish download for user acceptance
+        uses: actions/upload-artifact@v4
+        with:
+          name: LBG-TEST-Phu-Binh-16T11
+          path: dist/Lich_Bao_Giang_TEST_Phu_Binh_16T11.zip
+          retention-days: 30
+          if-no-files-found: error
