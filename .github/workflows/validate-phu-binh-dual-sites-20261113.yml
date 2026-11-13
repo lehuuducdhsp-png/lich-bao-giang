@@ -1,0 +1,59 @@
+name: TEST Phu Binh + Phu Hau dual-campus from original XLSX
+
+on:
+  pull_request:
+    paths:
+      - 'tkb-roster-group-period-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'assist-p-trial-v1.js'
+      - 'assist-p-official-v1.js'
+      - 'patch-runtime-loader-v1.js'
+      - 'index.html'
+      - 'tests/phu-binh-dual-site-16t11.test.cjs'
+      - 'tests/fixtures/phu-binh-dual-site-20261113.json'
+      - '.github/workflows/validate-phu-binh-dual-sites-20261113.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout proposed TEST only
+        uses: actions/checkout@v4
+      - name: Syntax and original-workbook fixture test
+        run: |
+          node --check tkb-roster-group-period-safe-v1.js
+          node --check assist-p-preview-safe-v1.js
+          node --check assist-p-trial-v1.js
+          node --check assist-p-official-v1.js
+          node --check patch-runtime-loader-v1.js
+          node --check tests/phu-binh-dual-site-16t11.test.cjs
+          node tests/phu-binh-dual-site-16t11.test.cjs
+      - name: Preserve old schools, GA and performance
+        run: |
+          node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/tkb-location-boundary-safe-v1.test.cjs
+          node tests/grouped-plus-report-safe-v1.test.cjs
+          node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/thanh-lam-release-20261018.test.cjs
+          node tests/release-integrity-phu-tan-20261017.test.cjs
+          node tests/phu-binh-cs2-26t10-ga8.test.cjs
+          node tests/ga-kns-november-production.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/runtime-stability-budget-v1.test.cjs
+          node tests/production-runtime-performance.test.cjs
+          node tests/multi-report-performance-v1.test.cjs
+      - name: Create standalone TEST ZIP without Pages deploy
+        run: |
+          mkdir -p dist
+          git archive --format=zip --output dist/Lich_Bao_Giang_TEST_Phu_Binh_Phu_Hau_16T11.zip HEAD
+          unzip -t dist/Lich_Bao_Giang_TEST_Phu_Binh_Phu_Hau_16T11.zip | tail -1
+      - name: Upload tested ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lich-Bao-Giang-TEST-Phu-Binh-Phu-Hau-16T11
+          path: dist/Lich_Bao_Giang_TEST_Phu_Binh_Phu_Hau_16T11.zip
+          if-no-files-found: error
+          retention-days: 30
