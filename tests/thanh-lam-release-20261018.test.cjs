@@ -18,7 +18,7 @@ assert.ok(assist.includes('function thanhLamSplitPairedMain'));
 assert.ok(read('tkb-parser-school-name-fix-v1.js').includes('actualSchool'));
 assert.ok(read('tkb-roster-group-period-safe-v1.js').includes('thanhLamLastRow'));
 assert.ok(runtime.includes('tkb-parser-school-name-fix-v1.js?v=20261018.2'));
-assert.ok(loader.includes('tkb-roster-group-period-safe-v1.js?v=20261113.2'));
+assert.ok(loader.includes('tkb-roster-group-period-safe-v1.js?v=20261113.3'));
 assert.ok(assist.includes("'thanh-lam-paired-main'"));
 assert.ok(runtime.includes('tkb-parser-v2.js?v=20261018.1'));
 assert.ok(loader.includes('assist-p-preview-safe-v1.js?v=20261113.2'));
