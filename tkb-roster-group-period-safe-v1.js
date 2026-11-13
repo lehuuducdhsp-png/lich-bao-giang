@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261113.1';
+  const VERSION='20261113.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -243,8 +243,49 @@
     if(!m)return null;
     return{period:Number(m[1]),session:m[2]==='SANG'?'Sáng':'Chiều',day:Number(m[3]),sourceText:txt(value)};
   }
+
+  // 16T11: Phu Binh has two column-based sites in one B81:B94 school band.
+  // Preserve canonical site identity from previous weeks for GA history.
+  function phuBinhDualSiteAt(ws,row,col,parser=null,assistCode=''){
+    if(!ws?.getCell)return null;
+    const r=Number(row),c=Number(col),code=txt(assistCode).toUpperCase();
+    if(!Number.isInteger(r)||!Number.isInteger(c))return null;
+    const ranges=mergeRanges(ws);
+    for(const band of ranges){
+      if(band.c1!==2||band.c2!==2||r<band.r1||r>band.r2+(code?1:0))continue;
+      if(fold(cellText(ws.getCell(band.r1,2)))!=='PHU BINH')continue;
+      const trailing=r===band.r2+1;
+      if(trailing){
+        const base=code.replace(/P$/,'');
+        if(!base||base===code||txt(cellText(ws.getCell(r-1,c))).toUpperCase()!==base)continue;
+        const previousClass=parser?.classMeta?.(cellText(ws.getCell(r-2,c)));
+        if(txt(previousClass?.classType)!=='single')continue;
+      }
+      const headers=ranges.filter(m=>m.r1===band.r1&&m.r2===band.r2&&m.c1>3)
+        .map(m=>{
+          const label=txt(cellText(ws.getCell(m.r1,m.c1))),f=fold(label);
+          const which=/^CO SO PHU BINH\b/.test(f)?'binh':/^CO SO PHU HAU\b/.test(f)?'hau':'';
+          const schedule=which?explicitScheduleFromText(label):null;
+          return which&&schedule?{...m,label,which,schedule}:null;
+        }).filter(Boolean).sort((a,b)=>a.c1-b.c1);
+      for(let i=0;i<headers.length;i++){
+        const h=headers[i],next=headers[i+1];
+        if(c<=h.c2||(next&&c>=next.c1))continue;
+        const siteRaw=h.which==='binh'?'CƠ SỞ 2 - PHÚ BÌNH CŨ':'CƠ SỞ 1 - PHÚ HẬU CŨ';
+        const site=parser?.parseSite?.(siteRaw)||{siteRaw,siteType:'Cơ sở',siteName:h.which==='binh'?'PHÚ BÌNH CŨ':'PHÚ HẬU CŨ',siteDisplay:siteRaw,siteKey:fold(siteRaw)};
+        const schoolName='PHÚ BÌNH',locationKey=fold(schoolName)+'|'+txt(site.siteKey);
+        return{...h.schedule,row:h.r1,col:c,source:'phu-binh-dual-column',sourceText:h.label,
+          siteRaw,siteType:site.siteType,siteName:site.siteName,siteDisplay:site.siteDisplay,siteKey:site.siteKey,
+          schoolName,school:schoolName,locationKey,locationLabel:schoolName+'\n'+site.siteDisplay,
+          trailingAssist:trailing,siteColumn:h.c1,siteMerge:h.ref};
+      }
+    }
+    return null;
+  }
   function specialScheduleHintAt(ws,row,col,parser=null,entryOrLocation=null){
     if(!ws||!Number.isInteger(Number(row))||!Number.isInteger(Number(col)))return null;
+    const dual=phuBinhDualSiteAt(ws,row,col,parser,entryOrLocation?.assistCode||'');
+    if(dual)return dual;
     let loc=entryOrLocation||{};
     if(!loc.siteRaw&&parser?.locationAt){try{loc=parser.locationAt(ws,Number(row))||{}}catch{}}
     const place=fold([loc.schoolName||loc.school,loc.siteRaw,loc.siteDisplay].filter(Boolean).join(' '));
@@ -263,7 +304,12 @@
   function applySpecialScheduleHint(entry,hint){
     if(!entry||!hint||txt(entry.classType).toLowerCase()!=='single')return entry;
     const slot=Number(entry.slotPeriod??entry.period)||null;
-    return{...entry,
+    const site=hint.source==='phu-binh-dual-column'?{
+      school:hint.school,schoolName:hint.schoolName,siteRaw:hint.siteRaw,
+      siteType:hint.siteType,siteName:hint.siteName,siteDisplay:hint.siteDisplay,
+      siteKey:hint.siteKey,locationKey:hint.locationKey,locationLabel:hint.locationLabel
+    }:{};
+    return{...entry,...site,
       slotDay:Number(entry.slotDay??entry.day),slotSession:txt(entry.slotSession||entry.session),slotPeriod:slot,
       day:Number(hint.day),session:txt(hint.session),teachingPeriod:Number(hint.period),
       rosterTeachingPeriod:Number(hint.period),rosterTeachingPeriodSource:txt(hint.sourceText),
@@ -337,7 +383,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,phuBinhDualSiteAt,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
@@ -356,7 +402,8 @@
       const resolver=parser.locationAt?(w,r)=>parser.locationAt(w,r):null;
       return periodHintAt(ws,row,col,resolver);
     };
-    parser.specialScheduleHintAt=(ws,row,col)=>specialScheduleHintAt(ws,row,col,parser);
+    parser.specialScheduleHintAt=(ws,row,col,options={})=>specialScheduleHintAt(ws,row,col,parser,options);
+    parser.phuBinhDualSiteAt=(ws,row,col,assistCode='')=>phuBinhDualSiteAt(ws,row,col,parser,assistCode);
     parser.rosterTeachingPeriodAt=(ws,row,col)=>parser.rosterTeachingPeriodHintAt(ws,row,col)?.period||null;
     parser.explicitGroupAnchorAt=(ws,row,col)=>explicitGroupAnchorAt(ws,row,col,parser,txt(parser.locationAt?.(ws,row)?.locationKey));
     parser.scanPlusGroupedAssignments=(ws,onlyCode='')=>scanPlusGroupedAssignments(ws,onlyCode,parser);
@@ -372,5 +419,5 @@
     root.document.addEventListener('lbg-runtime-ready',installOnce);
     return true;
   }
-  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
+  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,phuBinhDualSiteAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
 });

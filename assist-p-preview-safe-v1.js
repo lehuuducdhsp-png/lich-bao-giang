@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261017.2';
+  const VERSION='20261113.2';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -165,15 +165,23 @@
         const cell=ws.getCell(row,col);
         if(cellText(cell).toUpperCase()!==target)continue;
         const loc=p.locationAt?.(ws,row)||{};
+        const dual=p.phuBinhDualSiteAt?.(ws,row,col,target)||null;
         const candidates=sameRowMainCandidates(assignments,row,col,base,info);
         const main=pairedMainAssignment(assignments,row,col,base,info);
-        const localMeta=strictLocalClassAt(ws,row,col,base,loc);
-        const specialSchedule=p.specialScheduleHintAt?.(ws,row,col)||null;
+        let localMeta=strictLocalClassAt(ws,row,col,base,loc);
+        if(dual?.trailingAssist&&txt(localMeta?.classType)==='unknown'){
+          const cls=p.classMeta?.(cellText(ws.getCell(row-2,col)));
+          if(txt(cls?.classType)==='single')localMeta={
+            className:cls.classDisplay||cls.classRaw,classRaw:cls.classRaw,classType:cls.classType,
+            classCount:Number(cls.classCount)||1,groupNote:txt(cls.groupNote),assistClassRow:row-2
+          };
+        }
+        const specialSchedule=p.specialScheduleHintAt?.(ws,row,col,{assistCode:target})||null;
         // Tiết bổ sung Phú Tân: P phải học đúng tiết in trên nhãn cụm,
         // kể cả P nằm ở cột bên cạnh hay xuống dòng 159/160 (BB160 = tiết 4, không phải 5).
         const extra=window.LBGTkbPhuTanExtraPeriodV1;
         const extraHeader=extra?.findHeader?.(ws,{row,col,day:info.day,session:info.session},p)||null;
-        const ownRosterPeriod=Number(extraHeader?.period)||Number(p.rosterTeachingPeriodAt?.(ws,row,col))||0;
+        const ownRosterPeriod=Number(specialSchedule?.period)||Number(extraHeader?.period)||Number(p.rosterTeachingPeriodAt?.(ws,row,col))||0;
         const specialMain=ownRosterPeriod?null:specialPairedMainAssignment(assignments,row,col,base,p,ws);
         // Với riêng cụm MỖI GV/LỚP, nếu P đặt ngay cạnh GV chính (ví dụ AR155,
         // BB160), được mượn lớp từ CHÍNH GIÁO VIÊN CÙNG MÃ trên cùng hàng.
@@ -189,7 +197,7 @@
           day:(thanhLamMain||anchor).day,session:(thanhLamMain||anchor).session,
           period:(thanhLamMain||anchor).period
         }:(specialSchedule?{...info,day:specialSchedule.day,session:specialSchedule.session}:info);
-        const sourceLoc=thanhLamMain||anchor||loc;
+        const sourceLoc=dual||thanhLamMain||anchor||loc;
         const rosterPeriod=ownRosterPeriod||Number((thanhLamMain||anchor)?.teachingPeriod||(thanhLamMain||anchor)?.rosterTeachingPeriod)||0;
         out.push({
           day:Number(sourceInfo.day),session:txt(sourceInfo.session),period:Number(sourceInfo.period),
