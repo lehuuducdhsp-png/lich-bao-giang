@@ -19,7 +19,7 @@
   const CORE_PATCHES=[
     ['tkb-class-typo-fix-v1.js?v=20260913.2','lbgTkbClassTypoFixV1Script'],
     ['class-typo-report-path-safe-v1.js?v=20260916.1','lbgClassTypoReportPathSafeV1Script'],
-    ['tkb-roster-group-period-safe-v1.js?v=20261018.2','lbgTkbRosterGroupPeriodSafeV1Script'],
+    ['tkb-roster-group-period-safe-v1.js?v=20261113.1','lbgTkbRosterGroupPeriodSafeV1Script'],
     ['tkb-phu-tan-extra-period-v1.js?v=20261017.3','lbgTkbPhuTanExtraPeriodV1Script'],
     ['tkb-assignment-cache-safe-v1.js?v=20260913.1','lbgTkbAssignmentCacheSafeV1Script'],
     ['grouped-plus-report-safe-v1.js?v=20260919.1','lbgGroupedPlusReportSafeV1Script'],
@@ -36,7 +36,7 @@
     ['ga-multi-selection-bridge-v1.js?v=20260914.2','lbgGaMultiSelectionBridgeV1Script'],
     ['sheets-ga-save-safe-v1.js?v=20260913.1','lbgSheetsGaSaveSafeV1Script'],
     ['report-branding-v1.js?v=20260925.2','lbgReportBrandingV1Script'],
-    ['assist-p-preview-safe-v1.js?v=20261018.1','lbgAssistPPreviewSafeV1Script'],
+    ['assist-p-preview-safe-v1.js?v=20261113.1','lbgAssistPPreviewSafeV1Script'],
     ['assist-p-summary-monthly-safe-v1.js?v=20260912.1','lbgAssistPSummaryMonthlySafeV1Script'],
     ['assist-p-web-footer-safe-v1.js?v=20260912.1','lbgAssistPWebFooterSafeV1Script'],
     ['multi-preview-assist-sync-v1.js?v=20260914.1','lbgMultiPreviewAssistSyncV1Script'],
