@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261113.2';
+  const VERSION='20261113.3';
   const LOOKAHEAD=6;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -19,7 +19,7 @@
   const CORE_PATCHES=[
     ['tkb-class-typo-fix-v1.js?v=20260913.2','lbgTkbClassTypoFixV1Script'],
     ['class-typo-report-path-safe-v1.js?v=20260916.1','lbgClassTypoReportPathSafeV1Script'],
-    ['tkb-roster-group-period-safe-v1.js?v=20261113.2','lbgTkbRosterGroupPeriodSafeV1Script'],
+    ['tkb-roster-group-period-safe-v1.js?v=20261113.3','lbgTkbRosterGroupPeriodSafeV1Script'],
     ['tkb-phu-tan-extra-period-v1.js?v=20261017.3','lbgTkbPhuTanExtraPeriodV1Script'],
     ['tkb-assignment-cache-safe-v1.js?v=20260913.1','lbgTkbAssignmentCacheSafeV1Script'],
     ['grouped-plus-report-safe-v1.js?v=20260919.1','lbgGroupedPlusReportSafeV1Script'],
@@ -32,7 +32,7 @@
 
   const RUNTIME_PATCHES=[
     ['ga-suggestion-multi-apply-v1.js?v=20260920.3','lbgGaSuggestionMultiApplyV1Script'],
-    ['ga-per-class-v2.js?v=20260930.1','lbgGaPerClassV2Script'],
+    ['ga-per-class-v2.js?v=20261113.3','lbgGaPerClassV2Script'],
     ['ga-multi-selection-bridge-v1.js?v=20260914.2','lbgGaMultiSelectionBridgeV1Script'],
     ['sheets-ga-save-safe-v1.js?v=20260913.1','lbgSheetsGaSaveSafeV1Script'],
     ['report-branding-v1.js?v=20260925.2','lbgReportBrandingV1Script'],
