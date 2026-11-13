@@ -192,4 +192,73 @@ assert.equal(duongAnchor?.period,4);
 assert.equal(duongAnchor?.meta?.classDisplay,'KHỐI 4 (4 LỚP)');
 assert.equal(R.explicitGroupAnchorAt(groupWs,67,11,groupParser,'TRẦN QUỐC TOẢN|PHÚ HÒA CŨ'),null,'class-count guard must reject unrelated main teacher after the 4 base slots');
 
+
+ // Ảnh TKB 13/11/2026: Phú Bình, Phú Hậu và các cụm Thuận An 1/2.
+ // Chỉ suy ra THỨ/BUỔI/TIẾT từ dòng hướng dẫn; mã P không phải tiết chính.
+ for(const [label,day,session,period] of [
+   ['CƠ SỞ PHÚ BÌNH HỌC TIẾT 4 CHIỀU THỨ 4',4,'Chiều',4],
+   ['CƠ SỞ PHÚ HẬU HỌC TIẾT 5 SÁNG THỨ 6',6,'Sáng',5],
+   ['HỌC TIẾT 4 CHIỀU THỨ 2 - MỖI GV/LỚP (8GV)',2,'Chiều',4],
+   ['HỌC TIẾT 4 CHIỀU THỨ 3 - MỖI GV/LỚP (8GV)',3,'Chiều',4],
+   ['HỌC TIẾT 5 SÁNG THỨ 4 - MỖI GV/LỚP (9GV)',4,'Sáng',5],
+   ['HỌC TIẾT4 CHIỀU THỨ 5 - MỖI GV/LỚP (7GV)',5,'Chiều',4],
+   ['HỌC TIẾT4 CHIỀU THỨ 6 - MỖI GV/LỚP (7GV)',6,'Chiều',4]
+ ]){
+   const hint=R.explicitScheduleFromText(label);
+   assert.ok(hint,'phải đọc được đầy đủ nhãn: '+label);
+   assert.equal(hint.day,day,label);assert.equal(hint.session,session,label);assert.equal(hint.period,period,label);
+ }
+ const emptySpecialWs={rowCount:150,model:{merges:[]},getCell(){return{text:''}}};
+ for(const [school,site,day,session,period,main,assist] of [
+   ['PHÚ BÌNH','CƠ SỞ PHÚ BÌNH HỌC TIẾT 4 CHIỀU THỨ 4',4,'Chiều',4,19,18],
+   ['PHÚ HẬU','CƠ SỞ PHÚ HẬU HỌC TIẾT 5 SÁNG THỨ 6',6,'Sáng',5,16,16]
+ ]){
+   const loc={schoolName:school,siteRaw:site,locationKey:school+'|'+site};
+   const parser={locationAt:()=>loc};
+   const base={day:2,session:'Sáng',period:1,row:110,col:12,classRow:109,className:'1/4',classRaw:'1/4',classType:'single',locationKey:loc.locationKey};
+   const normalized=R.normalizeEntry(emptySpecialWs,base,parser);
+   assert.equal(normalized.day,day,school+' sai thứ');
+   assert.equal(normalized.session,session,school+' sai buổi');
+   assert.equal(normalized.teachingPeriod,period,school+' sai tiết dạy');
+   assert.equal(normalized.period,1,school+' không được xóa tiết nguồn');
+   assert.equal(normalized.slotDay,2,school+' phải giữ ngày nguồn');
+   const assistHint=R.specialScheduleHintAt(emptySpecialWs,111,12,parser);
+   assert.equal(assistHint?.day,day,school+' mã P phải cùng ngày');
+   assert.equal(assistHint?.period,period,school+' mã P phải cùng tiết');
+   assert.ok(main>0&&assist>0);
+ }
+ const thuAnHeaders=[
+   {r:20,day:2,session:'Chiều',period:4,count:8,label:'HỌC TIẾT 4 CHIỀU THỨ 2 - MỖI GV/LỚP (8GV)'},
+   {r:40,day:3,session:'Chiều',period:4,count:8,label:'HỌC TIẾT 4 CHIỀU THỨ 3 - MỖI GV/LỚP (8GV)'},
+   {r:60,day:4,session:'Sáng',period:5,count:9,label:'HỌC TIẾT 5 SÁNG THỨ 4 - MỖI GV/LỚP (9GV)'},
+   {r:80,day:5,session:'Chiều',period:4,count:7,label:'HỌC TIẾT4 CHIỀU THỨ 5 - MỖI GV/LỚP (7GV)'},
+   {r:100,day:6,session:'Chiều',period:4,count:7,label:'HỌC TIẾT4 CHIỀU THỨ 6 - MỖI GV/LỚP (7GV)'}
+ ];
+ const thuAnCells=new Map(thuAnHeaders.map(h=>[h.r+',10',{text:h.label}]));
+ const thuAnWs={
+   rowCount:130,model:{merges:thuAnHeaders.map(h=>'J'+h.r+':N'+h.r)},
+   getCell(row,col){return thuAnCells.get(row+','+col)||{text:''}}
+ };
+ const thuAnParser={locationAt(_ws,row){const site=row<35?'CƠ SỞ CHÍNH - THUẬN AN 1 CŨ':'PHÂN HIỆU - THUẬN AN 2 CŨ';return{schoolName:'THUẬN AN',siteRaw:site,locationKey:'THUAN AN|'+site}}};
+ let countMain=0;
+ for(const h of thuAnHeaders){
+   // Hai hàng lớp/giáo viên/P tối đa sáu dòng sau tiêu đề.
+   for(const offset of [2,5,6]){
+     const row=h.r+offset,base=thuAnParser.locationAt(thuAnWs,row);
+     const hint=R.specialScheduleHintAt(thuAnWs,row,12,thuAnParser,base);
+     assert.equal(hint?.day,h.day,'Thuận An sai thứ tại hàng '+row);
+     assert.equal(hint?.session,h.session,'Thuận An sai buổi tại hàng '+row);
+     assert.equal(hint?.period,h.period,'Thuận An sai tiết tại hàng '+row);
+   }
+   const r=h.r+2,loc=thuAnParser.locationAt(thuAnWs,r);
+   const fixed=R.normalizeEntry(thuAnWs,{row:r,col:12,classRow:r-1,className:'1/1',classRaw:'1/1',classType:'single',day:7,session:'Sáng',period:1,locationKey:loc.locationKey},thuAnParser);
+   assert.equal(fixed.day,h.day);
+   assert.equal(fixed.teachingPeriod,h.period);
+   countMain+=h.count;
+ }
+ assert.equal(countMain,39,'Thuận An có 8+8+9+7+7 phân công chính trong các ảnh');
+ assert.equal(19+16+countMain,74,'ảnh chụp có 74 ô phân công chính, trong đó Phú Bình có một ô CTV');
+ const unrelated={locationAt:()=>({schoolName:'TRẦN QUỐC TOẢN',siteRaw:'HỌC TIẾT 5 SÁNG THỨ 6',locationKey:'TQT|A'})};
+ assert.equal(R.specialScheduleHintAt(emptySpecialWs,110,12,unrelated),null,'không áp dụng quy tắc ba trường cho nơi khác');
+
 console.log('OK roster group period: roster-style classes and wrapped merged-group participants resolve to actual Tiết 4');
