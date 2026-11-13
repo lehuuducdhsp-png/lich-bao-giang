@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const V=require('../ga-suggestion-v7.js');
 
-assert.equal(V.version,'20261001.2');
+assert.equal(V.version,'20261113.3');
 assert.equal(V.QUANG_TRUNG_GA_START,'2026-09-21');
 assert.equal(V.QUANG_TRUNG_WEEK21_SHEET,'21T9');
 
