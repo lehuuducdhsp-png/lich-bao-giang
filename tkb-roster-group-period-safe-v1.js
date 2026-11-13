@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261113.2';
+  const VERSION='20261113.3';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -261,15 +261,26 @@
       if(r===m.r2+1 && !/P$/i.test(txt(cellText(ws.getCell(r,c)))))continue;
       let schoolLoc={};try{schoolLoc=parser.locationAt(ws,m.r1)||{}}catch{}
       if(fold(schoolLoc.schoolName||schoolLoc.school)!=='PHU BINH')continue;
-      const siteName=match[1]==='BINH'?'Phú Bình':'Phú Hậu';
-      const siteRaw='CƠ SỞ '+siteName.toUpperCase(),siteKey=fold('Cơ sở|'+siteName);
+      // 07T9–09T11: cơ sở cũ là identity bền vững để nối tiến độ GA.
+      // 16T11 chỉ đổi nhãn ô gộp; KHÔNG phải địa điểm/chuỗi GA mới.
+      const phuBinhOld=match[1]==='BINH';
+      const siteName=phuBinhOld?'Phú Bình':'Phú Hậu';
+      const siteRaw='CƠ SỞ '+siteName.toUpperCase();
+      const legacySiteNumber=phuBinhOld?2:1;
+      const legacySiteName=phuBinhOld?'PHÚ BÌNH CŨ':'PHÚ HẬU CŨ';
+      const siteKey=fold('Cơ sở '+legacySiteNumber+'|'+legacySiteName);
+      // Alias chỉ dùng ĐỌC các GA đã lưu dưới key sai của bản 13/11 trước;
+      // tuyệt đối không xóa/ghi đè lịch sử hay quy đổi GA ngầm.
+      const wrongNewKey=fold('PHÚ BÌNH')+'|'+fold('Cơ sở|'+siteName);
       const location={
         ...schoolLoc,school:'PHÚ BÌNH',schoolName:'PHÚ BÌNH',
         schoolKey:fold('PHÚ BÌNH'),
         siteRaw,siteType:'Cơ sở',siteName,
         siteDisplay:'Cơ sở: '+siteName,siteKey,
         locationKey:fold('PHÚ BÌNH')+'|'+siteKey,
-        locationLabel:'PHÚ BÌNH\\nCơ sở: '+siteName
+        locationLabel:'PHÚ BÌNH\\nCơ sở: '+siteName,
+        gaLegacyLocationKeys:[wrongNewKey],
+        legacySiteHistoryIdentity:legacySiteNumber
       };
       return{...schedule,row:m.r1,col:c,source:'phu-binh-merged-site',
         blockEndRow:m.r2,blockFirstClassCol:m.c2+1,blockLastClassCol:m.c2+4,

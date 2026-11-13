@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionCrossVersionV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261001.1';
+  const VERSION='20261113.3';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
@@ -139,7 +139,8 @@
     if(!Number.isFinite(day)||!session||!school||!locationKey)return null;
     const key=gaTargetKey(day,session,locationKey);
     const legacyKey=gaTargetKey(day,session,txt(entry?.school||school));
-    return{key,legacyKey,day,session,school,siteDisplay,locationLabel,locationKey};
+    return{key,legacyKey,day,session,school,siteDisplay,locationLabel,locationKey,
+      gaLegacyLocationKeys:(Array.isArray(entry?.gaLegacyLocationKeys)?entry.gaLegacyLocationKeys:[]).map(txt).filter(Boolean)};
   }
   function resolveApplyTarget(ev,entries=[]){
     const addresses=new Set((ev?.addresses||[]).map(txt).filter(Boolean));
@@ -155,7 +156,7 @@
   }
   function currentGaRaw(currentValues,target){
     if(!currentValues||typeof currentValues!=='object')return undefined;
-    const keys=[target?.key,target?.legacyKey].filter(Boolean);
+    const keys=[target?.key,...(target?.gaLegacyLocationKeys||[]).map(loc=>gaTargetKey(target.day,target.session,loc)),target?.legacyKey].filter(Boolean);
     for(const key of keys){
       if(!Object.prototype.hasOwnProperty.call(currentValues,key))continue;
       const raw=currentValues[key];
@@ -240,7 +241,7 @@
     return(e,ws)=>{
       if(ws?.name!==a?.sheet||txt(e?.code).toUpperCase()!==txt(a?.code).toUpperCase())return null;
       const values=a?.gaValues&&typeof a.gaValues==='object'?a.gaValues:{};
-      const locations=[txt(e?.locationKey),txt(e?.locationLabel),txt(e?.school),txt(e?.schoolName)].filter(Boolean);
+      const locations=[txt(e?.locationKey),...(Array.isArray(e?.gaLegacyLocationKeys)?e.gaLegacyLocationKeys.map(txt):[]),txt(e?.locationLabel),txt(e?.school),txt(e?.schoolName)].filter(Boolean);
       for(const loc of locations){
         const raw=values[`${Number(e.day)}|${txt(e.session)}|${loc}`];
         if(raw===undefined||raw===null||txt(raw)==='')continue;

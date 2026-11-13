@@ -93,8 +93,8 @@
         ['tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script'],
         ['teaching-plan-progress-v1.js?v=20261029.1','lbgTeachingPlanProgressV1Script'],
         ['conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script'],
-        ['ga-suggestion-v7.js?v=20261029.1','lbgGaSuggestionV7Script'],
-        ['ga-suggestion-cross-version-v1.js?v=20261029.1','lbgGaSuggestionCrossVersionV1Script']
+        ['ga-suggestion-v7.js?v=20261113.3','lbgGaSuggestionV7Script'],
+        ['ga-suggestion-cross-version-v1.js?v=20261113.3','lbgGaSuggestionCrossVersionV1Script']
       ];
       preloadWindow(reportCore,0,reportCore.length);
       await loadSequence(reportCore);

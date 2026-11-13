@@ -5,7 +5,7 @@
   if(root)root.LBGGaPerClassV2=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20260930.1';
+  const VERSION='20261113.3';
   const GA_PREFIX='lbgGaManualV2';
   const LEGACY_GA_PREFIX='lbgGaManualV1';
   const CLASS_PREFIX='@CLASS';
@@ -43,7 +43,8 @@
     const schoolName=txt(entry?.schoolName||entry?.school),siteDisplay=txt(entry?.siteDisplay||entry?.siteName);
     const label=txt(entry?.locationLabel)||(siteDisplay?`${schoolName}\n${siteDisplay}`:schoolName);
     const key=txt(entry?.locationKey)||`${fold(schoolName)}|${fold(siteDisplay)}`;
-    return{key,schoolName,siteDisplay,label,legacySchool:txt(entry?.school||schoolName)};
+    const aliases=(Array.isArray(entry?.gaLegacyLocationKeys)?entry.gaLegacyLocationKeys:[]).map(txt).filter(x=>x&&x!==key);
+    return{key,aliases,schoolName,siteDisplay,label,legacySchool:txt(entry?.school||schoolName)};
   }
   function gaKey(day,session,location){return`${Number(day)}|${txt(session)}|${txt(location)}`}
   function classGaKey(day,session,location,classKey){return`${CLASS_PREFIX}|${Number(day)}|${txt(session)}|${txt(location)}|${txt(classKey)}`}
@@ -62,9 +63,15 @@
   }
   function locationRaw(values,day,session,loc){
     const direct=rawValue(values,gaKey(day,session,loc?.key||loc?.label));if(direct!==undefined)return direct;
+    // Legacy alias chỉ để đọc GA đã nhập dưới mã địa điểm đổi tên 13/11.
+    for(const alias of loc?.aliases||[]){const old=rawValue(values,gaKey(day,session,alias));if(old!==undefined)return old}
     return rawValue(values,gaKey(day,session,loc?.legacySchool||loc?.schoolName));
   }
-  function classRaw(values,day,session,loc,classKey){return rawValue(values,classGaKey(day,session,loc?.key||loc?.label,classKey))}
+  function classRaw(values,day,session,loc,classKey){
+    const direct=rawValue(values,classGaKey(day,session,loc?.key||loc?.label,classKey));if(direct!==undefined)return direct;
+    for(const alias of loc?.aliases||[]){const old=rawValue(values,classGaKey(day,session,alias,classKey));if(old!==undefined)return old}
+    return undefined;
+  }
 
   function buildProfiles(entries,values={},normalizer){
     const groups=new Map();
@@ -291,7 +298,7 @@
   function manualResolverFor(a,{classSpecific=true}={}){
     return(e,ws)=>{
       if(ws?.name!==a?.sheet||txt(e?.code).toUpperCase()!==txt(a?.code).toUpperCase())return null;
-      const values=loadStoredValues(a),classKey=entryClassKey(e,normalizer()),locations=[txt(e?.locationKey),txt(e?.locationLabel),txt(e?.school),txt(e?.schoolName)].filter(Boolean);
+      const values=loadStoredValues(a),classKey=entryClassKey(e,normalizer()),locations=[txt(e?.locationKey),...(Array.isArray(e?.gaLegacyLocationKeys)?e.gaLegacyLocationKeys.map(txt):[]),txt(e?.locationLabel),txt(e?.school),txt(e?.schoolName)].filter(Boolean);
       for(const loc of locations){
         if(classSpecific){
           const own=rawValue(values,classGaKey(Number(e.day),txt(e.session),loc,classKey));
