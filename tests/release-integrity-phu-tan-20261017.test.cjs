@@ -16,7 +16,8 @@ assert.ok(loader.includes("const VERSION='20261101.2'"));
 for(const file of ['tkb-phu-tan-extra-period-v1.js','school-report-v1.js']){
  assert.ok(loader.includes(file+'?v=20261017.3'));
 }
-assert.ok(loader.includes('assist-p-preview-safe-v1.js?v=20261018.1'));
+assert.ok(loader.includes('assist-p-preview-safe-v1.js?v=20261113.1'));
+assert.ok(read('assist-p-preview-safe-v1.js').includes('specialSchedule'),'Trợ P phải giữ bản cập nhật lịch đặc biệt');
 assert.ok(read('tkb-phu-tan-extra-period-v1.js').includes('findHeader'));
 assert.ok(read('school-report-v1.js').includes('validatedExtraPeriod'));
 assert.ok(read('assist-p-preview-safe-v1.js').includes('extraHeader'));
