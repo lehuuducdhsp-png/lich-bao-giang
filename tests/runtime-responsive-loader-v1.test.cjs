@@ -96,7 +96,7 @@ function patchNames(blockName){
 const expectedCorePatches=[
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'class-typo-report-path-safe-v1.js?v=20260916.1',
-  'tkb-roster-group-period-safe-v1.js?v=20261113.1',
+  'tkb-roster-group-period-safe-v1.js?v=20261113.2',
   'tkb-phu-tan-extra-period-v1.js?v=20261017.3',
   'tkb-assignment-cache-safe-v1.js?v=20260913.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
@@ -112,7 +112,7 @@ const expectedRuntimePatches=[
   'ga-multi-selection-bridge-v1.js?v=20260914.2',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'report-branding-v1.js?v=20260925.2',
-  'assist-p-preview-safe-v1.js?v=20261113.1',
+  'assist-p-preview-safe-v1.js?v=20261113.2',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
   'assist-p-web-footer-safe-v1.js?v=20260912.1',
   'multi-preview-assist-sync-v1.js?v=20260914.1',
@@ -127,7 +127,7 @@ const expectedRuntimePatches=[
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
 assert.match(index,/app-runtime-v1\.js\?v=20261106\.1/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20261101\.2/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20261113\.2/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
 assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');
