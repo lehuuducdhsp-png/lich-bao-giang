@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261018.2';
+  const VERSION='20261113.1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -234,6 +234,43 @@
     }
     return null;
   }
+
+  // TKB Phú Bình / Phú Hậu ghi giờ học trong nhãn cơ sở; Thuận An ghi
+  // trong tiêu đề gộp ngay trên các lớp. Cả THỨ, BUỔI và TIẾT đều là
+  // thông tin thực tế; cột Excel chỉ là tọa độ nguồn, không phải giờ dạy.
+  function explicitScheduleFromText(value){
+    const m=fold(value).match(/\bHOC\s+TIET\s*([1-5])\s+(SANG|CHIEU)\s+THU\s*([2-7])\b/);
+    if(!m)return null;
+    return{period:Number(m[1]),session:m[2]==='SANG'?'Sáng':'Chiều',day:Number(m[3]),sourceText:txt(value)};
+  }
+  function specialScheduleHintAt(ws,row,col,parser=null,entryOrLocation=null){
+    if(!ws||!Number.isInteger(Number(row))||!Number.isInteger(Number(col)))return null;
+    let loc=entryOrLocation||{};
+    if(!loc.siteRaw&&parser?.locationAt){try{loc=parser.locationAt(ws,Number(row))||{}}catch{}}
+    const place=fold([loc.schoolName||loc.school,loc.siteRaw,loc.siteDisplay].filter(Boolean).join(' '));
+    const phu=/(?:PHU BINH|PHU HAU)/.test(place),thuan=/THUAN AN/.test(place);
+    if(!phu&&!thuan)return null;
+    if(phu){
+      const siteHint=explicitScheduleFromText(loc.siteRaw||'');
+      if(siteHint)return{...siteHint,row:Number(row),col:Number(col),source:'site-label'};
+    }
+    const resolver=parser?.locationAt?(w,r)=>parser.locationAt(w,r):null;
+    const header=periodHintAt(ws,row,col,resolver,txt(loc.locationKey));
+    if(!header||Number(header.row)>Number(row))return null;
+    const fromHeader=explicitScheduleFromText(header.sourceText);
+    return fromHeader?{...fromHeader,row:Number(header.row),col:Number(col),source:'roster-header'}:null;
+  }
+  function applySpecialScheduleHint(entry,hint){
+    if(!entry||!hint||txt(entry.classType).toLowerCase()!=='single')return entry;
+    const slot=Number(entry.slotPeriod??entry.period)||null;
+    return{...entry,
+      slotDay:Number(entry.slotDay??entry.day),slotSession:txt(entry.slotSession||entry.session),slotPeriod:slot,
+      day:Number(hint.day),session:txt(hint.session),teachingPeriod:Number(hint.period),
+      rosterTeachingPeriod:Number(hint.period),rosterTeachingPeriodSource:txt(hint.sourceText),
+      specialTeachingSchedule:true,specialTeachingScheduleSource:txt(hint.source),
+      specialTeachingScheduleRow:Number(hint.row)||null
+    };
+  }
   function applyHint(entry,hint){
     if(!entry||typeof entry!=='object'||!hint||!Number.isFinite(Number(hint.period)))return entry;
     if(txt(entry.classType).toLowerCase()!=='single')return entry;
@@ -265,7 +302,8 @@
     const locKey=txt(located?.locationKey),anchor=explicitGroupAnchorAt(ws,located?.row,located?.col,parser,locKey);
     const repaired=applyGroupContinuation(located,anchor);
     const resolver=parser?.locationAt?(w,r)=>parser.locationAt(w,r):null;
-    return applyHint(repaired,periodHintAt(ws,repaired?.row,repaired?.col,resolver,repaired?.locationKey));
+    const normalized=applyHint(repaired,periodHintAt(ws,repaired?.row,repaired?.col,resolver,repaired?.locationKey));
+    return applySpecialScheduleHint(normalized,specialScheduleHintAt(ws,normalized?.row,normalized?.col,parser,normalized));
   }
 
   function scanPlusGroupedAssignments(ws,onlyCode='',parser=null){
@@ -299,7 +337,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
@@ -312,9 +350,13 @@
     wrapped.__lbgOriginalScanAssignments=original;
     parser.scanAssignments=wrapped;
     parser.rosterTeachingPeriodHintAt=(ws,row,col)=>{
+      const loc=parser.locationAt?.(ws,row)||{};
+      const special=specialScheduleHintAt(ws,row,col,parser,loc);
+      if(special)return special;
       const resolver=parser.locationAt?(w,r)=>parser.locationAt(w,r):null;
       return periodHintAt(ws,row,col,resolver);
     };
+    parser.specialScheduleHintAt=(ws,row,col)=>specialScheduleHintAt(ws,row,col,parser);
     parser.rosterTeachingPeriodAt=(ws,row,col)=>parser.rosterTeachingPeriodHintAt(ws,row,col)?.period||null;
     parser.explicitGroupAnchorAt=(ws,row,col)=>explicitGroupAnchorAt(ws,row,col,parser,txt(parser.locationAt?.(ws,row)?.locationKey));
     parser.scanPlusGroupedAssignments=(ws,onlyCode='')=>scanPlusGroupedAssignments(ws,onlyCode,parser);
