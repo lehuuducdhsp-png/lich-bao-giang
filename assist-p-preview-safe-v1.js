@@ -167,8 +167,12 @@
         const loc=p.locationAt?.(ws,row)||{};
         const candidates=sameRowMainCandidates(assignments,row,col,base,info);
         const main=pairedMainAssignment(assignments,row,col,base,info);
-        const localMeta=strictLocalClassAt(ws,row,col,base,loc);
         const specialSchedule=p.specialScheduleHintAt?.(ws,row,col)||null;
+        // P ở hàng 95: hàng 94 là GV cùng cột, hàng 95 đã sang trường khác theo trục dọc.
+        const spillMain=specialSchedule?.horizontalSiteBlock&&specialSchedule?.spillFromLastRow
+          ?assignments.find(e=>Number(e.row)===row-1&&Number(e.col)===col&&txt(e.code).toUpperCase()===base&&e.specialSiteAssigned)
+          :null;
+        const localMeta=spillMain?classFromPairedMain(spillMain):strictLocalClassAt(ws,row,col,base,loc);
         // Tiết bổ sung Phú Tân: P phải học đúng tiết in trên nhãn cụm,
         // kể cả P nằm ở cột bên cạnh hay xuống dòng 159/160 (BB160 = tiết 4, không phải 5).
         const extra=window.LBGTkbPhuTanExtraPeriodV1;
@@ -185,20 +189,22 @@
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
         const localKnown=Boolean(localMeta.className||localMeta.classRaw),anchor=specialMain||null;
-        const sourceInfo=(thanhLamMain||anchor)?{
-          day:(thanhLamMain||anchor).day,session:(thanhLamMain||anchor).session,
-          period:(thanhLamMain||anchor).period
+        const sourceInfo=(spillMain||thanhLamMain||anchor)?{
+          day:(spillMain||thanhLamMain||anchor).day,session:(spillMain||thanhLamMain||anchor).session,
+          period:(spillMain||thanhLamMain||anchor).period
         }:(specialSchedule?{...info,day:specialSchedule.day,session:specialSchedule.session}:info);
-        const sourceLoc=thanhLamMain||anchor||loc;
-        const rosterPeriod=ownRosterPeriod||Number((thanhLamMain||anchor)?.teachingPeriod||(thanhLamMain||anchor)?.rosterTeachingPeriod)||0;
+        const sourceLoc=spillMain||thanhLamMain||anchor||
+          (specialSchedule?.horizontalSiteBlock?specialSchedule:loc);
+        const rosterPeriod=ownRosterPeriod||Number((spillMain||thanhLamMain||anchor)?.teachingPeriod||(spillMain||thanhLamMain||anchor)?.rosterTeachingPeriod)||0;
         out.push({
           day:Number(sourceInfo.day),session:txt(sourceInfo.session),period:Number(sourceInfo.period),
           teachingPeriod:rosterPeriod||(explicit?Number(explicit[1]):Number(sourceInfo.period)),
           schoolName:txt(sourceLoc.schoolName||sourceLoc.school),siteDisplay:txt(sourceLoc.siteDisplay||sourceLoc.siteName),
+          siteRaw:txt(sourceLoc.siteRaw),locationKey:txt(sourceLoc.locationKey),
           className:resolvedClass,classRaw:resolvedRaw,classType:txt(meta.classType),classCount:Number(meta.classCount)||1,groupNote:txt(meta.groupNote),
           address:cell.address,row,col,sourceCode:target,isAssist:true,payEligible:false,
-          pairedMainAddress:txt((anchor||main)?.address),pairedMainCode:txt((anchor||main)?.code),
-          assistClassSource:localKnown?'same-column-class':anchor?'special-roster-paired-main':thanhLamMain?'thanh-lam-paired-main':'unresolved',
+          pairedMainAddress:txt((spillMain||anchor||main)?.address),pairedMainCode:txt((spillMain||anchor||main)?.code),
+          assistClassSource:spillMain?'phu-binh-last-row-paired-main':localKnown?'same-column-class':anchor?'special-roster-paired-main':thanhLamMain?'thanh-lam-paired-main':'unresolved',
           assistClassRow:Number(localMeta.assistClassRow)||null,
           rosterTeachingPeriod:rosterPeriod||null,
           phuTanExtraPeriodAssist:Boolean(extraHeader),
