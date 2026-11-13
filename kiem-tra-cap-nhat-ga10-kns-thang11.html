@@ -2,7 +2,7 @@
 async function get(p){const r=await fetch('./'+p+'?nocache='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(p+' HTTP '+r.status);return r.text()}
 async function check(){let ok=true;const ul=document.getElementById('checks');ul.textContent='';
 const tasks=[
-['Trang chính đã chuyển phiên bản',async()=>{const s=await get('index.html');return s.includes("window.LBG_RELEASE_ID='20261101.2-KNS-NOVEMBER-GA10-CHINH-THUC'")&&s.includes('patch-runtime-loader-v1.js?v=20261101.2')}],
+['Trang chính đã chuyển phiên bản',async()=>{const s=await get('index.html');return s.includes("window.LBG_RELEASE_ID='20261101.2-KNS-NOVEMBER-GA10-CHINH-THUC'")&&s.includes('patch-runtime-loader-v1.js?v=20261113.2')}],
 ['Bộ đọc lịch sử GA10/11',async()=>{const s=await get('ga-kns-november-2026-safe-v1.js');return s.includes('kns-nov-09-ga10-anchor')&&s.includes('kns-nov-16-stem09-ga10-makeup')}],
 ['Bộ nạp đã bật tính năng',async()=>{const s=await get('patch-runtime-loader-v1.js');return s.includes('ga-kns-november-2026-safe-v1.js?v=20261101.2')&&s.includes('ga-progress-dashboard-v1.js?v=20261101.2')}],
 ['Bảng theo dõi cảnh báo STEM',async()=>{const s=await get('ga-progress-dashboard-v1.js');return s.includes('__lbgGaKnsNovemberStats')&&s.includes('missingKns16')}]

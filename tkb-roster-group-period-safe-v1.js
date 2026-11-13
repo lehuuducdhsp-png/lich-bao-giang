@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261113.1';
+  const VERSION='20261113.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -243,8 +243,50 @@
     if(!m)return null;
     return{period:Number(m[1]),session:m[2]==='SANG'?'Sáng':'Chiều',day:Number(m[3]),sourceText:txt(value)};
   }
+  // TKB 16T11: hai cơ sở PHÚ BÌNH nằm CẠNH NHAU, AB81:AC94 và AQ81:AR94.
+  // Một TRƯỜNG (PHÚ BÌNH), hai site có siteKey ổn định với các tuần cũ.
+  // Dòng P cuối (row 95) tràn qua nhãn trường kế tiếp: chỉ nhận nếu cột
+  // đó có mã GV chính cùng tên ngay hàng 94, không được mượn nhầm site.
+  function phuBinhHorizontalSiteAt(ws,row,col,parser=null){
+    if(!ws?.getCell)return null;
+    const r=Number(row),c=Number(col),candidates=[];
+    for(const m of mergeRanges(ws)){
+      if(c<=m.c2||c>m.c2+6||r<m.r1||r>m.r2+1)continue;
+      const label=txt(cellText(ws.getCell(m.r1,m.c1))),f=fold(label);
+      if(!/\bCO SO PHU (?:BINH|HAU)\b/.test(f))continue;
+      const schedule=explicitScheduleFromText(label);
+      if(!schedule)continue;
+      const headerLoc=parser?.locationAt?.(ws,m.r1)||{};
+      if(fold(headerLoc.schoolName||headerLoc.school)!=='PHU BINH')continue;
+      const spill=r===m.r2+1;
+      if(spill){
+        const assist=txt(cellText(ws.getCell(r,c))).toUpperCase();
+        const main=txt(cellText(ws.getCell(r-1,c))).toUpperCase();
+        if(!assist.endsWith('P')||!main||assist!==main+'P')continue;
+      }
+      const isHau=/\bCO SO PHU HAU\b/.test(f);
+      const siteRaw=isHau?'CƠ SỞ 1 - PHÚ HẬU CŨ':'CƠ SỞ 2 - PHÚ BÌNH CŨ';
+      const parsed=parser?.parseSite?.(siteRaw)||{
+        siteRaw,siteType:isHau?'Cơ sở 1':'Cơ sở 2',
+        siteName:isHau?'PHÚ HẬU CŨ':'PHÚ BÌNH CŨ',
+        siteDisplay:isHau?'Cơ sở 1: PHÚ HẬU CŨ':'Cơ sở 2: PHÚ BÌNH CŨ',
+        siteKey:fold(isHau?'Cơ sở 1|PHÚ HẬU CŨ':'Cơ sở 2|PHÚ BÌNH CŨ')
+      };
+      const schoolName=txt(headerLoc.schoolName||headerLoc.school)||'PHÚ BÌNH';
+      const schoolKey=txt(headerLoc.schoolKey)||fold(schoolName);
+      candidates.push({...schedule,...parsed,schoolName,schoolKey,
+        locationKey:schoolKey+'|'+txt(parsed.siteKey),
+        locationLabel:schoolName+'\n'+txt(parsed.siteDisplay),
+        horizontalSiteBlock:true,spillFromLastRow:spill,
+        row:m.r1,col:m.c1,source:'phu-binh-horizontal-'+(isHau?'phu-hau':'phu-binh'),
+        mergeRef:m.ref,distance:c-m.c2});
+    }
+    return candidates.sort((a,b)=>a.distance-b.distance)[0]||null;
+  }
   function specialScheduleHintAt(ws,row,col,parser=null,entryOrLocation=null){
     if(!ws||!Number.isInteger(Number(row))||!Number.isInteger(Number(col)))return null;
+    const horizontal=phuBinhHorizontalSiteAt(ws,row,col,parser);
+    if(horizontal)return horizontal;
     let loc=entryOrLocation||{};
     if(!loc.siteRaw&&parser?.locationAt){try{loc=parser.locationAt(ws,Number(row))||{}}catch{}}
     const place=fold([loc.schoolName||loc.school,loc.siteRaw,loc.siteDisplay].filter(Boolean).join(' '));
@@ -263,7 +305,14 @@
   function applySpecialScheduleHint(entry,hint){
     if(!entry||!hint||txt(entry.classType).toLowerCase()!=='single')return entry;
     const slot=Number(entry.slotPeriod??entry.period)||null;
-    return{...entry,
+    const site=hint.horizontalSiteBlock?{
+      school:hint.schoolName,schoolName:hint.schoolName,schoolKey:hint.schoolKey,
+      siteRaw:hint.siteRaw,siteType:hint.siteType,siteName:hint.siteName,
+      siteDisplay:hint.siteDisplay,siteKey:hint.siteKey,
+      locationKey:hint.locationKey,locationLabel:hint.locationLabel,
+      specialSiteAssigned:true,specialSiteSource:hint.source
+    }:{};
+    return{...entry,...site,
       slotDay:Number(entry.slotDay??entry.day),slotSession:txt(entry.slotSession||entry.session),slotPeriod:slot,
       day:Number(hint.day),session:txt(hint.session),teachingPeriod:Number(hint.period),
       rosterTeachingPeriod:Number(hint.period),rosterTeachingPeriodSource:txt(hint.sourceText),
@@ -337,7 +386,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,phuBinhHorizontalSiteAt,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
@@ -372,5 +421,5 @@
     root.document.addEventListener('lbg-runtime-ready',installOnce);
     return true;
   }
-  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
+  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,phuBinhHorizontalSiteAt,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
 });
