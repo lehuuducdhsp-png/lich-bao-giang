@@ -11,8 +11,8 @@ assert.equal(meta.blocks.reduce((s,b)=>s+b.assist,0),27);
 const html=read('index.html'),loader=read('patch-runtime-loader-v1.js');
 assert.ok(html.includes("window.LBG_RELEASE_ID='20261101.2-KNS-NOVEMBER-GA10-CHINH-THUC'"));
 assert.ok(html.includes('index-core.html?v=20261018.1'));
-assert.ok(html.includes('patch-runtime-loader-v1.js?v=20261113.2'));
-assert.ok(loader.includes("const VERSION='20261113.2'"));
+assert.ok(html.includes('patch-runtime-loader-v1.js?v=20261113.3'));
+assert.ok(loader.includes("const VERSION='20261113.3'"));
 for(const file of ['tkb-phu-tan-extra-period-v1.js','school-report-v1.js']){
  assert.ok(loader.includes(file+'?v=20261017.3'));
 }
