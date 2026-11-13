@@ -49,6 +49,7 @@ jobs:
           node --check app-runtime-v1.js
           node --check patch-runtime-loader-v1.js
           node tests/phu-binh-cs2-26t10-ga8.test.cjs
+          node tests/phu-binh-two-sites-16t11.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
           node tests/production-runtime-performance.test.cjs
           node tests/release-integrity-phu-tan-20261017.test.cjs
