@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionV7=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261001.2';
+  const VERSION='20261113.3';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -138,7 +138,7 @@
   function startDateFor(ws){try{return typeof startDate==='function'?startDate(ws.name):null}catch{return null}}
   function weekLikeFor(ws){try{return typeof weekLike==='function'?weekLike(ws):true}catch{return true}}
   function roleResolver(ws,code){const m=root.LBGTeacherIntelligenceV6?.summaryRoles?.(ws)?.get?.(txt(code).toUpperCase());return m?.role||'KNS'}
-  function currentManualResolver(a){return(e,ws)=>{if(ws?.name!==a?.sheet||txt(e?.code).toUpperCase()!==txt(a?.code).toUpperCase())return null;const values=a?.gaValues&&typeof a.gaValues==='object'?a.gaValues:{};const locations=[txt(e?.locationKey),txt(e?.locationLabel),txt(e?.school),txt(e?.schoolName)].filter(Boolean);for(const loc of locations){const raw=values[`${Number(e.day)}|${txt(e.session)}|${loc}`];if(raw===undefined||raw===null||txt(raw)==='')continue;const n=Number(raw);if(Number.isFinite(n))return Math.round(n)}return null}}
+  function currentManualResolver(a){return(e,ws)=>{if(ws?.name!==a?.sheet||txt(e?.code).toUpperCase()!==txt(a?.code).toUpperCase())return null;const values=a?.gaValues&&typeof a.gaValues==='object'?a.gaValues:{};const locations=[txt(e?.locationKey),...(Array.isArray(e?.gaLegacyLocationKeys)?e.gaLegacyLocationKeys.map(txt):[]),txt(e?.locationLabel),txt(e?.school),txt(e?.schoolName)].filter(Boolean);for(const loc of locations){const raw=values[`${Number(e.day)}|${txt(e.session)}|${loc}`];if(raw===undefined||raw===null||txt(raw)==='')continue;const n=Number(raw);if(Number.isFinite(n))return Math.round(n)}return null}}
   function fmtDate(d){return d instanceof Date&&!Number.isNaN(d.getTime())?d.toLocaleDateString('vi-VN'):'—'}
   function titleFor(ev){const h=root.LBGTeachingPlanProgressV1,x=h?.titleFor?.(ev.grade,ev.track,ev.ga);if(x?.kind==='lesson')return x;return{title:ev.ga==null?'Chưa xác định GA':'Chưa có tên bài trong kế hoạch',kind:'unknown'}}
   function trackText(ev){return ev.track==='stem'?'STEM':'Kỹ năng sống'}
