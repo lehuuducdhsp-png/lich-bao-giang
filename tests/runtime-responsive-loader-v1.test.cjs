@@ -96,7 +96,7 @@ function patchNames(blockName){
 const expectedCorePatches=[
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'class-typo-report-path-safe-v1.js?v=20260916.1',
-  'tkb-roster-group-period-safe-v1.js?v=20261018.2',
+  'tkb-roster-group-period-safe-v1.js?v=20261113.1',
   'tkb-phu-tan-extra-period-v1.js?v=20261017.3',
   'tkb-assignment-cache-safe-v1.js?v=20260913.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
@@ -112,7 +112,7 @@ const expectedRuntimePatches=[
   'ga-multi-selection-bridge-v1.js?v=20260914.2',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'report-branding-v1.js?v=20260925.2',
-  'assist-p-preview-safe-v1.js?v=20261018.1',
+  'assist-p-preview-safe-v1.js?v=20261113.1',
   'assist-p-summary-monthly-safe-v1.js?v=20260912.1',
   'assist-p-web-footer-safe-v1.js?v=20260912.1',
   'multi-preview-assist-sync-v1.js?v=20260914.1',

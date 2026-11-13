@@ -1,0 +1,51 @@
+name: Build isolated TEST ZIP - four schools
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tkb-roster-group-period-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'assist-p-trial-v1.js'
+      - 'assist-p-official-v1.js'
+      - 'patch-runtime-loader-v1.js'
+      - 'tests/**'
+      - 'HUONG_DAN_NGHIEM_THU_TEST_4_CO_SO_20261113.md'
+      - '.github/workflows/build-test-zip-four-schools-20261113.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package-isolated-test:
+    if: ${{ github.head_ref == 'fix/roster-phu-binh-phu-hau-thuan-an-20261113' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout TEST revision
+        uses: actions/checkout@v4
+      - name: Validate TEST syntax and regressions
+        run: |
+          node --check tkb-roster-group-period-safe-v1.js
+          node --check assist-p-preview-safe-v1.js
+          node --check assist-p-trial-v1.js
+          node --check assist-p-official-v1.js
+          node --check patch-runtime-loader-v1.js
+          node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/tkb-location-boundary-safe-v1.test.cjs
+          node tests/grouped-plus-report-safe-v1.test.cjs
+          node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/multi-report-performance-v1.test.cjs
+      - name: Bundle tracked TEST source without changing official Pages
+        run: |
+          mkdir -p dist
+          git archive --format=zip --output dist/Lich_Bao_Giang_TEST_4_Co_So_20261113.zip HEAD
+          unzip -t dist/Lich_Bao_Giang_TEST_4_Co_So_20261113.zip | tail -1
+          echo "TEST SHA: $(git rev-parse HEAD)"
+      - name: Upload complete TEST ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lich-Bao-Giang-TEST-4-Co-So-20261113
+          path: dist/Lich_Bao_Giang_TEST_4_Co_So_20261113.zip
+          retention-days: 30
+          if-no-files-found: error
