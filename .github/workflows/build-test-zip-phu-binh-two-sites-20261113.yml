@@ -1,0 +1,44 @@
+name: Build TEST ZIP - Phu Binh 2 sites
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tkb-roster-group-period-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'assist-p-trial-v1.js'
+      - 'patch-runtime-loader-v1.js'
+      - 'tests/phu-binh-two-sites-16t11.test.cjs'
+      - '.github/workflows/build-test-zip-phu-binh-two-sites-20261113.yml'
+permissions:
+  contents: read
+jobs:
+  build-test-zip:
+    if: ${{ github.head_ref == 'fix/phu-binh-two-sites-16t11-20261113' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify two sites, P and preserved modules
+        run: |
+          node --check tkb-roster-group-period-safe-v1.js
+          node --check assist-p-preview-safe-v1.js
+          node --check assist-p-trial-v1.js
+          node tests/phu-binh-two-sites-16t11.test.cjs
+          node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/tkb-location-boundary-safe-v1.test.cjs
+          node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/thanh-lam-release-20261018.test.cjs
+          node tests/release-integrity-phu-tan-20261017.test.cjs
+          node tests/ga-kns-november-production.test.cjs
+          node tests/production-runtime-performance.test.cjs
+      - name: Package exact PR commit
+        run: |
+          mkdir -p dist
+          git archive --format=zip --output dist/LBG_TEST_Phu_Binh_2_Co_So_16T11.zip HEAD
+          unzip -t dist/LBG_TEST_Phu_Binh_2_Co_So_16T11.zip | tail -1
+          git rev-parse HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LBG-TEST-Phu-Binh-2-Co-So-16T11
+          path: dist/LBG_TEST_Phu_Binh_2_Co_So_16T11.zip
+          retention-days: 30
+          if-no-files-found: error
