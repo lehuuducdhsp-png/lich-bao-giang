@@ -8,7 +8,7 @@ assert.equal(R.VERSION,'20261113.3');
 // 07T9–09T11 dùng CƠ SỞ 1 - PHÚ HẬU CŨ và CỞ SỞ 2 - PHÚ BÌNH CŨ.
 // 16T11 chỉ đổi tên hiển thị, không phải hai cơ sở mới.
 const cells=new Map([
- ['B81','PHÚ BÌNH'],['B95','HƯƠNG VINH'],
+ ['B81','PHÚ BÌNH'],['B95','HƯƠNG VINH'],['AE95','ĐỨCP'],['AS95','QUỲNHP'],
  ['AB81','CƠ SỞ PHÚ BÌNH\nHỌC TIẾT 4 CHIỀU THỨ 4'],
  ['AQ81','CƠ SỞ PHÚ HẬU\nHỌC TIẾT 5 SÁNG THỨ 6']
 ]);
