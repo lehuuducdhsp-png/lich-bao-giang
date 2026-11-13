@@ -10,6 +10,7 @@ on:
       - 'index.html'
       - 'patch-runtime-loader-v1.js'
       - 'tests/tkb-roster-group-period-safe-v1.test.cjs'
+      - 'tests/phu-binh-two-sites-16t11.test.cjs'
       - 'tests/grouped-plus-report-safe-v1.test.cjs'
       - 'tests/assist-p-class-pairing-v1.test.cjs'
       - 'tests/assist-p-excel-export-parity-v1.test.cjs'
@@ -31,6 +32,7 @@ jobs:
           node --check grouped-plus-report-safe-v1.js
           node --check assist-p-excel-export-parity-v1.js
           node --check tests/tkb-roster-group-period-safe-v1.test.cjs
+          node --check tests/phu-binh-two-sites-16t11.test.cjs
           node --check tests/grouped-plus-report-safe-v1.test.cjs
           node --check tests/assist-p-class-pairing-v1.test.cjs
           node --check tests/assist-p-excel-export-parity-v1.test.cjs
@@ -38,6 +40,7 @@ jobs:
       - name: Roster and P regressions
         run: |
           node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/phu-binh-two-sites-16t11.test.cjs
           node tests/grouped-plus-report-safe-v1.test.cjs
           node tests/assist-p-class-pairing-v1.test.cjs
           node tests/assist-p-excel-export-parity-v1.test.cjs
