@@ -26,7 +26,6 @@ const teacherSet=new Set();
 for(const s of sites){
  cells.set(s.header+'81','CƠ SỞ '+s.name.toUpperCase()+'\nHỌC TIẾT '+s.period+' '+s.session.toUpperCase()+' THỨ '+s.day);
  for(const [cls,main,assist] of s.classes){
-  const col=s.cols[(Number(cls.split('/')[1])-Number(cls.split('/')[0])+(s.name==='Phú Hậu'?0:0)+s.cols.length)%s.cols.length];
   // Resolve exact position from class list by its grade-local order, not day column.
   const siblings=s.classes.filter(x=>x[0].startsWith(cls[0]+'/'));
   const idx=siblings.findIndex(x=>x[0]===cls);
