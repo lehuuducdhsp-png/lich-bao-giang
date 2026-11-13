@@ -19,8 +19,8 @@ const expectedCore=[
   'tkb-parser-bridge-v2.js?v=20260906.3',
   'teaching-plan-progress-v1.js?v=20261029.1',
   'conflict-check-v8.js?v=20260909.1',
-  'ga-suggestion-v7.js?v=20261029.1',
-  'ga-suggestion-cross-version-v1.js?v=20261029.1'
+  'ga-suggestion-v7.js?v=20261113.3',
+  'ga-suggestion-cross-version-v1.js?v=20261113.3'
 ];
 
 const expectedModules=[
@@ -96,7 +96,7 @@ function patchNames(blockName){
 const expectedCorePatches=[
   'tkb-class-typo-fix-v1.js?v=20260913.2',
   'class-typo-report-path-safe-v1.js?v=20260916.1',
-  'tkb-roster-group-period-safe-v1.js?v=20261113.2',
+  'tkb-roster-group-period-safe-v1.js?v=20261113.3',
   'tkb-phu-tan-extra-period-v1.js?v=20261017.3',
   'tkb-assignment-cache-safe-v1.js?v=20260913.1',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
@@ -108,7 +108,7 @@ const expectedCorePatches=[
 ];
 const expectedRuntimePatches=[
   'ga-suggestion-multi-apply-v1.js?v=20260920.3',
-  'ga-per-class-v2.js?v=20260930.1',
+  'ga-per-class-v2.js?v=20261113.3',
   'ga-multi-selection-bridge-v1.js?v=20260914.2',
   'sheets-ga-save-safe-v1.js?v=20260913.1',
   'report-branding-v1.js?v=20260925.2',
@@ -126,8 +126,8 @@ const expectedRuntimePatches=[
 ];
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
-assert.match(index,/app-runtime-v1\.js\?v=20261106\.1/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20261113\.2/);
+assert.match(index,/app-runtime-v1\.js\?v=20261113\.3/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20261113\.3/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
 assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');
@@ -137,7 +137,7 @@ assert.match(patches,/if\(corePromise\)return corePromise/,'concurrent core requ
 assert.match(patches,/if\(runtimePromise\)return runtimePromise/,'concurrent runtime requests must share one promise');
 assert.doesNotMatch(patches,/setInterval\s*\(/,'patch loader must be lifecycle-driven, not poll continuously');
 assert.doesNotMatch(patches,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'loader refactor must not touch stored user data');
-assert.ok(expectedRuntimePatches.indexOf('ga-per-class-v2.js?v=20260930.1')<expectedRuntimePatches.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'per-class GA must load before shared bridge');
+assert.ok(expectedRuntimePatches.indexOf('ga-per-class-v2.js?v=20261113.3')<expectedRuntimePatches.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'per-class GA must load before shared bridge');
 assert.match(patches,/ga-progress-dashboard-v1\.js\?v=20261101\.2/,'GA progress dashboard must be available as an on-demand module');
 assert.match(patches,/installGaProgressLauncher\(\)/,'GA progress launcher must be installed after runtime patches are ready');
 assert.ok(expectedCorePatches.indexOf('ga-group-split-stale-repair-v1.js?v=20260920.1')<expectedCorePatches.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4'),'role-track repair must load after group-split repair');
