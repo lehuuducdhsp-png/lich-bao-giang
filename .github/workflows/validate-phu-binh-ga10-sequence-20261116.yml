@@ -9,6 +9,7 @@ on:
       - 'app-runtime-v1.js'
       - 'patch-runtime-loader-v1.js'
       - 'tests/phu-binh-ga09-before-ga10-16t11.test.cjs'
+      - 'tests/phu-binh-all-classes-ga-continuity-16t11.test.cjs'
       - '.github/workflows/validate-phu-binh-ga10-sequence-20261116.yml'
 
 permissions:
@@ -30,10 +31,11 @@ jobs:
       - name: Verify three classes and manual GA safety
         run: |
           node tests/phu-binh-ga09-before-ga10-16t11.test.cjs
+          node tests/phu-binh-all-classes-ga-continuity-16t11.test.cjs
           node tests/ga-kns-november-production.test.cjs
           node tests/ga-suggestion-v7.test.cjs
           node tests/ga-progress-dashboard-v1.test.cjs
-      - name: Verify all 64 source regressions
+      - name: Verify all 65 source regressions
         run: |
           set -eu
           for test in tests/*.cjs; do node "$test" > /tmp/test.log || { cat /tmp/test.log; exit 1; }; done
