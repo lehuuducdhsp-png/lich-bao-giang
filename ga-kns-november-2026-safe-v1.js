@@ -5,7 +5,7 @@
   if(root)root.LBGGaKnsNovember2026SafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261101.2-test';
+  const VERSION='20261116.3-test';
   const WEEK_02='02T11',WEEK_09='09T11',WEEK_16='16T11';
   const LIMIT='2026-11-09';
   const KNS=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
@@ -18,7 +18,14 @@
   const isKns=ev=>txt(ev?.track).toLowerCase()==='kns';
   const inYear=ev=>/^2026-/.test(txt(ev?.dateKey));
   const fromAnchor=ev=>txt(ev?.dateKey)>=LIMIT;
-  function nextUnlearned(learned){for(const ga of afterNine){if(!learned.has(ga))return ga}return null}
+  function nextUnlearned(learned){
+    // Mốc 09T11 học GA10 đặc biệt; các GA dưới 10 chưa học vẫn phải bù.
+    // Chỉ xét từ GA sớm nhất có bằng chứng đã dạy, không tự suy ra lịch sử trước đó.
+    if(!(learned instanceof Set))return null;
+    const earlier=KNS.filter(ga=>ga<10&&learned.has(ga));
+    if(!earlier.length)return null;
+    return KNS.slice(KNS.indexOf(earlier[0])).find(ga=>!learned.has(ga))??null;
+  }
   function apply(history){
     if(!history||!Array.isArray(history.events))return history;
     if(history.__lbgGaKnsNovember2026===VERSION)return history;
