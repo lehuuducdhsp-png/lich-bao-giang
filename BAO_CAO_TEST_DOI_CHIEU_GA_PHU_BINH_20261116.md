@@ -1,40 +1,40 @@
-# Báo cáo TEST — kiểm tra GA bị nhảy 9 → 11 tại Cơ sở 2 Phú Bình cũ
+# Báo cáo nghiệm thu TEST – Giáo án KNS Cơ sở 2 Phú Bình cũ, tuần 16T11
 
-**Ngày kiểm tra:** 16/11/2026. **Nguồn:** screenshot người dùng và TKB NĂM HỌC 26-27(3).xlsx, sheet 7T9–16T11.
+**Thời điểm:** 16/11/2026. **Nguồn dữ liệu:** ảnh báo giảng người dùng gửi và workbook `TKB NĂM HỌC 26-27(3).xlsx`, đối chiếu 11 sheet tuần từ `7T9` đến `16T11`. Không tải workbook nguyên gốc lên repository công khai.
 
-## Kết quả rà soát
+## Kết quả kiểm tra 19 lớp – không coi Phú Bình là cơ sở mới
 
-| Lớp | Giáo viên chính trong TKB 16T11 | KNS 26T10 | 02T11 | KNS 09T11 | KNS 16T11 | Website trước sửa |
-|---|---|---|---|---|---|---|
-| 1/5 | LINH2 | GA8 theo 6 lượt KNS trước đó | STEM | GA9 | **GA10** | GA11 |
-| 2/5 | M.LINH | GA8 theo 6 lượt KNS trước đó | STEM | GA9 | **GA10** | GA11 |
-| 5/7 | MỘNG | **GA8 được chốt trước** | STEM | GA9 | **GA10** | GA11 |
-| 3/4 | MINHANH | KNS | KNS | KNS | **STEM GA13** | STEM GA13 |
+| Nhóm | Lớp | Dự kiến giáo án tuần 16T11 |
+|---|---|---|
+| KNS – còn thiếu GA10 | **1/4, 1/5, 1/6, 1/7, 2/5, 2/6, 2/7, 3/6, 4/4, 4/6, 4/7, 5/7** (12 lớp) | **GA10** |
+| KNS – đã đi qua GA10 | **3/5, 5/5** (2 lớp) | **GA11** |
+| STEM – không sửa theo chuỗi KNS | **2/4, 3/4, 3/7, 4/5, 5/8** (5 lớp) | Tiếp nối GA STEM riêng (lớp 3/4 hiển thị GA13 STEM) |
 
-**Lưu ý:** Đây là tiến trình suy ra từ phân công TKB và các mốc đã xác nhận; TKB không chứng minh mọi buổi đã dạy thật. Nếu lớp nghỉ, dạy bù, hoặc có GA đã chỉnh thủ công, phải kiểm tra nhật ký thực dạy.
+Trong ảnh hiện tại, **LINH2–1/5, M.LINH–2/5, MỘNG–5/7** đang hiển thị GA11 KNS nhưng theo lịch TKB là **GA10**, vì:
+- KNS 19T10 theo tiến trình GA7; KNS 26T10 GA8.
+- **02T11 học STEM**, không cộng một lượt vào tiến độ KNS.
+- **09T11 mới tới KNS GA9**.
+- **16T11 dự kiến KNS GA10**.
 
-### Đủ 8 lượt KNS của ba lớp đến 16T11
+Lớp 1/6, 4/4 và 5/7 có **mốc GA8 KNS 26T10 đã CHỐT**, cần bảo vệ. Các lớp 3/5, 5/5 học KNS ở 02T11 nên tiếp tục GA11 vào 16T11. Không ép đồng loạt cả trường/cơ sở cùng một số GA.
 
-- **1/5, 2/5:** 7T9 GA1, 14T9 GA2, 28T9 GA4, 12T10 GA5, 19T10 GA7, 26T10 GA8, 09T11 GA9, 16T11 GA10. STEM xen giữa không tăng KNS.
-- **5/7:** 7T9 GA1, 14T9 GA2, 21T9 GA4, 5T10 GA5, 19T10 GA7, 26T10 GA8, 09T11 GA9, 16T11 GA10.
-- **3/4:** Giữ lộ trình STEM độc lập; không chỉnh GA13 theo GA KNS.
+## Nguyên nhân trong mã cũ
 
-## Nguyên nhân
+Module `ga-kns-november-2026-safe-v1.js` tự ép mọi lượt KNS của tuần 09T11 thành GA10, dù riêng từng lớp chưa học GA9, sau đó khiến lượt 16T11 hiện GA11. Đó là **mốc chung sai cho các lớp chưa đủ bài**.
 
-`ga-kns-november-2026-safe-v1.js` đang gán đồng loạt KNS của tuần 09T11 bằng GA10, rồi dùng tập bài chưa học chỉ bắt đầu từ GA10. Ba lớp nói trên chưa xong GA9 trước 09T11, nên bị đẩy lên GA11 ở 16T11.
+## Phạm vi sửa trên nhánh TEST
 
-## Sửa trên nhánh TEST
+1. Với **đúng 19 lớp của `PHU BINH|CO SO 2|PHU BINH CU`**, trong tuần 09T11 và 16T11, suy ra bài KNS tiếp theo từ lịch sử của **chính lớp**; không nhân bài KNS khi lớp học STEM.
+2. Giữ khác biệt giữa GA10 và GA11, không thay đổi tiến độ GA STEM và mã nhận diện cơ sở.
+3. Phú Hậu, Vỹ Dạ, Phú Tân, Thanh Lam, Thuận An và các cơ sở khác **không bị áp dụng ngoại lệ**.
+4. **Tuyệt đối không ghi đè GA11 đã lưu thủ công**. Khi lịch sử tính ra GA10 mà bản lưu có GA11, báo chênh lệch và yêu cầu đối chiếu nhật ký thực dạy, sau đó mới sửa thủ công qua giao diện nếu xác nhận chính xác.
+5. Không chỉnh sửa dữ liệu TKB, IndexedDB, Supabase, Google Sheets; không phá mốc GA8 Phú Bình cũ, KNS/STEM tháng 11 và quy tắc trợ giảng P.
+6. CI chạy hai bài kiểm thử mới (ba lớp theo 11 tuần và cả 19 lớp), toàn bộ kiểm thử dự án, kiểm tra hiệu năng và bảo vệ công đoạn triển khai Pages.
 
-- Trong đúng Cơ sở 2 – Phú Bình cũ, **ba lớp đã đối chiếu** lấy GA tiếp theo từ lịch sử KNS của chính lớp: 09T11 = GA9, 16T11 = GA10.
-- Không ảnh hưởng lịch Phú Hậu (Cơ sở 1), Phú Tân, Thanh Lam, Vỹ Dạ, Thuận An, hoặc các lớp chưa xác minh.
-- Không cộng mã `P` thành lượt GA, không cộng STEM vào KNS, không sửa các mốc GA8, GA13 đã chốt.
-- Nếu có GA11 đang lưu thủ công cho lớp: **không ghi đè**; chỉ cảnh báo số hiện có khác số dự kiến. Người dùng xác minh thực dạy trước khi chỉnh.
-- Không ghi, xóa, reset TKB/IndexedDB/localStorage/Supabase/Google Sheets.
+## Giới hạn cần nói rõ
 
-## Tiêu chí chốt
+TKB phản ánh **phân công**, không xác nhận các tiết đã thực dạy. Những số GA nêu trên là **dự kiến theo lịch** và mốc đã được xác nhận, không phải kết luận cuối cùng cho các lớp có buổi nghỉ, học bù, điều chỉnh tay hoặc thay đổi lịch thực tế. Bản TEST cần được kiểm tra qua lịch sử GA sau đăng nhập. **ZIP/CI đạt Success không đồng nghĩa website production đã sửa**.
 
-1. Ở 16T11, gợi ý cho **LINH2 – 1/5, M.LINH – 2/5, MỘNG – 5/7** là GA10 KNS, không phải GA11.
-2. **MINHANH – 3/4** vẫn GA13 STEM; mã P đúng lớp và không tăng lượt giáo án.
-3. Bảng tiến độ không tự bỏ qua bài trước GA10. Những GA thủ công khác đề xuất có cảnh báo.
-4. Các bộ kiểm thử GA tháng 11, lịch Phú Bình/Phú Hậu, Vỹ Dạ, Phú Tân, Thanh Lam, hiệu năng và báo cáo vẫn đạt.
-5. Chỉ sau khi người dùng **CHỐT bản TEST** mới sao lưu và hợp nhất nhánh chính. Gói TEST hoặc CI không chứng nhận việc đã thay đổi GA thủ công trên thiết bị người dùng.
+## Quy trình duyệt
+
+Chưa triển khai vào nhánh `main`. Chỉ sau xác nhận rõ **CHỐT** của người dùng mới sao lưu phiên bản chính, hợp nhất PR và xác minh GitHub Pages.
