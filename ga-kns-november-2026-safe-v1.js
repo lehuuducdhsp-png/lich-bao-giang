@@ -11,7 +11,7 @@
   const KNS=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const afterNine=KNS.slice(KNS.indexOf(10));
   const VERIFIED_SITE='PHU BINH|CO SO 2|PHU BINH CU';
-  const VERIFIED_CLASSES=new Set(['1/5','2/5','5/7']);
+  const VERIFIED_CLASSES=new Set(['1/4','1/5','1/6','1/7','2/4','2/5','2/6','2/7','3/4','3/5','3/6','3/7','4/4','4/5','4/6','4/7','5/5','5/7','5/8']);
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ').trim();
   const nextKns=ga=>{const i=KNS.indexOf(Number(ga));return i<0?null:(KNS[i+1]??null)};
   function isVerifiedPhuBinhEvent(ev,members,week){
