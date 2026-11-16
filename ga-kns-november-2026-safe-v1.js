@@ -34,12 +34,14 @@
     const state=new Map(),events=[...history.events].sort((a,b)=>dateMs(a.date)-dateMs(b.date)||Number(a.day)-Number(b.day)||Number(a.period)-Number(b.period));
     // Cần biết đúng lớp nào học STEM tuần 09T11 trước khi tính tiến độ KNS.
     // Khóa bao gồm trường/phân hiệu + khối + lớp, tránh đẩy GA10 của cơ sở khác.
-    const stem09=new Map();
+    const stem09=new Map(),kns09=new Set();
     for(const ev of events){
-      if(normalizedWeek(ev?.sheet)!==WEEK_09||txt(ev?.track).toLowerCase()!=='stem'||!inYear(ev))continue;
+      if(normalizedWeek(ev?.sheet)!==WEEK_09||!inYear(ev))continue;
       for(const member of membersOf(ev)){
         const key=memberKey(ev,member);
-        if(!stem09.has(key))stem09.set(key,{key,member,school:txt(ev.school),locationKey:txt(ev.locationKey)});
+        if(isKns(ev))kns09.add(key);
+        else if(txt(ev?.track).toLowerCase()==='stem'&&!stem09.has(key))
+          stem09.set(key,{key,member,school:txt(ev.school),locationKey:txt(ev.locationKey)});
       }
     }
     const hasWeek16=events.some(ev=>normalizedWeek(ev?.sheet)===WEEK_16&&inYear(ev));
@@ -69,6 +71,14 @@
         // Từ tuần kế tiếp quay lại bài KNS còn thiếu trong lịch sử của chính lớp.
         chosen=10;ev.gaSource='kns-nov-09-ga10-anchor';
       }else if(after&&!is09){
+        const specialMembers=members.map(m=>{
+          const key=memberKey(ev,m);return kns09.has(key)||stem09.has(key);
+        });
+        if(specialMembers.some(Boolean)&&!specialMembers.every(Boolean)){
+          // Lớp gộp: chỉ một phần có GA10 ngoại lệ, không thể chọn GA chung.
+          chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
+          warnings.push(`Nhóm ${txt(ev.classDisplay)} tuần ${week} trộn lớp có/không học 09T11; phải đối chiếu từng lớp.`);
+        }else if(specialMembers.every(Boolean)){
         // Lớp học STEM 09T11 và chưa học GA10 KNS sẽ phải bù ở 16T11,
         // nếu 16T11 có KNS. Nếu chưa có KNS, giữ quyền bù ở buổi KNS sau.
         const makeup=members.map((m,i)=>stem09.has(memberKey(ev,m))&&!available[i]?.learned?.has(10));
@@ -99,6 +109,8 @@
             }
           }
         }
+        }
+        // Nếu không có lịch KNS/STEM ở 09T11, giữ tiến trình V7 bình thường.
       }
       // Bảo toàn GA đã nhập tay và mâu thuẫn cũ, chỉ gắn cảnh báo để xác nhận.
       if(originalSource==='manual'&&valid){
