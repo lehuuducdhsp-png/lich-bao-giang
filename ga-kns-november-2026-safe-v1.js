@@ -55,14 +55,18 @@
       if(!isKns(ev)||!inYear(ev))continue;
       const members=membersOf(ev),week=normalizedWeek(ev.sheet),is02=week===WEEK_02,is09=week===WEEK_09,after=fromAnchor(ev);
       if(!members.length)continue;
-      let ga=Number(ev.ga),valid=Number.isFinite(ga)&&KNS.includes(ga),chosen=valid?ga:null;
+      const ga=Number(ev.ga),valid=ev.ga!==null&&ev.ga!==undefined&&
+        txt(ev.ga)!==''&&Number.isFinite(ga)&&KNS.includes(ga),chosenBefore=valid?ga:null;
+      let chosen=chosenBefore;
+      const originalSource=txt(ev.gaSource);
       const available=members.map(m=>state.get(memberKey(ev,m))||null);
       const prevWeek=members.map((m,i)=>available[i]?.weeks?.get(week)).filter(v=>v!==undefined);
       if(is02&&valid&&ga===10){
         // Tuần 02T11: chỉ những lớp vốn được gợi ý GA10 mới chuyển sang GA11.
         chosen=11;ev.gaSource='kns-nov-02-ga10-to-ga11';
       }else if(is09){
-        // Tuần 09T11 là mốc chung GA10 KNS cho những lớp thực sự có lịch học.
+        // Quy tắc đã CHỐT: lớp thực học KNS tuần 09T11 bắt buộc GA10.
+        // Từ tuần kế tiếp quay lại bài KNS còn thiếu trong lịch sử của chính lớp.
         chosen=10;ev.gaSource='kns-nov-09-ga10-anchor';
       }else if(after&&!is09){
         // Lớp học STEM 09T11 và chưa học GA10 KNS sẽ phải bù ở 16T11,
@@ -83,16 +87,29 @@
           else if(sameWeek.length>1){chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;}
           else{
             // Bù bài chưa học dựa trên lịch sử từng lớp và phân hiệu.
-            const candidates=available.map(s=>s&&(s.seenNineOrLater||s.learned.size)?nextUnlearned(s.learned):null);
+            const candidates=available.map(s=>s?.learned?.has(10)?nextUnlearned(s.learned):null);
             const withBasis=candidates.filter(x=>x!==null);
             if(withBasis.length&&withBasis.length===members.length&&new Set(withBasis).size===1){
               chosen=withBasis[0];ev.gaSource='kns-nov-per-class-catchup';
-            }else if(new Set(withBasis).size>1){
+            }else{
+              // Không biết đủ tiến trình trước GA10 hoặc lớp gộp thiếu đồng thuận.
+              // Không tự dùng số GA11/12 suy từ vị trí ô hoặc ngày học.
               chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
-              warnings.push(`Chưa thống nhất được GA KNS bù cho nhóm lớp ${txt(ev.classDisplay)} tuần ${week}.`);
+              warnings.push(`Thiếu lịch sử hoặc các lớp trong nhóm ${txt(ev.classDisplay)} không có chung GA còn thiếu tại ${txt(ev.school)} tuần ${week}; cần xác nhận thực dạy.`);
             }
           }
         }
+      }
+      // Bảo toàn GA đã nhập tay và mâu thuẫn cũ, chỉ gắn cảnh báo để xác nhận.
+      if(originalSource==='manual'&&valid){
+        if(chosen!==null&&chosen!==ga){
+          ev.__lbgGaNeedsConfirmation={expected:chosen,stored:ga,week,classDisplay:txt(ev.classDisplay)};
+          ev.historyMismatch=true;
+          warnings.push(`GA đã lưu ${ga} khác GA dự kiến ${chosen} tại ${txt(ev.school)} – ${txt(ev.classDisplay)} tuần ${week}; không tự ghi đè.`);
+        }
+        chosen=ga;ev.gaSource='manual';
+      }else if(originalSource==='conflict'){
+        chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;
       }
       if(chosen!==null&&(!valid||chosen!==ga))changed++;
       if(chosen!==null||ev.gaSource==='conflict')ev.ga=chosen;
