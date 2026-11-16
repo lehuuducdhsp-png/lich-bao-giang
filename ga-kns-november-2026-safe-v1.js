@@ -19,8 +19,6 @@
   const inYear=ev=>/^2026-/.test(txt(ev?.dateKey));
   const fromAnchor=ev=>txt(ev?.dateKey)>=LIMIT;
   function nextUnlearned(learned){
-    // Mốc 09T11 học GA10 đặc biệt; các GA dưới 10 chưa học vẫn phải bù.
-    // Chỉ xét từ GA sớm nhất có bằng chứng đã dạy, không tự suy ra lịch sử trước đó.
     if(!(learned instanceof Set))return null;
     const earlier=KNS.filter(ga=>ga<10&&learned.has(ga));
     if(!earlier.length)return null;
@@ -29,11 +27,7 @@
   function apply(history){
     if(!history||!Array.isArray(history.events))return history;
     if(history.__lbgGaKnsNovember2026===VERSION)return history;
-    // Chỉ cập nhật lịch sử tính toán; tuyệt đối không ghi dữ liệu vào TKB,
-    // localStorage, Supabase hoặc các ô GA đã nhập tay.
     const state=new Map(),events=[...history.events].sort((a,b)=>dateMs(a.date)-dateMs(b.date)||Number(a.day)-Number(b.day)||Number(a.period)-Number(b.period));
-    // Cần biết đúng lớp nào học STEM tuần 09T11 trước khi tính tiến độ KNS.
-    // Khóa bao gồm trường/phân hiệu + khối + lớp, tránh đẩy GA10 của cơ sở khác.
     const stem09=new Map(),kns09=new Set();
     for(const ev of events){
       if(normalizedWeek(ev?.sheet)!==WEEK_09||!inYear(ev))continue;
@@ -64,55 +58,43 @@
       const available=members.map(m=>state.get(memberKey(ev,m))||null);
       const prevWeek=members.map((m,i)=>available[i]?.weeks?.get(week)).filter(v=>v!==undefined);
       if(is02&&valid&&ga===10){
-        // Tuần 02T11: chỉ những lớp vốn được gợi ý GA10 mới chuyển sang GA11.
         chosen=11;ev.gaSource='kns-nov-02-ga10-to-ga11';
       }else if(is09){
-        // Quy tắc đã CHỐT: lớp thực học KNS tuần 09T11 bắt buộc GA10.
-        // Từ tuần kế tiếp quay lại bài KNS còn thiếu trong lịch sử của chính lớp.
+        // Tuần 09T11 học KNS = GA10; từ tuần sau bù GA chưa học.
         chosen=10;ev.gaSource='kns-nov-09-ga10-anchor';
       }else if(after&&!is09){
         const specialMembers=members.map(m=>{
           const key=memberKey(ev,m);return kns09.has(key)||stem09.has(key);
         });
         if(specialMembers.some(Boolean)&&!specialMembers.every(Boolean)){
-          // Lớp gộp: chỉ một phần có GA10 ngoại lệ, không thể chọn GA chung.
           chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
           warnings.push(`Nhóm ${txt(ev.classDisplay)} tuần ${week} trộn lớp có/không học 09T11; phải đối chiếu từng lớp.`);
         }else if(specialMembers.every(Boolean)){
-        // Lớp học STEM 09T11 và chưa học GA10 KNS sẽ phải bù ở 16T11,
-        // nếu 16T11 có KNS. Nếu chưa có KNS, giữ quyền bù ở buổi KNS sau.
         const makeup=members.map((m,i)=>stem09.has(memberKey(ev,m))&&!available[i]?.learned?.has(10));
         const shouldMakeup=makeup.some(Boolean);
         if(shouldMakeup&&makeup.every(Boolean)){
           chosen=10;
           ev.gaSource=week===WEEK_16?'kns-nov-16-stem09-ga10-makeup':'kns-nov-stem09-delayed-ga10-makeup';
         }else if(shouldMakeup){
-          // Nhóm gộp có lớp đã học GA10 và lớp chưa học: phải xử lý riêng.
           chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
           warnings.push(`Nhóm lớp ${txt(ev.classDisplay)} tuần ${week} có lớp thiếu GA10 vì STEM 09T11; cần tách nhóm hoặc kiểm tra lại TKB.`);
         }else{
-          // Các lượt cùng lớp trong một tuần giữ chung GA.
           const sameWeek=[...new Set(prevWeek.map(Number))];
           if(sameWeek.length===1){chosen=sameWeek[0];ev.gaSource='kns-nov-same-week';}
           else if(sameWeek.length>1){chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;}
           else{
-            // Bù bài chưa học dựa trên lịch sử từng lớp và phân hiệu.
             const candidates=available.map(s=>s?.learned?.has(10)?nextUnlearned(s.learned):null);
             const withBasis=candidates.filter(x=>x!==null);
             if(withBasis.length&&withBasis.length===members.length&&new Set(withBasis).size===1){
               chosen=withBasis[0];ev.gaSource='kns-nov-per-class-catchup';
             }else{
-              // Không biết đủ tiến trình trước GA10 hoặc lớp gộp thiếu đồng thuận.
-              // Không tự dùng số GA11/12 suy từ vị trí ô hoặc ngày học.
               chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
               warnings.push(`Thiếu lịch sử hoặc các lớp trong nhóm ${txt(ev.classDisplay)} không có chung GA còn thiếu tại ${txt(ev.school)} tuần ${week}; cần xác nhận thực dạy.`);
             }
           }
         }
         }
-        // Nếu không có lịch KNS/STEM ở 09T11, giữ tiến trình V7 bình thường.
       }
-      // Bảo toàn GA đã nhập tay và mâu thuẫn cũ, chỉ gắn cảnh báo để xác nhận.
       if(originalSource==='manual'&&valid){
         if(chosen!==null&&chosen!==ga){
           ev.__lbgGaNeedsConfirmation={expected:chosen,stored:ga,week,classDisplay:txt(ev.classDisplay)};
@@ -130,15 +112,12 @@
         for(const m of members){
           const key=memberKey(ev,m),prev=state.get(key)||{learned:new Set(),seenNineOrLater:false,weeks:new Map()};
           prev.learned.add(chosen);if(chosen>=9)prev.seenNineOrLater=true;
-          // Dùng cùng một bài nếu lớp được dạy nhiều lần trong tuần.
           prev.weeks.set(week,chosen);state.set(key,prev);
         }
       }
     }
     const missing16=[],unresolved16=[];
     if(hasWeek16){
-      // Kiểm tra NGAY mốc 16T11, không tính GA10 học bù muộn ở 23T11
-      // như đã hoàn tất đúng hạn ở 16T11.
       for(const [key,meta] of stem09){
         if(ga10By16.has(key))continue;
         if(!kns16.has(key)){
