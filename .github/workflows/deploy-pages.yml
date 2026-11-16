@@ -64,6 +64,8 @@ jobs:
           node --check ga-progress-dashboard-v1.js
           node --check patch-runtime-loader-v1.js
           node tests/ga-kns-november-production.test.cjs
+          node tests/ga-global-09t11-backfill-all-schools.test.cjs
+          node tests/ga-progress-dashboard-v1.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
           node tests/runtime-stability-budget-v1.test.cjs
       - name: Configure Pages
