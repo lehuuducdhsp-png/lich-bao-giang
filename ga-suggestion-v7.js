@@ -145,9 +145,9 @@
   function participantText(ev){return(ev.participants||[]).map(p=>`${p.name||p.code} (${p.code})${p.role==='CTV'?' – CTV KNS':''}`).join(' + ')}
   function basisText(ev){
     if(ev.__lbgNovemberGaReview?.expected!==undefined&&ev.__lbgNovemberGaReview.expected!==null)
-      return`CẦN XÁC NHẬN: lớp \${ev.__lbgNovemberGaReview.member} có GA đã lưu khác lịch sử KNS (dự kiến GA \${ev.__lbgNovemberGaReview.expected}); không tự ghi đè. Kiểm tra các GA đã học trước đó và chỉnh trong biểu mẫu nếu đúng.`;
+      return`CẦN XÁC NHẬN: lớp ${ev.__lbgNovemberGaReview.member} có GA đã lưu khác lịch sử KNS (dự kiến GA ${ev.__lbgNovemberGaReview.expected}); không tự ghi đè. Kiểm tra các GA đã học trước đó và chỉnh trong biểu mẫu nếu đúng.`;
     if(ev.gaSource==='kns-nov-phu-binh-sequence')
-      return`Phú Bình cũ lớp \${ev.members.join(', ')}: GA KNS tuần \${ev.sheet} dự kiến \${ev.ga} theo tiến trình, không cộng tuần STEM. Cần đối chiếu thực dạy.`;
+      return`Phú Bình cũ lớp ${ev.members.join(', ')}: GA KNS tuần ${ev.sheet} dự kiến ${ev.ga} theo tiến trình, không cộng tuần STEM. Cần đối chiếu thực dạy.`;
     if(ev.gaSource==='phu-binh-cs2-26t10-ga8-anchor')return'Mốc thực tế CƠ SỞ 2 - PHÚ BÌNH CŨ, tuần 26T10: ba lớp 1/6, 5/7, 4/4 cùng học GA 8 (KNS).';
     if(ev.gaSource==='quang-trung-21t9-anchor')return ev.ga===1?'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/3, lớp 1/4+1/5, lớp 2/5 và lớp 2/6 dùng GA 1.':'Mốc thực tế QUANG TRUNG tuần 21T9: lớp 1/8 được khóa GA 2; các lớp KNS còn lại ngoài nhóm GA 1 cũng dùng GA 2.';
     if(ev.gaSource==='manual')return'GA đã được nhập/xác nhận thủ công cho sự kiện này.';
