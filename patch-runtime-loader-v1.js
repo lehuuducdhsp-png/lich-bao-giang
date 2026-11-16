@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261116.1';
+  const VERSION='20261116.2';
   const LOOKAHEAD=6;
   const YIELD_EVERY=5;
   const warmed=new Set();
@@ -27,7 +27,7 @@
     ['ga-group-split-history-safe-v1.js?v=20261029.1','lbgGaGroupSplitHistorySafeV1Script'],
     ['ga-group-split-stale-repair-v1.js?v=20260920.1','lbgGaGroupSplitStaleRepairV1Script'],
     ['ga-role-track-stale-repair-v1.js?v=20260920.4','lbgGaRoleTrackStaleRepairV1Script'],
-    ['ga-kns-november-2026-safe-v1.js?v=20261101.2','lbgGaKnsNovember2026SafeV1Script']
+    ['ga-kns-november-2026-safe-v1.js?v=20261116.2','lbgGaKnsNovember2026SafeV1Script']
   ];
 
   const RUNTIME_PATCHES=[
@@ -87,7 +87,7 @@
     button.addEventListener('click',async()=>{
       const old=button.textContent;button.disabled=true;button.textContent='Đang mở bảng…';
       try{
-        await add('ga-progress-dashboard-v1.js?v=20261101.2','lbgGaProgressDashboardV1Script');
+        await add('ga-progress-dashboard-v1.js?v=20261116.2','lbgGaProgressDashboardV1Script');
         card.remove();
       }catch(error){
         state.errors.push(String(error?.message||error));console.error('GA progress dashboard:',error);
