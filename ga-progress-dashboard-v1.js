@@ -5,7 +5,7 @@
   if(root)root.LBGGaProgressDashboardV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261004.1';
+  const VERSION='20261116.2';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -66,7 +66,8 @@
     let next=nextGa(track,lastGa);
     // Sau mốc GA10 tháng 11: giáo án KNS kế tiếp là BÀI CHƯA HỌC,
     // tránh phát GA11 lần thứ hai nếu lớp đã học GA11 tuần 02T11.
-    if(track==='kns'&&known.some(e=>['02T11','2T11','09T11','9T11'].includes(txt(e.sheet))&&
+    if(track==='kns'&&lastGa!==null&&lastGa>=10&&known.some(e=>Number(e.ga)===10)&&
+       known.some(e=>['02T11','2T11','09T11','9T11'].includes(txt(e.sheet))&&
        /^kns-nov-/.test(txt(e.gaSource)))){
       const learned=new Set(known.map(e=>Number(e.ga)));
       const seq=KNS_SEQUENCE.slice(KNS_SEQUENCE.indexOf(10));
