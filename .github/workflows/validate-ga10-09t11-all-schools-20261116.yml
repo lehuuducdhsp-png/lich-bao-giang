@@ -1,0 +1,46 @@
+name: Validate 09T11 KNS GA10 and global catch-up
+
+on:
+  pull_request:
+    paths:
+      - 'ga-kns-november-2026-safe-v1.js'
+      - 'ga-suggestion-v7.js'
+      - 'ga-progress-dashboard-v1.js'
+      - 'tests/ga-global-09t11-backfill-all-schools.test.cjs'
+      - 'tests/ga-kns-november-production.test.cjs'
+      - '.github/workflows/validate-ga10-09t11-all-schools-20261116.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate production logic syntax
+        run: |
+          node --check ga-kns-november-2026-safe-v1.js
+          node --check ga-progress-dashboard-v1.js
+          node --check ga-suggestion-v7.js
+      - name: Verify 14 active + 7 inactive schools and GA10 policy
+        run: |
+          node tests/ga-global-09t11-backfill-all-schools.test.cjs
+          node tests/ga-kns-november-production.test.cjs
+          node tests/ga-progress-dashboard-v1.test.cjs
+          node tests/phu-binh-ga-legacy-history-16t11.test.cjs
+          node tests/quang-trung-21t9-class-ga.test.cjs
+      - name: Run all existing tests
+        run: |
+          set -eu
+          for test in tests/*.cjs; do
+            node "$test" > /tmp/lbg_check.log || { echo "FAILED: $test"; cat /tmp/lbg_check.log; exit 1; }
+          done
+      - name: Validate loading and performance limits
+        run: |
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/production-runtime-performance.test.cjs
+          node tests/runtime-stability-budget-v1.test.cjs

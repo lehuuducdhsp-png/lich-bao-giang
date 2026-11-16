@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const D=require('../ga-progress-dashboard-v1.js');
 
-assert.equal(D.VERSION,'20261004.1');
+assert.equal(D.VERSION,'20261116.3');
 assert.equal(D.nextGa('kns',1),2);
 assert.equal(D.nextGa('kns',2),4);
 assert.equal(D.nextGa('stem',3),6);

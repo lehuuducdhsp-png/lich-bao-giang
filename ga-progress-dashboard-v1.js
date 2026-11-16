@@ -5,7 +5,7 @@
   if(root)root.LBGGaProgressDashboardV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261004.1';
+  const VERSION='20261116.3';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -61,19 +61,25 @@
     return out;
   }
   function summarizeTrack(events,track){
-    const compact=compactTrackEvents(events,track),known=compact.filter(e=>Number.isFinite(Number(e?.ga))),lastEvent=compact[compact.length-1]||null,lastKnown=known[known.length-1]||null;
+    const compact=compactTrackEvents(events,track),known=compact.filter(e=>e?.ga!==null&&e?.ga!==undefined&&txt(e.ga)!==''&&Number.isFinite(Number(e.ga))),lastEvent=compact[compact.length-1]||null,lastKnown=known[known.length-1]||null;
     const lastGa=lastKnown?Number(lastKnown.ga):null;
-    let next=nextGa(track,lastGa);
-    // Sau mốc GA10 tháng 11: giáo án KNS kế tiếp là BÀI CHƯA HỌC,
-    // tránh phát GA11 lần thứ hai nếu lớp đã học GA11 tuần 02T11.
-    if(track==='kns'&&known.some(e=>['02T11','2T11','09T11','9T11'].includes(txt(e.sheet))&&
-       /^kns-nov-/.test(txt(e.gaSource)))){
+    let next=nextGa(track,lastGa),needsHistoryReview=false;
+    // Sau GA10 đặc biệt, quay lại GA chưa học, KỂ CẢ GA dưới 10.
+    const special=track==='kns'&&known.some(e=>
+      (['09T11','9T11'].includes(txt(e.sheet))&&Number(e.ga)===10)||
+      /^kns-nov-/.test(txt(e.gaSource)));
+    if(special){
       const learned=new Set(known.map(e=>Number(e.ga)));
-      const seq=KNS_SEQUENCE.slice(KNS_SEQUENCE.indexOf(10));
-      next=seq.find(ga=>!learned.has(ga))??null;
+      const earlier=KNS_SEQUENCE.filter(ga=>ga<10&&learned.has(ga));
+      if(earlier.length){
+        const start=KNS_SEQUENCE.indexOf(earlier[0]);
+        next=KNS_SEQUENCE.slice(start).find(ga=>!learned.has(ga))??null;
+      }else{
+        next=null;needsHistoryReview=true;
+      }
     }
     return{
-      track,count:compact.length,lastGa,nextGa:next,lastSheet:txt(lastEvent?.sheet),lastDate:txt(lastEvent?.dateKey),done:lastGa!==null&&next===null,
+      track,count:compact.length,lastGa,nextGa:next,lastSheet:txt(lastEvent?.sheet),lastDate:txt(lastEvent?.dateKey),needsHistoryReview,done:lastGa!==null&&next===null&&!needsHistoryReview,
       history:compact.map(ev=>({sheet:txt(ev?.sheet),dateKey:txt(ev?.dateKey),ga:Number.isFinite(Number(ev?.ga))?Number(ev.ga):null,source:txt(ev?.gaSource),period:Number(ev?.period)||null}))
     };
   }
@@ -129,6 +135,7 @@
     const out=[];
     for(const row of rows.values()){
       const kns=summarizeTrack(row.events,'kns'),stem=summarizeTrack(row.events,'stem'),rhythm=recentRhythm(row.events,6),last=[...row.events].sort((a,b)=>dateValue(b?.date)-dateValue(a?.date)||Number(b?.period||0)-Number(a?.period||0))[0]||null;
+      if(kns.needsHistoryReview&&!row.warnings.includes('Thiếu lịch sử KNS trước mốc GA10 tháng 11'))row.warnings.push('Thiếu lịch sử KNS trước mốc GA10 tháng 11');
       const status=row.warnings.length?'review':'ok';
       out.push({...row,kns,stem,rhythm,status,lastSheet:txt(last?.sheet),lastDate:txt(last?.dateKey),stemState:stem.done?'finished':stem.count?'has':'none'});
     }
