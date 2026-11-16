@@ -65,6 +65,7 @@ jobs:
           node --check patch-runtime-loader-v1.js
           node tests/ga-kns-november-production.test.cjs
           node tests/phu-binh-ga09-before-ga10-16t11.test.cjs
+          node tests/phu-binh-all-classes-ga-continuity-16t11.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
           node tests/runtime-stability-budget-v1.test.cjs
       - name: Configure Pages
