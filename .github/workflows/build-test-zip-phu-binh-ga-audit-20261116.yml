@@ -1,0 +1,49 @@
+name: Build isolated TEST ZIP - Phu Binh 19-class GA audit
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'ga-kns-november-2026-safe-v1.js'
+      - 'ga-suggestion-v7.js'
+      - 'ga-progress-dashboard-v1.js'
+      - 'tests/phu-binh-ga09-before-ga10-16t11.test.cjs'
+      - 'tests/phu-binh-all-classes-ga-continuity-16t11.test.cjs'
+      - 'BAO_CAO_TEST_DOI_CHIEU_GA_PHU_BINH_20261116.md'
+      - '.github/workflows/build-test-zip-phu-binh-ga-audit-20261116.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package-test:
+    if: ${{ github.head_ref == 'test/phu-binh-ga10-actual-sequence-20261116' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout TEST revision only
+        uses: actions/checkout@v4
+      - name: Verify historical GA and runtime
+        run: |
+          node --check ga-kns-november-2026-safe-v1.js
+          node --check ga-suggestion-v7.js
+          node --check ga-progress-dashboard-v1.js
+          node tests/phu-binh-ga09-before-ga10-16t11.test.cjs
+          node tests/phu-binh-all-classes-ga-continuity-16t11.test.cjs
+          node tests/ga-kns-november-production.test.cjs
+          node tests/phu-binh-ga-legacy-history-16t11.test.cjs
+          node tests/ga-progress-dashboard-v1.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/runtime-stability-budget-v1.test.cjs
+      - name: Bundle complete TEST source without Pages deployment
+        run: |
+          mkdir -p dist
+          git archive --format=zip --output dist/Lich_Bao_Giang_TEST_GA_Phu_Binh_19_Lop_20261116.zip HEAD
+          unzip -t dist/Lich_Bao_Giang_TEST_GA_Phu_Binh_19_Lop_20261116.zip | tail -1
+          echo "TEST commit: $(git rev-parse HEAD)"
+      - name: Upload TEST artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LBG-TEST-GA-Phu-Binh-19-Lop-20261116
+          path: dist/Lich_Bao_Giang_TEST_GA_Phu_Binh_19_Lop_20261116.zip
+          retention-days: 30
+          if-no-files-found: error
