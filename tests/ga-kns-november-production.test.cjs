@@ -9,6 +9,10 @@ const make=(id,sheet,day,cls,ga,track='kns',loc='THỦY PHƯƠNG|THANH LAM CŨ')
   day:2,session:'Chiều',period:4
 });
 const rows=[
+  make('a26','26T10','2026-10-26','1/6',8),
+  make('s26','26T10','2026-10-26','2/6',8),
+  make('c26','26T10','2026-10-26','3/6',8),
+  make('e26','26T10','2026-10-26','5/6',8),
   make('a02','02T11','2026-11-02','1/6',10),
   make('a09','09T11','2026-11-09','1/6',12),
   make('a16','16T11','2026-11-16','1/6',12),
@@ -28,7 +32,7 @@ const rows=[
 ];
 const history=N.apply({events:rows,warnings:[]});
 const byId=Object.fromEntries(rows.map(x=>[x.id,x]));
-for(const [id,ga] of Object.entries({a02:11,a09:10,a16:12,s09:3,s16:10,s23:11,c02:11,c09s:4,c16:10,c23:12,d09s:2,d16s:3,e09s:1,e09k:10,e16:11,other:1})){
+for(const [id,ga] of Object.entries({a26:8,s26:8,c26:8,e26:8,a02:11,a09:10,a16:9,s09:3,s16:10,s23:9,c02:11,c09s:4,c16:10,c23:9,d09s:2,d16s:3,e09s:1,e09k:10,e16:9,other:1})){
   assert.equal(byId[id].ga,ga,id);
 }
 assert.ok(history.__lbgGaKnsNovemberStats.missingKns16.some(x=>x.member==='4/6'));
@@ -38,4 +42,4 @@ assert.ok(warning.warnings.some(x=>x.includes('Thiếu tiết KNS GA10 tuần 16
 const once=JSON.stringify(rows.map(x=>x.ga));
 N.apply(history);assert.equal(JSON.stringify(rows.map(x=>x.ga)),once);
 assert.equal(N.normalizedWeek('9T11'),'09T11');
-console.log('PASS: 02T11 GA11, 09T11 GA10 KNS, STEM makeup 16T11, per-class catchup, warnings.');
+console.log('PASS: 02T11 GA11, 09T11 GA10 KNS, then skipped GA9; STEM makeup and cross-site warnings.');
