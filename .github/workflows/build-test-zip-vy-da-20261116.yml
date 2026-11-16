@@ -1,0 +1,50 @@
+name: Build isolated TEST ZIP - Vy Da TKB 16T11
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tkb-roster-group-period-safe-v1.js'
+      - 'assist-p-preview-safe-v1.js'
+      - 'assist-p-trial-v1.js'
+      - 'assist-p-official-v1.js'
+      - 'tests/vy-da-16t11-period4-assist.test.cjs'
+      - 'HUONG_DAN_NGHIEM_THU_TKB_VY_DA_16T11_20261116.md'
+      - '.github/workflows/build-test-zip-vy-da-20261116.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package-test:
+    if: ${{ github.head_ref == 'test/vy-da-tkb-16t11-period4-assist-20261116' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout independent TEST source only
+        uses: actions/checkout@v4
+      - name: Validate real workbook-derived scenarios and protected history
+        run: |
+          node --check tkb-roster-group-period-safe-v1.js
+          node --check assist-p-preview-safe-v1.js
+          node --check assist-p-trial-v1.js
+          node tests/vy-da-16t11-period4-assist.test.cjs
+          node tests/tkb-roster-group-period-safe-v1.test.cjs
+          node tests/phu-binh-ga-legacy-history-16t11.test.cjs
+          node tests/ga-kns-november-production.test.cjs
+          node tests/assist-p-class-pairing-v1.test.cjs
+          node tests/thanh-lam-release-20261018.test.cjs
+          node tests/release-integrity-phu-tan-20261017.test.cjs
+          node tests/runtime-responsive-loader-v1.test.cjs
+      - name: Package complete source without production deploy
+        run: |
+          mkdir -p dist
+          git archive --format=zip --output dist/Lich_Bao_Giang_TEST_Vy_Da_16T11_20261116.zip HEAD
+          unzip -t dist/Lich_Bao_Giang_TEST_Vy_Da_16T11_20261116.zip | tail -1
+          echo "TEST SHA: $(git rev-parse HEAD)"
+      - name: Publish ZIP for acceptance
+        uses: actions/upload-artifact@v4
+        with:
+          name: LBG-TEST-Vy-Da-16T11-20261116
+          path: dist/Lich_Bao_Giang_TEST_Vy_Da_16T11_20261116.zip
+          retention-days: 30
+          if-no-files-found: error
