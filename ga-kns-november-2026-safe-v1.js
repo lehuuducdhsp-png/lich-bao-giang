@@ -5,11 +5,19 @@
   if(root)root.LBGGaKnsNovember2026SafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261101.2-test';
+  const VERSION='20261116.2-test';
   const WEEK_02='02T11',WEEK_09='09T11',WEEK_16='16T11';
   const LIMIT='2026-11-09';
   const KNS=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const afterNine=KNS.slice(KNS.indexOf(10));
+  const VERIFIED_SITE='PHU BINH|CO SO 2|PHU BINH CU';
+  const VERIFIED_CLASSES=new Set(['1/5','2/5','5/7']);
+  const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ').trim();
+  const nextKns=ga=>{const i=KNS.indexOf(Number(ga));return i<0?null:(KNS[i+1]??null)};
+  function isVerifiedPhuBinhEvent(ev,members,week){
+    return (week===WEEK_09||week===WEEK_16)&&fold(ev?.locationKey)===VERIFIED_SITE&&
+      members.length===1&&VERIFIED_CLASSES.has(members[0]);
+  }
   const txt=v=>String(v??'').trim();
   const normalizedWeek=v=>txt(v).toUpperCase().replace(/^0?(\d{1,2})T(\d{1,2})$/,(_,day,month)=>`${String(day).padStart(2,'0')}T${month}`);
   const dateMs=v=>v instanceof Date?v.getTime():Date.parse(v||'')||0;
@@ -22,11 +30,7 @@
   function apply(history){
     if(!history||!Array.isArray(history.events))return history;
     if(history.__lbgGaKnsNovember2026===VERSION)return history;
-    // Chỉ cập nhật lịch sử tính toán; tuyệt đối không ghi dữ liệu vào TKB,
-    // localStorage, Supabase hoặc các ô GA đã nhập tay.
     const state=new Map(),events=[...history.events].sort((a,b)=>dateMs(a.date)-dateMs(b.date)||Number(a.day)-Number(b.day)||Number(a.period)-Number(b.period));
-    // Cần biết đúng lớp nào học STEM tuần 09T11 trước khi tính tiến độ KNS.
-    // Khóa bao gồm trường/phân hiệu + khối + lớp, tránh đẩy GA10 của cơ sở khác.
     const stem09=new Map();
     for(const ev of events){
       if(normalizedWeek(ev?.sheet)!==WEEK_09||txt(ev?.track).toLowerCase()!=='stem'||!inYear(ev))continue;
@@ -51,7 +55,26 @@
       let ga=Number(ev.ga),valid=Number.isFinite(ga)&&KNS.includes(ga),chosen=valid?ga:null;
       const available=members.map(m=>state.get(memberKey(ev,m))||null);
       const prevWeek=members.map((m,i)=>available[i]?.weeks?.get(week)).filter(v=>v!==undefined);
-      if(is02&&valid&&ga===10){
+      if(isVerifiedPhuBinhEvent(ev,members,week)){
+        const prev=available[0],same=prev?.weeks?.get(week);
+        const expected=same!==undefined?Number(same):nextKns(prev?.lastGa);
+        if(expected!==null&&KNS.includes(expected)){
+          ev.__lbgNovemberExpectedGa=expected;
+          if(ev.gaSource==='manual'){
+            if(chosen!==expected){
+              ev.__lbgNovemberGaReview={expected,stored:chosen,week,member:members[0]};
+              ev.historyMismatch=true;
+              warnings.push(`Phú Bình cũ lớp ${members[0]} tuần ${week}: GA lưu ${chosen??'?'}, dự kiến ${expected}. Không tự ghi đè.`);
+            }
+          }else{
+            chosen=expected;
+            ev.gaSource='kns-nov-phu-binh-sequence';
+          }
+        }else{
+          ev.__lbgNovemberGaReview={expected:null,stored:chosen,week,member:members[0]};
+          warnings.push(`Phú Bình cũ lớp ${members[0]} tuần ${week}: thiếu lịch sử, không ép GA10/11.`);
+        }
+      }else if(is02&&valid&&ga===10){
         // Tuần 02T11: chỉ những lớp vốn được gợi ý GA10 mới chuyển sang GA11.
         chosen=11;ev.gaSource='kns-nov-02-ga10-to-ga11';
       }else if(is09){
@@ -93,8 +116,7 @@
         if(chosen===10&&(is09||week===WEEK_16))for(const m of members)ga10By16.add(memberKey(ev,m));
         for(const m of members){
           const key=memberKey(ev,m),prev=state.get(key)||{learned:new Set(),seenNineOrLater:false,weeks:new Map()};
-          prev.learned.add(chosen);if(chosen>=9)prev.seenNineOrLater=true;
-          // Dùng cùng một bài nếu lớp được dạy nhiều lần trong tuần.
+          prev.learned.add(chosen);prev.lastGa=chosen;if(chosen>=9)prev.seenNineOrLater=true;
           prev.weeks.set(week,chosen);state.set(key,prev);
         }
       }
@@ -131,5 +153,5 @@
     base.buildHistory=wrapBuildHistory(base.buildHistory);return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,WEEK_02,WEEK_09,WEEK_16,KNS,afterNine,normalizedWeek,nextUnlearned,apply,wrapBuildHistory,install};
+  return{VERSION,WEEK_02,WEEK_09,WEEK_16,KNS,afterNine,VERIFIED_SITE,VERIFIED_CLASSES,nextKns,isVerifiedPhuBinhEvent,normalizedWeek,nextUnlearned,apply,wrapBuildHistory,install};
 });
