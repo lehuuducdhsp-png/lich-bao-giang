@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 const P=require('../assist-p-preview-safe-v1.js');
-assert.equal(R.VERSION,'20261122.2');assert.equal(P.VERSION,'20261116.1');
+assert.equal(R.VERSION,'20261122.3');assert.equal(P.VERSION,'20261116.1');
 // Positions transcribed from uploaded TKB NĂM HỌC 26-27(2).xlsx, sheet 16T11.
 const tue=[
  ['4/1','TIÊN','TIÊNP'],['4/2','TRÂM','TRÂMP'],['4/3','VÂN','VÂNP'],
@@ -97,7 +97,8 @@ for(const read of [reader('assist-p-preview-safe-v1.js','preview'),reader('assis
  assert.equal(seen.size,17);assert.equal(read(ws,'CTV').length,0);
 }
 assert.equal(R.vyDaFridayAt(ws,60,52,parser),null);
-assert.equal(R.vyDaFridayAt({...ws,name:'09T11'},42,52,parser),null);
+const noNoteOldWeek={...ws,name:'09T11',getCell(r,c){const x=ws.getCell(r,c);return r===40&&c===50?{...x,value:'',text:''}:x}};
+assert.equal(R.vyDaFridayAt(noNoteOldWeek,42,52,parser),null);
 assert.equal(R.vyDaAssistMainColAt(ws,44,27,parser),null);
 assert.equal(R.vyDaFridayAt(ws,42,52,parser)?.period,4);
 assert.equal(R.vyDaAssistMainColAt(ws,56,53,parser),52,'BA56 P belongs to AZ56 class 2/8');
