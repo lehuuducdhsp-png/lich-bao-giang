@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'weekly-stats-enhancement-v8.js'
+      - 'teacher-intelligence-v6.js'
+      - 'tests/vy-da-weekly-stats-real-period.test.cjs'
       - 'analysis-fix-v2.js'
       - 'teacher-fix-v2.js'
       - 'index.html'
@@ -30,6 +32,7 @@ jobs:
       - name: Exact teacher code regression
         run: |
           node tests/weekly-stats-enhancement-v8.test.cjs
+          node tests/vy-da-weekly-stats-real-period.test.cjs
       - name: Load-chain and safety contracts
         run: |
           grep -F "teacher-fix-v2.js?v=" index.html

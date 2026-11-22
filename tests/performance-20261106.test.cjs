@@ -7,12 +7,12 @@ const assist=read('assist-p-preview-position-hotfix-v1.js'),entry=read('index.ht
 const loader=read('app-runtime-v1.js'),analysis=read('analysis-fix-v2.js'),bridge=read('teacher-fix-v2.js');
 assert.match(entry,/lbg-performance-preview" content="20261106\.1"/);
 assert.match(entry,/app-runtime-v1\.js\?v=20261116\.3/);
-assert.match(entry,/teacher-fix-v2\.js\?v=20261106\.1/);
+assert.match(entry,/teacher-fix-v2\.js\?v=20261122\.1/);
 assert.match(loader,/ui-redesign-v1\.js\?v=20261106\.1/);
 assert.match(loader,/branding-runtime-v2\.js\?v=20261106\.1/);
-assert.match(bridge,/analysis-fix-v2\.js\?v=20261106\.1/);
-assert.match(analysis,/teacher-intelligence-v6\.js\?v=20261106\.1/);
-assert.match(analysis,/weekly-stats-enhancement-v8\.js\?v=20261106\.1/);
+assert.match(bridge,/analysis-fix-v2\.js\?v=20261122\.1/);
+assert.match(analysis,/teacher-intelligence-v6\.js\?v=20261122\.1/);
+assert.match(analysis,/weekly-stats-enhancement-v8\.js\?v=20261122\.1/);
 assert.match(ui,/structureChanged\(records\)/);
 assert.match(ui,/target\.closest\?\.\('h2,h3'\)/);
 assert.match(brand,/brandingDomChanged\(records\)/);
