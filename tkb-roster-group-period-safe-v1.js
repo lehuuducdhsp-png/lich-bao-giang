@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261116.1';
+  const VERSION='20261122.2';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -301,8 +301,9 @@
     if(note!=='TAT CA HOC TIET 4 CHIEU THU 6')return null;
     const title=fold(cellText(ws.getCell(39,52)));
     if(title!=='HOC TIET 4')return null;
-    let school='';try{school=fold(parser.locationAt(ws,Math.min(r,55))?.schoolName||'')}catch{}
-    if(school!=='VY DA')return null;
+    // B41 in the real workbook contains "VỸ\n DẠ"; parser.locationAt returns
+    // only the first word "VỸ". Check the complete block label instead.
+    if(fold(cellText(ws.getCell(41,2)))!=='VY DA')return null;
     return{day:6,session:'Chiều',period:4,row:40,col:c,
       source:'vy-da-friday-16t11',sourceText:cellText(ws.getCell(40,50))};
   }
@@ -314,9 +315,15 @@
     if(txt(ws?.name).toUpperCase()!=='16T11'||!ws?.getCell||!parser?.locationAt||
        !Number.isInteger(r)||r<42||r>56)return null;
     if(c===51||c===54){if(vyDaFridayAt(ws,r,c,parser))return c===51?52:53;return null}
+    // New workbook (2) has BA56=D.PHƯƠNGP for AZ56=D.PHƯƠNG (class 2/8).
+    // BA is used as a P column only for this verified row and matching code.
+    if(c===53&&r===56&&vyDaFridayAt(ws,r,c,parser)){
+      const main=txt(cellText(ws.getCell(r,52))).toUpperCase(),
+        assist=txt(cellText(ws.getCell(r,53))).toUpperCase();
+      return main&&assist===main+'P'?52:null;
+    }
     if(c!==24||r>55)return null;
-    let school='';try{school=fold(parser.locationAt(ws,r)?.schoolName||'')}catch{}
-    if(school!=='VY DA')return null;
+    if(fold(cellText(ws.getCell(41,2)))!=='VY DA')return null;
     return txt(cellText(ws.getCell(4,23)))==='4'?23:null;
   }
   function specialScheduleHintAt(ws,row,col,parser=null,entryOrLocation=null){

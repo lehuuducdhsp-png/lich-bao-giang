@@ -64,8 +64,8 @@ assert.match(cacheSource,/__lbgAtomicTeachingV1/,'cache must wait for atomic sem
 assert.match(cacheSource,/__lbgClassTypoFixV1/,'cache must wait for class typo normalization');
 
 // Cache-bust chain for the updated browser modules.
-assert.match(index,/teacher-fix-v2\.js\?v=20261122\.1/);
-assert.match(teacherFix,/analysis-fix-v2\.js\?v=20261122\.1/);
+assert.match(index,/teacher-fix-v2\.js\?v=20261122\.2/);
+assert.match(teacherFix,/analysis-fix-v2\.js\?v=20261122\.2/);
 assert.match(analysisFix,/multi-teacher-v5\.js\?v=20260913\.1/);
 assert.match(analysisFix,/weekly-stats-enhancement-v8\.js\?v=20261122\.1/);
 assert.match(analysisFix,/runner=typeof analyzeNow==='function'\?analyzeNow:safeAnalyze/,'single-teacher analyze must use shared analyzeNow hook');
@@ -84,7 +84,7 @@ assert.ok(patchLoader.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4')<p
 // Các module nghiệp vụ đã chốt gần đây vẫn phải còn nguyên trên đường chạy chính.
 for(const required of [
   'tkb-class-typo-fix-v1.js?v=20260913.2',
-  'tkb-roster-group-period-safe-v1.js?v=20261116.1',
+  'tkb-roster-group-period-safe-v1.js?v=20261122.2',
   'grouped-plus-report-safe-v1.js?v=20260919.1',
   'ga-per-class-v2.js?v=20261113.3',
   'ga-per-class-history-safe-v1.js?v=20260913.1',

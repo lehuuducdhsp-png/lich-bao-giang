@@ -56,7 +56,8 @@
   function lettersToColumn(s){let n=0;for(const ch of String(s))n=n*26+ch.charCodeAt(0)-64;return n}
   function schoolAt(ws,row){
     for(let r=row;r>=1;r--){
-      const value=text(cellText(master(ws,r,2))).split('\n')[0].trim();
+      const raw=text(cellText(master(ws,r,2)));
+      const value=fold(raw)==='VY DA'?'VỸ DẠ':raw.split('\n')[0].trim();
       if(!value||value.length>100)continue;
       if(/^(TRƯỜNG|LỚP|TIẾT|SÁNG|CHIỀU|THỨ)$/i.test(value))continue;
       return value;
