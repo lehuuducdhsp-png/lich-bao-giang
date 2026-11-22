@@ -127,7 +127,7 @@ const expectedRuntimePatches=[
 assert.deepEqual(patchNames('CORE_PATCHES'),expectedCorePatches,'core patches must preserve exact business order');
 assert.deepEqual(patchNames('RUNTIME_PATCHES'),expectedRuntimePatches,'runtime patches must preserve exact UI/report order');
 assert.match(index,/app-runtime-v1\.js\?v=20261116\.3/);
-assert.match(index,/patch-runtime-loader-v1\.js\?v=20261116\.3/);
+assert.match(index,/patch-runtime-loader-v1\.js\?v=20261122\.2/);
 assert.doesNotMatch(index,/ga-per-class-v2\.js\?v=/,'patches must not race app-runtime during bootstrap');
 assert.match(runtime,/lbg-report-core-ready/,'runtime must expose a report-core lifecycle event');
 assert.match(patches,/lbg-report-core-ready/,'patch loader must wait for report core');
