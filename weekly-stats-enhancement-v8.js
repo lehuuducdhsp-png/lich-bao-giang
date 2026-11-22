@@ -5,7 +5,7 @@
   if(root)root.LBGWeeklyStatsEnhancementV8=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261106.1';
+  const VERSION='20261122.1';
   const ROLE_LABEL={KNS:'GV KNS',STEM:'GV STEM',CTV:'CTV',UNKNOWN:'Chưa xác định'};
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
@@ -77,7 +77,7 @@
       for(const col of cols){
         const info=timetableInfo(ws,col);if(!info)continue;
         const raw=txt(cellText(row.getCell(col)));if(!raw)continue;
-        for(const token of splitTokens(raw))if(codeLike(token)){allTokens.add(token);rawRows.push({token,row:row.number,col,address:row.getCell(col).address,day:Number(info.day),session:txt(info.session),period:Number(info.period)})}
+        for(const token of splitTokens(raw))if(codeLike(token)){const when=root.LBGTeacherIntelligenceV6?.scheduleAt?.(ws,row.number,col)||info;allTokens.add(token);rawRows.push({token,row:row.number,col,address:row.getCell(col).address,day:Number(when.day),session:txt(when.session),period:Number(when.period),slotPeriod:Number(when.slotPeriod??info.period)})}
       }
     });
     const unknown=[],seen=new Set();
@@ -101,9 +101,9 @@
     const list=[...teachers.values()].sort((a,b)=>a.name.localeCompare(b.name,'vi'));
     const roster=[...roles.values()].filter(x=>x.code&&x.code!=='OFF').sort((a,b)=>a.name.localeCompare(b.name,'vi'));
     const byRole=role=>list.filter(x=>x.role===role),rosterByRole=role=>roster.filter(x=>x.role===role),countPeriods=role=>(scan.source||[]).filter(x=>x.role===role).length;
-    const audit=rawCodeAudit(ws,roles);
+    const audit=rawCodeAudit(ws,roles),corrections=(scan.source||[]).filter(e=>e.corrected);
     return{
-      ws,scan,roles,roster,list,audit,sheet:ws.name,file:txt(q('active')?.textContent||'TKB'),
+      ws,scan,roles,roster,list,audit,corrections,sheet:ws.name,file:txt(q('active')?.textContent||'TKB'),
       totalRoster:roster.length,totalTeachers:list.length,totalPeriods:(scan.source||[]).length,
       byRole:{KNS:byRole('KNS'),STEM:byRole('STEM'),CTV:byRole('CTV'),UNKNOWN:byRole('UNKNOWN')},
       rosterByRole:{KNS:rosterByRole('KNS'),STEM:rosterByRole('STEM'),CTV:rosterByRole('CTV'),UNKNOWN:rosterByRole('UNKNOWN')},
@@ -159,8 +159,15 @@
       <div class="${unknown?'warn':''}"><b>${unknown}</b><span>Mã TKB cần kiểm tra</span></div>
     </div>`;
   }
+  function correctionHtml(data){
+    const count=(data.corrections||[]).length;
+    if(!count)return'';
+    const examples=data.corrections.slice(0,4).map(e=>esc(e.school||'Trường')+' • '+esc(e.code)+': tiết '+Number(e.slotPeriod)+' → tiết '+Number(e.period)).join(' | ');
+    return'<div class="lbg-v8-note"><b>Đã chuẩn hóa tiết theo ghi chú TKB:</b> '+count+' ô mã giáo viên có tiết thực tế khác vị trí cột. '+examples+'. Tiết gốc được giữ trong Excel để đối chiếu.</div>';
+  }
   function overviewHtml(data){
     return`${summaryCards(data)}
+      ${correctionHtml(data)}
       <div class="lbg-v8-note"><b>Nguyên tắc kiểm tra mã:</b> so khớp đúng mã giáo viên trong bảng tổng. <b>Không bỏ dấu để tự gộp người</b>; vì vậy <b>HẠ ≠ HÀ</b>. Dòng hậu tố <b>P</b> như HẠP, LIÊNP… là dòng phối hợp/trợ và không tự tạo thêm một giáo viên chính.</div>
       ${data.audit.unknown.length?`<div class="lbg-v8-audit"><b>⚠ Có ${data.audit.unknown.length} mã/ô trong vùng TKB chưa ghép được với bảng tổng giáo viên.</b><div class="lbg-v8-audit-list">${data.audit.unknown.slice(0,18).map(x=>`<span><strong>${esc(x.token)}</strong> • ${esc(dayLabel(x.day))} ${esc(x.session)} • Tiết ${x.period} • ${esc(x.address)}</span>`).join('')}</div>${data.audit.unknown.length>18?`<small>Còn ${data.audit.unknown.length-18} mục khác; xem Excel xuất ra để đối chiếu đầy đủ.</small>`:''}</div>`:''}`;
   }
@@ -271,8 +278,8 @@
       ]);sum.eachRow((row,n)=>row.eachCell(cell=>{cell.alignment={vertical:'middle',wrapText:true};cell.border=border()}));
       addTeacherSheet(book,'GV KNS',data.byRole.KNS);addTeacherSheet(book,'GV STEM',data.byRole.STEM);addTeacherSheet(book,'CTV',data.byRole.CTV);addTeacherSheet(book,'CHƯA XÁC ĐỊNH',data.byRole.UNKNOWN);
       const ds=book.addWorksheet('THEO NGÀY - BUỔI');ds.columns=[{header:'THỨ',key:'day',width:12},{header:'BUỔI',key:'session',width:11},{header:'NHÓM',key:'role',width:18},{header:'CÓ TIẾT',key:'activeCount',width:10},{header:'DANH SÁCH CÓ TIẾT',key:'active',width:60},{header:'KHÔNG CÓ TIẾT',key:'absentCount',width:14},{header:'DANH SÁCH KHÔNG CÓ TIẾT',key:'absent',width:70}];daySessionRows(data).forEach(x=>ds.addRow(x));styleSheet(ds);
-      const detail=book.addWorksheet('CHI TIẾT TIẾT DẠY');detail.columns=[{header:'STT',key:'i',width:7},{header:'NGÀY',key:'date',width:14},{header:'THỨ',key:'day',width:10},{header:'BUỔI',key:'session',width:11},{header:'TIẾT',key:'period',width:9},{header:'GIÁO VIÊN',key:'name',width:28},{header:'MÃ',key:'code',width:15},{header:'NHÓM',key:'role',width:18},{header:'TRẠNG THÁI',key:'status',width:14},{header:'TRƯỜNG',key:'school',width:30},{header:'LỚP',key:'className',width:24},{header:'Ô NGUỒN',key:'address',width:14}];
-      (data.scan.source||[]).forEach((e,i)=>detail.addRow({i:i+1,date:formatDate(e.date),day:dayLabel(e.day),session:e.session,period:e.period,name:e.teacherName,code:e.code,role:roleLabel(e.role),status:e.makeUp?'Dạy bù':'Bình thường',school:e.school||'Chưa xác định',className:e.className||'Chưa xác định',address:e.address}));styleSheet(detail);
+      const detail=book.addWorksheet('CHI TIẾT TIẾT DẠY');detail.columns=[{header:'STT',key:'i',width:7},{header:'NGÀY',key:'date',width:14},{header:'THỨ',key:'day',width:10},{header:'BUỔI',key:'session',width:11},{header:'TIẾT',key:'period',width:9},{header:'TIẾT Ô TKB',key:'slotPeriod',width:12},{header:'GIÁO VIÊN',key:'name',width:28},{header:'MÃ',key:'code',width:15},{header:'NHÓM',key:'role',width:18},{header:'TRẠNG THÁI',key:'status',width:14},{header:'TRƯỜNG',key:'school',width:30},{header:'LỚP',key:'className',width:24},{header:'Ô NGUỒN',key:'address',width:14}];
+      (data.scan.source||[]).forEach((e,i)=>detail.addRow({i:i+1,date:formatDate(e.date),day:dayLabel(e.day),session:e.session,period:e.period,slotPeriod:e.slotPeriod??e.period,name:e.teacherName,code:e.code,role:roleLabel(e.role),status:e.makeUp?'Dạy bù':'Bình thường',school:e.school||'Chưa xác định',className:e.className||'Chưa xác định',address:e.address}));styleSheet(detail);
       const audit=book.addWorksheet('MÃ CẦN KIỂM TRA');audit.columns=[{header:'STT',key:'i',width:7},{header:'MÃ TKB',key:'token',width:18},{header:'THỨ',key:'day',width:12},{header:'BUỔI',key:'session',width:11},{header:'TIẾT',key:'period',width:9},{header:'Ô NGUỒN',key:'address',width:14},{header:'GHI CHÚ',key:'note',width:58}];
       data.audit.unknown.forEach((x,i)=>audit.addRow({i:i+1,token:x.token,day:dayLabel(x.day),session:x.session,period:x.period,address:x.address,note:'Không có mã trùng nguyên văn trong bảng tổng. Không tự đổi dấu/gộp với người khác.'}));styleSheet(audit);
       const buffer=await book.xlsx.writeBuffer();saveAs(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`THONG_KE_GIAO_VIEN_CHI_TIET_${safeFile(data.sheet)}.xlsx`);if(typeof toast==='function')toast('Đã xuất thống kê giáo viên chi tiết ra Excel.');
