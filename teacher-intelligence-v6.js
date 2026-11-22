@@ -124,6 +124,20 @@
     return raw.split(/\s*(?:\+|&)\s*/).map(x=>text(x)).filter(Boolean);
   }
   function classKey(school,className){return`${fold(school)}|${keyText(className)}`}
+  // Ưu tiên ghi chú tiết thực tế; luôn lấy lịch của sheet đang thống kê.
+  function scheduleAt(ws,row,col){
+    const parser=typeof window!=='undefined'?window.LBGTkbParserV2:null;
+    let info=null;
+    try{info=parser?.colInfoFor?.(ws,col)||null}catch{}
+    if(!info){try{info=typeof colInfo==='function'?colInfo(col):null}catch{}}
+    if(!info)return null;
+    let hint=null;
+    try{hint=parser?.specialScheduleHintAt?.(ws,row,col)||null}catch{}
+    const slotDay=Number(info.day),slotSession=text(info.session),slotPeriod=Number(info.period);
+    const day=Number(hint?.day)||slotDay,session=text(hint?.session)||slotSession,period=Number(hint?.period)||slotPeriod;
+    return{day,session,period,slotDay,slotSession,slotPeriod,
+      corrected:day!==slotDay||session!==slotSession||period!==slotPeriod};
+  }
   function scanSheet(ws){
     if(scanCache.has(ws))return scanCache.get(ws);
     const roles=summaryRoles(ws),codes=new Set(roles.keys()),source=[];
@@ -131,10 +145,10 @@
       for(let c=4;c<=73;c++){
         const cell=row.getCell(c),code=text(cellText(cell)).toUpperCase();
         if(!code||code==='OFF'||!codes.has(code))continue;
-        const info=typeof colInfo==='function'?colInfo(c):null;
-        if(!info)continue;
-        const meta=roles.get(code),school=schoolAt(ws,row.number),className=classAt(ws,row.number,c,codes),date=dateFor(ws,info.day);
-        source.push({sheet:ws.name,code,teacherName:meta?.name||code,role:meta?.role||ROLE.UNKNOWN,makeUp:isBlue(cell),day:Number(info.day),session:info.session,period:Number(info.period),school,className,address:cell.address,row:row.number,col:c,date,dateKey:dateKey(date)});
+        const when=scheduleAt(ws,row.number,c);
+        if(!when)continue;
+        const meta=roles.get(code),school=schoolAt(ws,row.number),className=classAt(ws,row.number,c,codes),date=dateFor(ws,when.day);
+        source.push({sheet:ws.name,code,teacherName:meta?.name||code,role:meta?.role||ROLE.UNKNOWN,makeUp:isBlue(cell),...when,school,className,address:cell.address,row:row.number,col:c,date,dateKey:dateKey(date)});
       }
     });
     source.sort((a,b)=>(a.date?.getTime()||0)-(b.date?.getTime()||0)||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.period-b.period||a.row-b.row||a.col-b.col);
@@ -322,6 +336,7 @@
     queuedStart=true;
     setTimeout(()=>{queuedStart=false;start()},0);
   }
+  if(typeof module==='object'&&module.exports){module.exports={scheduleAt};return;}
   document.addEventListener('change',event=>{
     if(['week','teacher','year','weeklyStatsWeek'].includes(event.target?.id))queueStart();
   },true);
@@ -334,5 +349,5 @@
   const timer=setInterval(()=>{if(!document.hidden)start()},3500);
   start();
   window.addEventListener('beforeunload',()=>clearInterval(timer));
-  window.LBGTeacherIntelligenceV6={summaryRoles,scanSheet,buildHistory,STEM_GA:[...STEM_GA]};
+  window.LBGTeacherIntelligenceV6={summaryRoles,scanSheet,buildHistory,scheduleAt,STEM_GA:[...STEM_GA]};
 })();
