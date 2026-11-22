@@ -19,7 +19,7 @@ const expectedCore=[
   'tkb-parser-bridge-v2.js?v=20260906.3',
   'teaching-plan-progress-v1.js?v=20261029.1',
   'conflict-check-v8.js?v=20260909.1',
-  'ga-suggestion-v7.js?v=20261116.3',
+  'ga-suggestion-v7.js?v=20261122.5',
   'ga-suggestion-cross-version-v1.js?v=20261113.3'
 ];
 
