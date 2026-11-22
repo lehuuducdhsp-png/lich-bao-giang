@@ -146,7 +146,7 @@
   function basisText(ev){
     if(ev.__lbgGaNeedsConfirmation){
       const c=ev.__lbgGaNeedsConfirmation;
-      return `CẦN XÁC NHẬN: GA đã lưu ${c.stored}, nhưng tiến trình dự kiến ${c.expected} ở tuần ${c.week}. Không tự ghi đè; kiểm tra thực dạy.`;
+      return c.expected==null?`CẦN XÁC NHẬN: GA đã lưu ${c.stored} ở tuần ${c.week} không phù hợp lịch sử/quy tắc GA10; cần xác định bài chưa học, không tự ghi đè.`:`CẦN XÁC NHẬN: GA đã lưu ${c.stored}, nhưng tiến trình dự kiến ${c.expected} ở tuần ${c.week}. Không tự ghi đè; kiểm tra thực dạy.`;
     }
     if(ev.gaSource==='kns-nov-09-ga10-anchor')return 'Mốc đã chốt: tuần 09T11 lớp thực học KNS dùng GA10 đặc biệt. Những GA trước đó chưa học sẽ được bù ở các buổi KNS tiếp theo.';
     if(ev.gaSource==='kns-nov-per-class-catchup')return `Sau GA10 đặc biệt, trở về GA KNS còn thiếu theo thứ tự lịch sử lớp: GA ${ev.ga}. Không cộng tuần STEM thành một lượt KNS.`;
