@@ -23,7 +23,7 @@ for(const [r,c,p] of [[42,52,3],[42,53,4],[44,52,3],[44,53,4],[56,52,3]]){
  assert.equal(v.period,4,'Vỹ Dạ chiều thứ Sáu phải vào tiết 4');
  assert.equal(v.slotPeriod,p,'giữ tiết ô gốc để truy vết');
 }
-assert.equal(T.scheduleAt({...ws,name:'09T11'},42,52).period,3,'tuần khác không bị ép tiết 4');
+assert.equal(T.scheduleAt({...ws,name:'23T11'},42,52).period,4,'23T11 có ghi chú thì phải sửa về tiết 4');
 const noNote={...ws,getCell(r,c){const x=ws.getCell(r,c);return r===40&&c===50?{...x,value:'',text:''}:x}};
 assert.equal(T.scheduleAt(noNote,42,52).period,3,'thiếu ghi chú không tự gán tiết');
 window.LBGTeacherIntelligenceV6=T;

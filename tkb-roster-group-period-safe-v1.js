@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261122.2';
+  const VERSION='20261122.3';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -289,13 +289,13 @@
     return null;
   }
 
-  // VỸ DẠ 16T11: thứ 6 có nhãn gộp AX40:AX54 "TẤT CẢ HỌC TIẾT 4,
-  // CHIỀU THỨ 6". Lớp/giáo viên nằm ở AZ:BA, mã trợ nằm ở AY/BB,
-  // tiếp tục tới lớp 2/8 & CTV hàng 55–56. Không lấy tiết 2,3,5
-  // theo cột bảng Excel; chỉ áp dụng cho tuần/vùng/địa điểm đã kiểm chứng.
+  // VỸ DẠ: Các sheet 16T11, 23T11 (và tuần sau có cùng ghi chú) có nhãn
+  // AX40 "TẤT CẢ HỌC TIẾT 4, CHIỀU THỨ 6", AZ39 "HỌC TIẾT 4".
+  // Giáo viên chính nằm AZ:BA, trợ giảng AY/BB. Chỉ áp dụng khi đúng
+  // tên trường B41, đúng vùng và cả hai ghi chú; không dựa vào tuần cố định.
   function vyDaFridayAt(ws,row,col,parser=null){
     const r=Number(row),c=Number(col);
-    if(txt(ws?.name).toUpperCase()!=='16T11'||!ws?.getCell||!parser?.locationAt||
+    if(!/^\d{1,2}T\d{1,2}$/.test(txt(ws?.name).toUpperCase())||!ws?.getCell||!parser?.locationAt||
        !Number.isInteger(r)||!Number.isInteger(c)||r<41||r>56||![51,52,53,54].includes(c))return null;
     const note=fold(cellText(ws.getCell(40,50))).replace(/[,.;:]/g,' ').replace(/\s+/g,' ').trim();
     if(note!=='TAT CA HOC TIET 4 CHIEU THU 6')return null;
@@ -312,7 +312,7 @@
   // Mã GV và lớp phải được đối chiếu thêm ở nơi gọi, không ghép mặc định.
   function vyDaAssistMainColAt(ws,row,col,parser=null){
     const r=Number(row),c=Number(col);
-    if(txt(ws?.name).toUpperCase()!=='16T11'||!ws?.getCell||!parser?.locationAt||
+    if(!/^\d{1,2}T\d{1,2}$/.test(txt(ws?.name).toUpperCase())||!ws?.getCell||!parser?.locationAt||
        !Number.isInteger(r)||r<42||r>56)return null;
     if(c===51||c===54){if(vyDaFridayAt(ws,r,c,parser))return c===51?52:53;return null}
     // New workbook (2) has BA56=D.PHƯƠNGP for AZ56=D.PHƯƠNG (class 2/8).
