@@ -123,7 +123,7 @@
     const school=fold(loc?.schoolName),site=fold(loc?.siteDisplay||loc?.label);
     return txt(a?.sheet).toUpperCase()==='23T11'&&Number(d)===4&&txt(s)==='Sáng'&&
       (code==='M.LINH'||name==='NGO THI MY LINH')&&school==='HA THE HANH'&&
-      /\\bTU HA 1 CU\\b/.test(site);
+      /\bTU HA 1 CU\b/.test(site);
   }
   function applyConfirmedHaTheHanh34Ga11(a,d,s,loc,data){
     if(!confirmedHaTheHanh34Ga11(a,d,s,loc))return false;
@@ -146,8 +146,8 @@
     for(const e of a?.entries||[]){
       if(Number(e?.day)!==4||txt(e?.session)!=='Sáng'||
          fold(e?.schoolName||e?.school)!=='HA THE HANH'||
-         !/\\bTU HA 1 CU\\b/.test(fold(e?.siteDisplay||e?.siteName)))continue;
-      if(/^3\\/4\\s*\\(GA\\s*12\\)$/i.test(txt(e?.className)))e.className='3/4';
+         !/\bTU HA 1 CU\b/.test(fold(e?.siteDisplay||e?.siteName)))continue;
+      if(/^3\/4\s*\(GA\s*12\)$/i.test(txt(e?.className)))e.className='3/4';
     }
     return true;
   }
