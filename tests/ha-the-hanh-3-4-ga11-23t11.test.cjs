@@ -50,8 +50,8 @@ assert.equal(engine.gaDisplayValue(makeCase({sheet:'16T11'}),4,'Sáng',loc),'12'
 assert.equal(engine.gaDisplayValue(makeCase({code:'THAO',teacherName:'Thảo'}),4,'Sáng',loc),'12','giáo viên khác không bị đổi');
 assert.equal(engine.gaDisplayValue(makeCase({sheet:'23T11'}),5,'Sáng',loc),'','thứ Năm không tự ép GA11');
 const siteOther={...loc,key:'HA THE HANH|TU HA 2 CU',siteDisplay:'Phân hiệu: Tứ Hạ 2 cũ'};
-assert.equal(engine.gaDisplayValue(makeCase(),4,'Sáng',siteOther),'','điểm trường khác không bị đổi');
-const schoolOther={...loc,key:'PHU BINH|TU HA 1 CU',schoolName:'PHÚ BÌNH'};
+assert.equal(engine.gaDisplayValue(makeCase(),4,'Sáng',siteOther),'12','điểm trường khác giữ GA12 cũ, không ép GA11');
+const schoolOther={...loc,key:'PHU BINH|TU HA 1 CU',schoolName:'PHÚ BÌNH',legacySchool:'PHÚ BÌNH'};
 assert.equal(engine.gaDisplayValue(makeCase(),4,'Sáng',schoolOther),'','trường khác không bị đổi');
 // Excel render calls the same canonical GA value used by on-screen report.
 const cells=new Map(),rows=new Map();
