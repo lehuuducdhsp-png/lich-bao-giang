@@ -4,7 +4,7 @@ const R=require('../tkb-roster-group-period-safe-v1.js');
 const GA=require('../ga-suggestion-v7.js');
 const Cross=require('../ga-suggestion-cross-version-v1.js');
 const PerClass=require('../ga-per-class-v2.js');
-assert.equal(R.VERSION,'20261116.1');
+assert.equal(R.VERSION,'20261122.2');
 // 07T9–09T11 dùng CƠ SỞ 1 - PHÚ HẬU CŨ và CỞ SỞ 2 - PHÚ BÌNH CŨ.
 // 16T11 chỉ đổi tên hiển thị, không phải hai cơ sở mới.
 const cells=new Map([
