@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 const P=require('../assist-p-preview-safe-v1.js');
-assert.equal(R.VERSION,'20261116.1');assert.equal(P.VERSION,'20261116.1');
+assert.equal(R.VERSION,'20261122.2');assert.equal(P.VERSION,'20261116.1');
 // Positions transcribed from uploaded TKB NĂM HỌC 26-27(3).xlsx, sheet 16T11.
 const tue=[
  ['4/1','TIÊN','TIÊNP'],['4/2','TRÂM','TRÂMP'],['4/3','HẠ','HẠP'],
@@ -19,7 +19,7 @@ const fri=[
  [['2/8','CTV',''],null]
 ];
 const cells=new Map([['AX40','TẤT CẢ HỌC TIẾT 4, CHIỀU THỨ 6'],
- ['AZ39','HỌC TIẾT 4'],['W4','4'],['B41','VỸ DẠ']]);
+ ['AZ39','HỌC TIẾT 4'],['W4','4'],['B41','VỸ\n DẠ']]);
 for(let i=0;i<tue.length;i++){const [cls,m,p]=tue[i],r=42+i*2;cells.set('W'+r,cls);cells.set('W'+(r+1),m);if(p)cells.set('X'+(r+1),p)}
 for(let i=0;i<fri.length;i++)for(let j=0;j<2;j++){
  const v=fri[i][j];if(!v)continue;const r=41+i*2,mc=j===0?'AZ':'BA',pc=j===0?'AY':'BB';
@@ -29,7 +29,7 @@ const col=n=>{let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floo
 const ws={name:'16T11',rowCount:220,model:{merges:['B41:B59','AX40:AX54','AZ39:BA40']},
  getCell(r,c){const a=col(c)+r,v=cells.get(a)||'';return{value:v,text:v,address:a}}};
 const parser={
- locationAt(_w,r){return r>=41&&r<=59?{schoolName:'VỸ DẠ',school:'VỸ DẠ',locationKey:'VY DA|'}:
+ locationAt(_w,r){return r>=41&&r<=59?{schoolName:'VỸ',school:'VỸ',locationKey:'VY|'}:
   {schoolName:'TRẦN QUỐC TOẢN',locationKey:'TRAN QUOC TOAN|'}},
  buildHeader(){return{headerRow:4}},
  classMeta(v){return /^[1-5]\/\d+$/.test(v)?
@@ -99,6 +99,7 @@ for(const read of [reader('assist-p-preview-safe-v1.js','preview'),reader('assis
 assert.equal(R.vyDaFridayAt(ws,60,52,parser),null);
 assert.equal(R.vyDaFridayAt({...ws,name:'09T11'},42,52,parser),null);
 assert.equal(R.vyDaAssistMainColAt(ws,44,27,parser),null);
+assert.equal(R.vyDaFridayAt(ws,42,52,parser)?.period,4,'Tên trường xuống dòng vẫn phải về tiết 4');
 // Real Excel update also shifts Phú Bình/Phú Hậu blocks down a row (82:95),
 // so P at row 96 belongs to Phú Bình even when B96 starts Hương Vinh.
 const pcells=new Map([['B82','PHÚ BÌNH'],['B96','HƯƠNG VINH'],

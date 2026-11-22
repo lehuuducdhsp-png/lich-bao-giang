@@ -5,12 +5,12 @@ const cells=new Map([
  ['AX40','TẤT CẢ HỌC TIẾT 4, CHIỀU THỨ 6'],['AZ39','HỌC TIẾT 4'],
  ['AZ41','1/2'],['AZ42','DUNG'],['BA41','1/1'],['BA42','YẾN'],
  ['AZ43','1/4'],['AZ44','DUNG2'],['BA43','1/3'],['BA44','QUỲNH'],
- ['AZ55','2/8'],['AZ56','CTV'],['B41','VỸ DẠ']
+ ['AZ55','2/8'],['AZ56','CTV'],['B41','VỸ\n DẠ']
 ]);
 const colName=c=>{let s='';while(c){c--;s=String.fromCharCode(65+c%26)+s;c=Math.floor(c/26)}return s};
 const ws={name:'16T11',getCell(r,c){const address=colName(c)+r,v=cells.get(address)||'';return{address,value:v,text:v}}};
 const parser={
- locationAt(_ws,r){return{schoolName:r>=41&&r<=56?'VỸ DẠ':'KHÁC'}},
+ locationAt(_ws,r){return{schoolName:r>=41&&r<=56?'VỸ':'KHÁC'}},
  colInfoFor(_ws,col){const p={51:2,52:3,53:4,54:5};return p[col]?{day:6,session:'Chiều',period:p[col]}:null},
  specialScheduleHintAt(w,r,c){return R.specialScheduleHintAt(w,r,c,parser)},
  timetableColumns(){return[52,53]}
