@@ -115,8 +115,45 @@
     return a.gaValues
   }
   const gaKey=(d,s,loc)=>`${Number(d)}|${txt(s)}|${txt(loc?.key||loc?.label)}`,legacyGaKey=(d,s,loc)=>`${Number(d)}|${txt(s)}|${txt(loc?.legacySchool||loc?.schoolName)}`;
+  // Mốc GA người dùng đã xác nhận từ báo giảng tuần 12: riêng lớp 3/4
+  // Hà Thế Hạnh – Tứ Hạ 1 cũ, sáng Thứ Tư 23T11, GV Ngô Thị Mỹ Linh.
+  // Không áp dụng GA11 cho cả trường, khối hoặc tuần khác.
+  function confirmedHaTheHanh34Ga11(a,d,s,loc){
+    const name=fold(a?.teacherName),code=txt(a?.code).toUpperCase();
+    const school=fold(loc?.schoolName),site=fold(loc?.siteDisplay||loc?.label);
+    return txt(a?.sheet).toUpperCase()==='23T11'&&Number(d)===4&&txt(s)==='Sáng'&&
+      (code==='M.LINH'||name==='NGO THI MY LINH')&&school==='HA THE HANH'&&
+      /\bTU HA 1 CU\b/.test(site);
+  }
+  function applyConfirmedHaTheHanh34Ga11(a,d,s,loc,data){
+    if(!confirmedHaTheHanh34Ga11(a,d,s,loc))return false;
+    const canonical=gaKey(d,s,loc),legacy=legacyGaKey(d,s,loc),
+      classKeys=[`@CLASS|4|Sáng|${txt(loc?.key||loc?.label)}|3/4`,
+        `@CLASS|4|Sáng|${txt(loc?.legacySchool||loc?.schoolName)}|3/4`];
+    const keys=[canonical,...[legacy,...classKeys].filter(k=>Object.prototype.hasOwnProperty.call(data,k))];
+    const changed=keys.some(k=>txt(data[k])!=='11');
+    if(changed){
+      // Trước khi đổi GA12 đã lưu, chỉ sao lưu đúng bản báo giảng liên quan.
+      try{
+        const backup=`lbgGaConfirmedCorrectionBackupV1:${reportKey(a)}:HA_THE_HANH_3_4_23T11`;
+        if(!localStorage.getItem(backup))
+          localStorage.setItem(backup,JSON.stringify({confirmedGa:11,previous:{...data}}));
+      }catch{}
+      for(const key of keys)data[key]='11';
+      try{localStorage.setItem(reportKey(a),JSON.stringify(data))}catch{}
+    }
+    // Nếu trước đó hệ thống gắn nhãn "(GA 12)" riêng cho lớp thì bỏ nhãn sai.
+    for(const e of a?.entries||[]){
+      if(Number(e?.day)!==4||txt(e?.session)!=='Sáng'||
+         fold(e?.schoolName||e?.school)!=='HA THE HANH'||
+         !/\bTU HA 1 CU\b/.test(fold(e?.siteDisplay||e?.siteName)))continue;
+      if(/^3\/4\s*\(GA\s*12\)$/i.test(txt(e?.className)))e.className='3/4';
+    }
+    return true;
+  }
   function gaValue(a,d,s,loc){
     const data=ensureGa(a),newKey=gaKey(d,s,loc);
+    if(applyConfirmedHaTheHanh34Ga11(a,d,s,loc,data))return'11';
     if(data[newKey]!=null)return String(data[newKey]);
     const old=data[legacyGaKey(d,s,loc)];
     return old==null?'':String(old)

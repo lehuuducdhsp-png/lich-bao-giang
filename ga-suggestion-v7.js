@@ -5,7 +5,7 @@
   if(root)root.LBGGaSuggestionV7=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261116.3';
+  const VERSION='20261122.5';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -146,7 +146,7 @@
   function basisText(ev){
     if(ev.__lbgGaNeedsConfirmation){
       const c=ev.__lbgGaNeedsConfirmation;
-      return `CẦN XÁC NHẬN: GA đã lưu ${c.stored}, nhưng tiến trình dự kiến ${c.expected} ở tuần ${c.week}. Không tự ghi đè; kiểm tra thực dạy.`;
+      return c.expected==null?`CẦN XÁC NHẬN: GA đã lưu ${c.stored} ở tuần ${c.week} không phù hợp lịch sử/quy tắc GA10; cần xác định bài chưa học, không tự ghi đè.`:`CẦN XÁC NHẬN: GA đã lưu ${c.stored}, nhưng tiến trình dự kiến ${c.expected} ở tuần ${c.week}. Không tự ghi đè; kiểm tra thực dạy.`;
     }
     if(ev.gaSource==='kns-nov-09-ga10-anchor')return 'Mốc đã chốt: tuần 09T11 lớp thực học KNS dùng GA10 đặc biệt. Những GA trước đó chưa học sẽ được bù ở các buổi KNS tiếp theo.';
     if(ev.gaSource==='kns-nov-per-class-catchup')return `Sau GA10 đặc biệt, trở về GA KNS còn thiếu theo thứ tự lịch sử lớp: GA ${ev.ga}. Không cộng tuần STEM thành một lượt KNS.`;

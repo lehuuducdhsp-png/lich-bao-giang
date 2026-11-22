@@ -109,4 +109,13 @@ assert.equal(missing.nextGa,null);assert.equal(missing.needsHistoryReview,true);
 assert.match(V.basisText(checks[0].special),/GA10 đặc biệt/);
 assert.match(V.basisText(checks[0].catchup),/GA 9/);
 const again=events.map(x=>x.ga);N.apply(history);assert.deepEqual(events.map(x=>x.ga),again);
-console.log('PASS: 14 active schools + 7 absent in week 09, GA10 special, full backfill, STEM makeup, campus isolation, manual and group review');
+// Tại tuần 23T11, GA10 không được xuất hiện trong gợi ý tại bất kỳ trường nào.
+const missed=make({school:'HÀ THẾ HẠNH',site:'HA THE HANH|TU HA 1 CU',cls:'3/4',week:'26T10',ga:8});
+const missedStem=make({school:'HÀ THẾ HẠNH',site:'HA THE HANH|TU HA 1 CU',cls:'3/4',week:'09T11',ga:13,track:'stem'});
+const missed23=make({school:'HÀ THẾ HẠNH',site:'HA THE HANH|TU HA 1 CU',cls:'3/4',week:'23T11',ga:10});
+N.apply({events:[missed,missedStem,missed23],warnings:[]});
+assert.equal(missed23.ga,9,'23T11 không được lấy GA10 dù từng học STEM');
+assert.equal(D.summarizeTrack([
+ make({school:'HÀ THẾ HẠNH',week:'16T11',ga:9})
+],'kns').nextGa,11,'Dashboard sau 16T11 không được gợi ý GA10');
+console.log('PASS: 14 active schools + 7 absent in week 09; GA10 only 09T11/16T11, later missing KNS without GA10, manual review');

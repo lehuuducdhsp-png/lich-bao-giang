@@ -93,7 +93,7 @@
         ['tkb-parser-bridge-v2.js?v=20260906.3','lbgTkbParserBridgeV2Script'],
         ['teaching-plan-progress-v1.js?v=20261029.1','lbgTeachingPlanProgressV1Script'],
         ['conflict-check-v8.js?v=20260909.1','lbgConflictCheckV8Script'],
-        ['ga-suggestion-v7.js?v=20261116.3','lbgGaSuggestionV7Script'],
+        ['ga-suggestion-v7.js?v=20261122.5','lbgGaSuggestionV7Script'],
         ['ga-suggestion-cross-version-v1.js?v=20261113.3','lbgGaSuggestionCrossVersionV1Script']
       ];
       preloadWindow(reportCore,0,reportCore.length);
@@ -125,7 +125,7 @@
         ['branding-header-fix-v1.js?v=20260805.1','lbgBrandingHeaderFixV1'],
         ['ui-redesign-v1.js?v=20261106.1','lbgUiRedesignV1'],
         ['report-pay-rules-v1.js?v=20260908.1','lbgReportPayRulesV1Script'],
-        ['report-engine-v4.js?v=20260930.1','lbgReportEngineV4Script'],
+        ['report-engine-v4.js?v=20261122.4','lbgReportEngineV4Script'],
         ['sheets-ga-sync-compat-v1.js?v=20260906.1','lbgSheetsGaSyncCompatV1Script'],
         ['week-number-guard-v2.js?v=20260903.2','lbgWeekNumberGuardV2Script'],
         ['mobile-polish-v2.js?v=20260807.4','lbgMobilePolishV2'],

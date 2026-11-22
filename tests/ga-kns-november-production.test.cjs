@@ -42,4 +42,31 @@ assert.ok(warning.warnings.some(x=>x.includes('Thiếu tiết KNS GA10 tuần 16
 const once=JSON.stringify(rows.map(x=>x.ga));
 N.apply(history);assert.equal(JSON.stringify(rows.map(x=>x.ga)),once);
 assert.equal(N.normalizedWeek('9T11'),'09T11');
-console.log('PASS: 02T11 GA11, 09T11 GA10 KNS, then skipped GA9; STEM makeup and cross-site warnings.');
+// STEM ở 09T11, không có KNS 16T11: 23T11 KHÔNG được xếp GA10 muộn.
+const lateStem=[
+ make('late-old','26T10','2026-10-26','4/7',8),
+ make('late-stem','09T11','2026-11-09','4/7',3,'stem'),
+ make('late23','23T11','2026-11-23','4/7',10),
+ make('late30','30T11','2026-11-30','4/7',10)
+];
+N.apply({events:lateStem,warnings:[]});
+assert.equal(lateStem[2].ga,9,'23T11 quay lại GA9, không bù GA10 trễ');
+assert.equal(lateStem[3].ga,11,'30T11 học tiếp GA11, bỏ qua GA10');
+const complete=[
+ make('all01','21T9','2026-09-21','1/9',8),
+ make('all09','09T11','2026-11-09','1/9',10),
+ make('all16','16T11','2026-11-16','1/9',9),
+ make('all23','23T11','2026-11-23','1/9',10)
+];
+N.apply({events:complete,warnings:[]});
+assert.equal(complete[3].ga,11,'KNS đã học GA9,10 thì 23T11 lên GA11');
+const manual=[
+ make('manual26','26T10','2026-10-26','5/9',8),
+ make('manual23','23T11','2026-11-23','5/9',10)
+];
+manual[1].gaSource='manual';
+const flagged=N.apply({events:manual,warnings:[]});
+assert.equal(manual[1].ga,null,'GA10 nhập tay ở 23T11 phải chờ xác minh, không coi là lịch học hợp lệ');
+assert.equal(manual[1].__lbgGaNeedsConfirmation.stored,10);
+assert.match(flagged.warnings.join(' '),/Giữ dữ liệu gốc/);
+console.log('PASS: GA10 chỉ ở 09T11/16T11; 23T11 dùng GA còn thiếu, STEM không kéo GA10 muộn, manual được cảnh báo.');
