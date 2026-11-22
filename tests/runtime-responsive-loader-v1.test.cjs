@@ -104,7 +104,7 @@ const expectedCorePatches=[
   'ga-group-split-history-safe-v1.js?v=20261029.1',
   'ga-group-split-stale-repair-v1.js?v=20260920.1',
   'ga-role-track-stale-repair-v1.js?v=20260920.4',
-  'ga-kns-november-2026-safe-v1.js?v=20261116.3'
+  'ga-kns-november-2026-safe-v1.js?v=20261122.5'
 ];
 const expectedRuntimePatches=[
   'ga-suggestion-multi-apply-v1.js?v=20260920.3',
@@ -138,7 +138,7 @@ assert.match(patches,/if\(runtimePromise\)return runtimePromise/,'concurrent run
 assert.doesNotMatch(patches,/setInterval\s*\(/,'patch loader must be lifecycle-driven, not poll continuously');
 assert.doesNotMatch(patches,/\bindexedDB\b|\blocalStorage\b|document\.cookie/,'loader refactor must not touch stored user data');
 assert.ok(expectedRuntimePatches.indexOf('ga-per-class-v2.js?v=20261113.3')<expectedRuntimePatches.indexOf('ga-multi-selection-bridge-v1.js?v=20260914.2'),'per-class GA must load before shared bridge');
-assert.match(patches,/ga-progress-dashboard-v1\.js\?v=20261116\.3/,'GA progress dashboard must be available as an on-demand module');
+assert.match(patches,/ga-progress-dashboard-v1\.js\?v=20261122\.5/,'GA progress dashboard must be available as an on-demand module');
 assert.match(patches,/installGaProgressLauncher\(\)/,'GA progress launcher must be installed after runtime patches are ready');
 assert.ok(expectedCorePatches.indexOf('ga-group-split-stale-repair-v1.js?v=20260920.1')<expectedCorePatches.indexOf('ga-role-track-stale-repair-v1.js?v=20260920.4'),'role-track repair must load after group-split repair');
 

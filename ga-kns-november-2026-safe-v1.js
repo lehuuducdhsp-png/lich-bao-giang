@@ -5,7 +5,7 @@
   if(root)root.LBGGaKnsNovember2026SafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261116.3-test';
+  const VERSION='20261122.5';
   const WEEK_02='02T11',WEEK_09='09T11',WEEK_16='16T11';
   const LIMIT='2026-11-09';
   const KNS=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
@@ -18,11 +18,11 @@
   const isKns=ev=>txt(ev?.track).toLowerCase()==='kns';
   const inYear=ev=>/^2026-/.test(txt(ev?.dateKey));
   const fromAnchor=ev=>txt(ev?.dateKey)>=LIMIT;
-  function nextUnlearned(learned){
+  function nextUnlearned(learned,skipGa10=false){
     if(!(learned instanceof Set))return null;
     const earlier=KNS.filter(ga=>ga<10&&learned.has(ga));
     if(!earlier.length)return null;
-    return KNS.slice(KNS.indexOf(earlier[0])).find(ga=>!learned.has(ga))??null;
+    return KNS.slice(KNS.indexOf(earlier[0])).find(ga=>(!skipGa10||ga!==10)&&!learned.has(ga))??null;
   }
   function apply(history){
     if(!history||!Array.isArray(history.events))return history;
@@ -49,7 +49,7 @@
     let changed=0,conflicts=0;
     for(const ev of events){
       if(!isKns(ev)||!inYear(ev))continue;
-      const members=membersOf(ev),week=normalizedWeek(ev.sheet),is02=week===WEEK_02,is09=week===WEEK_09,after=fromAnchor(ev);
+      const members=membersOf(ev),week=normalizedWeek(ev.sheet),is02=week===WEEK_02,is09=week===WEEK_09,after=fromAnchor(ev),after16=txt(ev.dateKey)>='2026-11-23';
       if(!members.length)continue;
       const ga=Number(ev.ga),valid=ev.ga!==null&&ev.ga!==undefined&&
         txt(ev.ga)!==''&&Number.isFinite(ga)&&KNS.includes(ga),chosenBefore=valid?ga:null;
@@ -71,11 +71,11 @@
           warnings.push(`Nhóm ${txt(ev.classDisplay)} tuần ${week} trộn lớp có/không học 09T11; phải đối chiếu từng lớp.`);
         }else if(specialMembers.every(Boolean)){
         const makeup=members.map((m,i)=>stem09.has(memberKey(ev,m))&&!available[i]?.learned?.has(10));
-        const shouldMakeup=makeup.some(Boolean);
+        const shouldMakeup=week===WEEK_16&&makeup.some(Boolean);
         if(shouldMakeup&&makeup.every(Boolean)){
           chosen=10;
           ev.gaSource=week===WEEK_16?'kns-nov-16-stem09-ga10-makeup':'kns-nov-stem09-delayed-ga10-makeup';
-        }else if(shouldMakeup){
+        }else if(week===WEEK_16&&makeup.some(Boolean)){
           chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
           warnings.push(`Nhóm lớp ${txt(ev.classDisplay)} tuần ${week} có lớp thiếu GA10 vì STEM 09T11; cần tách nhóm hoặc kiểm tra lại TKB.`);
         }else{
@@ -83,7 +83,7 @@
           if(sameWeek.length===1){chosen=sameWeek[0];ev.gaSource='kns-nov-same-week';}
           else if(sameWeek.length>1){chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;}
           else{
-            const candidates=available.map(s=>s?.learned?.has(10)?nextUnlearned(s.learned):null);
+            const candidates=available.map(s=>s?.learned?.size?nextUnlearned(s.learned,after16):null);
             const withBasis=candidates.filter(x=>x!==null);
             if(withBasis.length&&withBasis.length===members.length&&new Set(withBasis).size===1){
               chosen=withBasis[0];ev.gaSource='kns-nov-per-class-catchup';
@@ -95,7 +95,23 @@
         }
         }
       }
-      if(originalSource==='manual'&&valid){
+      if(after16&&originalSource!=='manual'&&chosen===10){
+        const candidates=available.map(st=>st?.learned?.size?nextUnlearned(st.learned,true):null);
+        const usable=candidates.filter(v=>v!==null);
+        if(usable.length===members.length&&new Set(usable).size===1){
+          chosen=usable[0];ev.gaSource='kns-nov-per-class-catchup';
+        }else{
+          chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
+          warnings.push(`Tuần ${week} không được tự xếp GA10; lớp ${txt(ev.classDisplay)} thiếu lịch sử để xác định GA KNS tiếp theo.`);
+        }
+      }
+      if(after16&&originalSource==='manual'&&valid&&ga===10){
+        const options=available.map(st=>st?.learned?.size?nextUnlearned(st.learned,true):null),
+          usable=options.filter(v=>v!==null),expected=usable.length===members.length&&new Set(usable).size===1?usable[0]:null;
+        ev.__lbgGaNeedsConfirmation={expected,stored:10,week,classDisplay:txt(ev.classDisplay)};
+        chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;conflicts++;
+        warnings.push(`GA10 đã nhập ở tuần ${week} không phù hợp quy tắc (GA10 chỉ tuần 09T11/16T11). Giữ dữ liệu gốc và cần xác nhận GA thay thế cho ${txt(ev.classDisplay)}.`);
+      }else if(originalSource==='manual'&&valid){
         if(chosen!==null&&chosen!==ga){
           ev.__lbgGaNeedsConfirmation={expected:chosen,stored:ga,week,classDisplay:txt(ev.classDisplay)};
           ev.historyMismatch=true;

@@ -5,7 +5,7 @@
   if(root)root.LBGGaProgressDashboardV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261116.3';
+  const VERSION='20261122.5';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -64,20 +64,22 @@
     const compact=compactTrackEvents(events,track),known=compact.filter(e=>e?.ga!==null&&e?.ga!==undefined&&txt(e.ga)!==''&&Number.isFinite(Number(e.ga))),lastEvent=compact[compact.length-1]||null,lastKnown=known[known.length-1]||null;
     const lastGa=lastKnown?Number(lastKnown.ga):null;
     let next=nextGa(track,lastGa),needsHistoryReview=false;
+    const after16=track==='kns'&&compact.some(e=>txt(e.dateKey)>='2026-11-16'&&txt(e.dateKey).slice(0,4)==='2026');
     // Sau GA10 đặc biệt, quay lại GA chưa học, KỂ CẢ GA dưới 10.
     const special=track==='kns'&&known.some(e=>
       (['09T11','9T11'].includes(txt(e.sheet))&&Number(e.ga)===10)||
       /^kns-nov-/.test(txt(e.gaSource)));
-    if(special){
+    if(special||after16){
       const learned=new Set(known.map(e=>Number(e.ga)));
       const earlier=KNS_SEQUENCE.filter(ga=>ga<10&&learned.has(ga));
       if(earlier.length){
         const start=KNS_SEQUENCE.indexOf(earlier[0]);
-        next=KNS_SEQUENCE.slice(start).find(ga=>!learned.has(ga))??null;
+        next=KNS_SEQUENCE.slice(start).find(ga=>(!after16||ga!==10)&&!learned.has(ga))??null;
       }else{
-        next=null;needsHistoryReview=true;
+        if(special){next=null;needsHistoryReview=true;}
       }
     }
+    if(after16&&next===10){next=null;needsHistoryReview=true;}
     return{
       track,count:compact.length,lastGa,nextGa:next,lastSheet:txt(lastEvent?.sheet),lastDate:txt(lastEvent?.dateKey),needsHistoryReview,done:lastGa!==null&&next===null&&!needsHistoryReview,
       history:compact.map(ev=>({sheet:txt(ev?.sheet),dateKey:txt(ev?.dateKey),ga:Number.isFinite(Number(ev?.ga))?Number(ev.ga):null,source:txt(ev?.gaSource),period:Number(ev?.period)||null}))
