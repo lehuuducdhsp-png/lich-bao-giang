@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261116.1';
+  const VERSION='20261124.1';
   const q=id=>document.getElementById(id),txt=v=>String(v??'').replace(/\r/g,'').trim(),pad=n=>String(Number(n)||0).padStart(2,'0'),esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const book=()=>{try{return typeof wb!=='undefined'?wb:null}catch{return null}},parser=()=>window.LBGTkbParserV2,engine=()=>window.LBGReportEngineV4,rules=()=>window.LBGReportPayRulesV1;
   const mergeCache=new WeakMap();let installed=false,previewObs=null,detailObs=null,monthObs=null,realSaveAs=null;
@@ -31,7 +31,8 @@
             Number(e.col)===partnerCol&&e.classType==='single'&&Number(e.classRow)===r-1);
           if(candidates.length===1)main=candidates[0];
         }
-        const cm=main?{classDisplay:main.className,classRaw:main.classRaw,groupNote:main.groupNote}:classAt(ws,r,c,base);
+        const confirmed=p.confirmedNov18Assist?.(ws,r,c,base)||null;
+        const cm=confirmed?{classDisplay:confirmed.className,classRaw:confirmed.classRaw,groupNote:confirmed.groupNote}:main?{classDisplay:main.className,classRaw:main.classRaw,groupNote:main.groupNote}:classAt(ws,r,c,base);
         const when=main?{day:main.day,session:main.session,period:main.period,teachingPeriod:main.teachingPeriod||main.period}:
           schedule?{day:schedule.day,session:schedule.session,period:schedule.period,teachingPeriod:schedule.period}:{};
         out.push({...info,...(schedule||main?{slotDay:info.day,slotSession:info.session,slotPeriod:info.period}:{}),...when,

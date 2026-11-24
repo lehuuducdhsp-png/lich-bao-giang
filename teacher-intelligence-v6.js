@@ -152,6 +152,17 @@
         source.push({sheet:ws.name,code,teacherName:meta?.name||code,role:meta?.role||ROLE.UNKNOWN,makeUp:isBlue(cell),...when,school,className,address:cell.address,row:row.number,col:c,date,dateKey:dateKey(date)});
       }
     });
+    if(text(ws?.name).toUpperCase()==='16T11'){
+      try{
+        const corrected=(window.LBGTkbParserV2?.scanAssignments?.(ws)||[])
+          .filter(e=>e.confirmedClassCorrection==='2026-11-18-phu-binh-duc-nhung');
+        const byAddress=new Map(corrected.map(e=>[text(e.address),e]));
+        for(const e of source){
+          const hit=byAddress.get(text(e.address));
+          if(hit&&text(e.code)===text(hit.code))e.className=text(hit.className);
+        }
+      }catch{}
+    }
     source.sort((a,b)=>(a.date?.getTime()||0)-(b.date?.getTime()||0)||((a.session==='Sáng'?0:1)-(b.session==='Sáng'?0:1))||a.period-b.period||a.row-b.row||a.col-b.col);
     const grouped=new Map();
     for(const e of source){

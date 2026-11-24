@@ -43,6 +43,7 @@ jobs:
           node tests/vy-da-weekly-stats-real-period.test.cjs
           node tests/vy-da-16t11-workbook2-real-layout.test.cjs
           node tests/vy-da-23t11-period4-all-classes.test.cjs
+          node tests/phu-binh-16t11-duc-nhung-correction.test.cjs
           node tests/grouped-plus-report-safe-v1.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
           node tests/production-runtime-performance.test.cjs

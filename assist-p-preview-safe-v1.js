@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-  const VERSION='20261116.1';
+  const VERSION='20261124.1';
   const q=id=>document.getElementById(id);
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const assistantCode=code=>`${txt(code).toUpperCase()}P`;
@@ -198,7 +198,7 @@
         // Không mở rộng việc mượn lớp cho các nhóm khác, tránh sai lệch giáo án.
         const rosterPairedMain=extraHeader&&main?.phuTanExtraPeriod?main:null;
         const thanhLamMain=thanhLamSplitPairedMain(main,base,row,col);
-        const meta=selectAssistClass(candidates,main,localMeta,vyDaMain||specialMain||rosterPairedMain||thanhLamMain);
+        const meta=p.confirmedNov18Assist?.(ws,row,col,base)||selectAssistClass(candidates,main,localMeta,vyDaMain||specialMain||rosterPairedMain||thanhLamMain);
         const resolvedClass=txt(meta.className||meta.classDisplay||meta.classRaw)||'Lớp không xác định';
         const resolvedRaw=txt(meta.classRaw)||resolvedClass;
         const explicit=txt(meta.groupNote||resolvedRaw).match(/\bTI[ẾE]T\s*([1-5])\b/i);
