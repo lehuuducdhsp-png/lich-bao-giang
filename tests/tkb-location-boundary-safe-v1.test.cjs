@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const L=require('../tkb-roster-group-period-safe-v1.js');
 
-assert.equal(L.VERSION,'20261122.3');
+assert.equal(L.VERSION,'20261124.1');
 
 function makeWs(cells,merges=[]){
   return{
