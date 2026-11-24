@@ -5,7 +5,7 @@
   if(root)root.LBGTkbRosterGroupPeriodSafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261122.3';
+  const VERSION='20261124.1';
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
   const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Đ/g,'D').replace(/đ/g,'d').toUpperCase().replace(/\s+/g,' ');
   const mergeCache=new WeakMap();
@@ -401,6 +401,39 @@
         :timed;
   }
 
+  // Xác nhận thực dạy 18/11/2026, Phú Bình cơ sở Phú Bình: ĐỨC 3/7; NHUNG 2/7.
+  // Chỉ hoán đổi khi CẢ HAI mã/lớp gốc cùng xuất hiện trong đúng buổi này.
+  // Không sửa file nguồn, các phiên bản TKB khác, cơ sở Phú Hậu hay tuần sau.
+  function confirmedNov18PhuBinh(entries,ws){
+    if(txt(ws?.name).toUpperCase()!=='16T11'||!Array.isArray(entries))return entries;
+    const matching=e=>Number(e?.day)===4&&txt(e?.session)==='Chiều'&&
+      fold(e?.schoolName||e?.school)==='PHU BINH'&&
+      (fold(e?.siteName)==='PHU BINH'||fold(e?.siteDisplay)==='CO SO: PHU BINH')&&
+      txt(e?.classType).toLowerCase()==='single';
+    const duc=entries.filter(e=>matching(e)&&txt(e.code).toUpperCase()==='ĐỨC'&&txt(e.classRaw||e.className)==='2/7');
+    const nhung=entries.filter(e=>matching(e)&&txt(e.code).toUpperCase()==='NHUNG'&&txt(e.classRaw||e.className)==='3/7');
+    if(duc.length!==1||nhung.length!==1||Number(duc[0].period)!==Number(nhung[0].period)||
+       txt(duc[0].locationKey)!==txt(nhung[0].locationKey))return entries;
+    const corrections=new Map([[duc[0],'3/7'],[nhung[0],'2/7']]);
+    return entries.map(e=>{
+      const cls=corrections.get(e);if(!cls)return e;
+      return{...e,className:cls,classRaw:cls,classType:'single',classCount:1,
+        confirmedClassCorrection:'2026-11-18-phu-binh-duc-nhung',
+        confirmedOriginalClass:txt(e.classRaw||e.className),confirmedActualClass:cls};
+    });
+  }
+  // Trợ giảng P mượn đúng lớp của giáo viên chính đã xác nhận, cùng cột và hàng liền trước.
+  function confirmedNov18Assist(ws,row,col,code,parser){
+    if(txt(ws?.name).toUpperCase()!=='16T11'||!parser?.scanAssignments)return null;
+    const key=txt(code).toUpperCase();if(!['ĐỨC','NHUNG'].includes(key))return null;
+    let arr=[];try{arr=parser.scanAssignments(ws,key)||[]}catch{return null}
+    const found=arr.filter(e=>e.confirmedClassCorrection==='2026-11-18-phu-binh-duc-nhung'&&
+      Number(e.row)===Number(row)-1&&Number(e.col)===Number(col));
+    if(found.length!==1)return null;
+    const e=found[0];
+    return{className:e.className,classRaw:e.classRaw,classType:'single',classCount:1,
+      groupNote:txt(e.groupNote),confirmedClassCorrection:e.confirmedClassCorrection};
+  }
   function scanPlusGroupedAssignments(ws,onlyCode='',parser=null){
     if(!ws||!parser?.timetableColumns||!parser?.colInfoFor||!parser?.resolveTeacherCode)return[];
     const want=txt(onlyCode).toUpperCase(),out=[],start=Math.max(1,Number(parser.buildHeader?.(ws)?.headerRow||4)+1);
@@ -432,7 +465,7 @@
   }
 
   if(typeof module==='object'&&module.exports){
-    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,mergedPhuBinhSiteAt,vyDaFridayAt,vyDaAssistMainColAt,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments};
+    return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,explicitScheduleFromText,mergedPhuBinhSiteAt,vyDaFridayAt,vyDaAssistMainColAt,specialScheduleHintAt,applySpecialScheduleHint,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,confirmedNov18PhuBinh,confirmedNov18Assist,scanPlusGroupedAssignments};
   }
 
   function installOnce(){
@@ -440,10 +473,17 @@
     if(!parser?.scanAssignments||!parser.__lbgAtomicTeachingV1||!parser.__lbgClassTypoFixV1)return false;
     if(parser.__lbgRosterGroupPeriodSafeV1===VERSION)return true;
     const original=parser.scanAssignments.bind(parser);
-    const wrapped=function(ws,onlyCode=''){return(original(ws,onlyCode)||[]).map(entry=>normalizeEntry(ws,entry,parser))};
+    const wrapped=function(ws,onlyCode=''){
+      const special=txt(ws?.name).toUpperCase()==='16T11';
+      const list=(original(ws,special?'':onlyCode)||[]).map(e=>normalizeEntry(ws,e,parser));
+      const corrected=confirmedNov18PhuBinh(list,ws);
+      const want=txt(onlyCode).toUpperCase();
+      return special&&want?corrected.filter(e=>txt(e.code).toUpperCase()===want):corrected;
+    };
     wrapped.__lbgRosterGroupPeriodSafeV1=VERSION;
     wrapped.__lbgOriginalScanAssignments=original;
     parser.scanAssignments=wrapped;
+    parser.confirmedNov18Assist=(ws,row,col,code)=>confirmedNov18Assist(ws,row,col,code,parser);
     parser.rosterTeachingPeriodHintAt=(ws,row,col)=>{
       const loc=parser.locationAt?.(ws,row)||{};
       const special=specialScheduleHintAt(ws,row,col,parser,loc);
@@ -468,5 +508,5 @@
     root.document.addEventListener('lbg-runtime-ready',installOnce);
     return true;
   }
-  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,scanPlusGroupedAssignments,install};
+  return{VERSION,periodHintFromText,explicitGroupPeriod,periodHintAt,directSiteAt,isThuyPhu1ThreeClassHandoff,repairBoundaryLocation,assignmentToken,groupRosterCells,explicitGroupAnchorAt,applyHint,applyGroupContinuation,normalizeEntry,confirmedNov18PhuBinh,confirmedNov18Assist,scanPlusGroupedAssignments,install};
 });

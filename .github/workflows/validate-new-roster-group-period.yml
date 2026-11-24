@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'tkb-roster-group-period-safe-v1.js'
+      - 'tests/phu-binh-16t11-duc-nhung-correction.test.cjs'
       - 'assist-p-preview-safe-v1.js'
       - 'grouped-plus-report-safe-v1.js'
       - 'assist-p-excel-export-parity-v1.js'
@@ -50,6 +51,7 @@ jobs:
           node tests/vy-da-16t11-period4-assist.test.cjs
           node tests/vy-da-16t11-workbook2-real-layout.test.cjs
           node tests/vy-da-23t11-period4-all-classes.test.cjs
+          node tests/phu-binh-16t11-duc-nhung-correction.test.cjs
           node tests/grouped-plus-report-safe-v1.test.cjs
           node tests/assist-p-class-pairing-v1.test.cjs
           node tests/assist-p-excel-export-parity-v1.test.cjs

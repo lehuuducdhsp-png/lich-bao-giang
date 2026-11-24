@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 const P=require('../assist-p-preview-safe-v1.js');
-assert.equal(R.VERSION,'20261122.3');assert.equal(P.VERSION,'20261116.1');
+assert.equal(R.VERSION,'20261124.1');assert.equal(P.VERSION,'20261124.1');
 // Đối chiếu trực tiếp TKB NĂM HỌC 26-27(2).xlsx, sheet 23T11; lớp trong ảnh đều tiết 4.
 const tue=[];
 const fri=[

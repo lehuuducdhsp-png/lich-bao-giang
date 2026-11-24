@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const R=require('../tkb-roster-group-period-safe-v1.js');
 const P=require('../assist-p-preview-safe-v1.js');
-assert.equal(R.VERSION,'20261122.3');assert.equal(P.VERSION,'20261116.1');
+assert.equal(R.VERSION,'20261124.1');assert.equal(P.VERSION,'20261124.1');
 // Positions transcribed from uploaded TKB NĂM HỌC 26-27(3).xlsx, sheet 16T11.
 const tue=[
  ['4/1','TIÊN','TIÊNP'],['4/2','TRÂM','TRÂMP'],['4/3','HẠ','HẠP'],
