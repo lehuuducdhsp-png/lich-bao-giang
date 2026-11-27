@@ -27,5 +27,5 @@ jobs:
           node --check tests/phu-tan-4-6-ga11-23t11.test.cjs
       - name: Verify source version and GA11 correction
         run: |
-          grep -Fq 'report-engine-v4.js?v=20261127.1' app-runtime-v1.js
+          grep -Fq 'report-engine-v4.js?v=20261127.2' app-runtime-v1.js
           node tests/phu-tan-4-6-ga11-23t11.test.cjs
