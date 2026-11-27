@@ -70,6 +70,7 @@ jobs:
           node --check report-engine-v4.js
           node tests/ha-the-hanh-3-4-ga11-23t11.test.cjs
           node tests/phu-tan-4-6-ga11-23t11.test.cjs
+          node tests/ga11-23t11-next-ga12-performance.test.cjs
           node tests/ga-kns-november-production.test.cjs
           node tests/ga-global-09t11-backfill-all-schools.test.cjs
           node tests/ga-progress-dashboard-v1.test.cjs
