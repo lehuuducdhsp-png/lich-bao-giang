@@ -46,7 +46,8 @@ async function smoke(){
  const sandbox=vm.createContext({document,window,indexedDB,ExcelJS:excel,localStorage,Date,Math,
   setTimeout,clearTimeout,console,alert(){throw Error('unexpected alert')},confirm(){return false}});
  vm.runInContext(match[1],sandbox,{filename:'index-core-inline.js'});
- await new Promise(r=>setTimeout(r,50));
+ for(let i=0;i<30&&stats.parsed===0;i++)await new Promise(r=>setTimeout(r,25));
+ if(!stats.get.length)console.log('DEBUG_LAZY_LOAD',JSON.stringify({status:el('status').textContent,versions:vm.runInContext('versions.map(v=>v.id)',sandbox),active:vm.runInContext('activeId',sandbox),cursor:stats.cursor,parsed:stats.parsed}));
  assert.equal(stats.getAll,0,'startup must avoid getAll');
  assert.equal(stats.cursor,3,'cursor gets metadata');
  assert.deepEqual(stats.get,['new'],'only current version loaded');
