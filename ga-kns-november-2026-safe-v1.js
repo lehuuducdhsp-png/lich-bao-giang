@@ -5,7 +5,7 @@
   if(root)root.LBGGaKnsNovember2026SafeV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261122.5';
+  const VERSION='20261127.2';
   const WEEK_02='02T11',WEEK_09='09T11',WEEK_16='16T11';
   const LIMIT='2026-11-09';
   const KNS=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
@@ -18,6 +18,17 @@
   const isKns=ev=>txt(ev?.track).toLowerCase()==='kns';
   const inYear=ev=>/^2026-/.test(txt(ev?.dateKey));
   const fromAnchor=ev=>txt(ev?.dateKey)>=LIMIT;
+  const fold=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'D').toUpperCase().replace(/\s+/g,' ');
+  function confirmedGa11At23(ev,members){
+    if(normalizedWeek(ev?.sheet)!=='23T11'||!inYear(ev)||!isKns(ev)||members.length!==1)return false;
+    const name=fold(ev?.school||(ev?.atoms||[])[0]?.schoolName),site=fold(ev?.locationKey);
+    const codes=new Set([...(ev?.participants||[]),...(ev?.atoms||[])].map(v=>txt(v?.code).toUpperCase()));
+    const day=Number(ev?.day),period=Number(ev?.teachingPeriod??ev?.period),session=txt(ev?.session),cls=members[0];
+    return(name.includes('PHU TAN')&&cls==='4/6'&&day===6&&session==='Chiều'&&period===4&&codes.has('ĐỨC'))||
+      (name.includes('HA THE HANH')&&site.includes('TU HA 1 CU')&&cls==='3/4'&&
+       day===4&&session==='Sáng'&&period===5&&codes.has('M.LINH'));
+  }
+  function nextAfter(ga){const i=KNS.indexOf(Number(ga));return i<0?null:KNS[i+1]??null;}
   function nextUnlearned(learned,skipGa10=false){
     if(!(learned instanceof Set))return null;
     const earlier=KNS.filter(ga=>ga<10&&learned.has(ga));
@@ -121,12 +132,39 @@
       }else if(originalSource==='conflict'){
         chosen=null;ev.gaSource='conflict';ev.historyMismatch=true;
       }
+      // GA11 được xác nhận tại 23T11 phải trở thành mốc lịch sử cho các tuần kế tiếp,
+      // không chỉ sửa ô GA tại màn hình báo giảng của tuần 12.
+      const confirmed=confirmedGa11At23(ev,members);
+      if(confirmed){
+        if(valid&&ga!==11)warnings.push(`Mốc GA11 thực dạy đã xác nhận tại ${txt(ev.school)} – ${txt(ev.classDisplay)} tuần 23T11; giá trị GA ${ga} trước đây giữ tại bản sao của báo giảng.`);
+        chosen=11;ev.gaSource='confirmed-23t11-ga11';
+        delete ev.__lbgGaNeedsConfirmation;ev.historyMismatch=false;
+      }else if(after16&&week!=='23T11'&&available.length&&available.every(st=>st?.anchorForward)){
+        const sameWeek=available.every(st=>st.weeks.has(week));
+        const candidates=available.map(st=>sameWeek?st.weeks.get(week):nextAfter(st.lastGa));
+        if(candidates.every(v=>v!==null)&&new Set(candidates).size===1){
+          const expected=candidates[0];
+          if(originalSource!=='manual'){
+            chosen=expected;ev.gaSource=sameWeek?'kns-confirmed-same-week':'kns-after-ga11-anchor';
+            ev.historyMismatch=false;
+          }else if(valid&&ga!==expected){
+            ev.__lbgGaNeedsConfirmation={expected,stored:ga,week,classDisplay:txt(ev.classDisplay)};
+            ev.historyMismatch=true;
+            warnings.push(`GA thủ công ${ga} khác GA ${expected} tiếp theo sau mốc GA11 tại ${txt(ev.school)} – ${txt(ev.classDisplay)}. Cần xác nhận, không ghi đè dữ liệu đã lưu.`);
+          }
+        }
+      }
       if(chosen!==null&&(!valid||chosen!==ga))changed++;
       if(chosen!==null||ev.gaSource==='conflict')ev.ga=chosen;
       if(chosen!==null){
         if(chosen===10&&(is09||week===WEEK_16))for(const m of members)ga10By16.add(memberKey(ev,m));
         for(const m of members){
           const key=memberKey(ev,m),prev=state.get(key)||{learned:new Set(),seenNineOrLater:false,weeks:new Map()};
+          const prior=available[members.indexOf(m)];
+          const validStep=prior?.anchorForward&&
+            (chosen===nextAfter(prior.lastGa)||(prior.weeks.has(week)&&chosen===prior.weeks.get(week)));
+          prev.anchorForward=confirmed||(week==='23T11'&&chosen===11)||Boolean(validStep);
+          prev.lastGa=chosen;
           prev.learned.add(chosen);if(chosen>=9)prev.seenNineOrLater=true;
           prev.weeks.set(week,chosen);state.set(key,prev);
         }
@@ -162,5 +200,5 @@
     base.buildHistory=wrapBuildHistory(base.buildHistory);return true;
   }
   function install(){let tries=0;const tick=()=>{tries++;if(installOnce())return;if(tries<400)setTimeout(tick,50)};tick();return true}
-  return{VERSION,WEEK_02,WEEK_09,WEEK_16,KNS,afterNine,normalizedWeek,nextUnlearned,apply,wrapBuildHistory,install};
+  return{VERSION,WEEK_02,WEEK_09,WEEK_16,KNS,afterNine,normalizedWeek,confirmedGa11At23,nextAfter,nextUnlearned,apply,wrapBuildHistory,install};
 });
