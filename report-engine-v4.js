@@ -151,9 +151,41 @@
     }
     return true;
   }
+  // Mốc thực dạy do người dùng xác nhận 27/11/2026, từ file TKB (3):
+  // Tuần 23T11, Phú Tân, thứ Sáu chiều tiết 4: lớp 4/6, ĐỨC/ĐỨCP = GA11.
+  // Không thay GA12 của Thủy Dương hay các lớp/tuần/cơ sở khác.
+  function confirmedPhuTan46Ga11(a,d,s,loc){
+    if(txt(a?.sheet).toUpperCase()!=='23T11'||Number(d)!==6||txt(s)!=='Chiều'||
+       fold(loc?.schoolName)!=='PHU TAN'||txt(a?.code).toUpperCase()!=='ĐỨC')return false;
+    const matches=(a?.entries||[]).filter(e=>
+      Number(e?.day)===6&&txt(e?.session)==='Chiều'&&
+      Number(e?.teachingPeriod??e?.period)===4&&
+      txt(e?.code).toUpperCase()==='ĐỨC'&&
+      fold(e?.schoolName||e?.school)==='PHU TAN'&&
+      /^4\s*\/\s*6(?:\b|\s|$)/.test(txt(e?.classRaw||e?.className))&&
+      txt(locOf(e).key)===txt(loc?.key));
+    return matches.length===1;
+  }
+  function applyConfirmedPhuTan46Ga11(a,d,s,loc,data){
+    if(!confirmedPhuTan46Ga11(a,d,s,loc))return false;
+    const canonical=gaKey(d,s,loc),legacy=legacyGaKey(d,s,loc);
+    const classKeys=[`@CLASS|6|Chiều|${txt(loc?.key||loc?.label)}|4/6`,
+      `@CLASS|6|Chiều|${txt(loc?.legacySchool||loc?.schoolName)}|4/6`];
+    const keys=[canonical,...[legacy,...classKeys].filter(k=>Object.prototype.hasOwnProperty.call(data,k))];
+    if(keys.some(k=>txt(data[k])!=='11')){
+      try{
+        const backup=`lbgGaConfirmedCorrectionBackupV1:${reportKey(a)}:PHU_TAN_4_6_23T11`;
+        if(!localStorage.getItem(backup))
+          localStorage.setItem(backup,JSON.stringify({confirmedGa:11,previous:{...data}}));
+      }catch{}
+      for(const key of keys)data[key]='11';
+      try{localStorage.setItem(reportKey(a),JSON.stringify(data))}catch{}
+    }
+    return true;
+  }
   function gaValue(a,d,s,loc){
     const data=ensureGa(a),newKey=gaKey(d,s,loc);
-    if(applyConfirmedHaTheHanh34Ga11(a,d,s,loc,data))return'11';
+    if(applyConfirmedHaTheHanh34Ga11(a,d,s,loc,data)||applyConfirmedPhuTan46Ga11(a,d,s,loc,data))return'11';
     if(data[newKey]!=null)return String(data[newKey]);
     const old=data[legacyGaKey(d,s,loc)];
     return old==null?'':String(old)

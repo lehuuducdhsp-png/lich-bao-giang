@@ -1,0 +1,31 @@
+name: Validate Phu Tan class 4-6 GA11 week 23T11
+
+on:
+  pull_request:
+    paths:
+      - 'report-engine-v4.js'
+      - 'app-runtime-v1.js'
+      - 'index.html'
+      - 'tests/phu-tan-4-6-ga11-23t11.test.cjs'
+      - '.github/workflows/validate-phu-tan-ga11-23t11.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check report-engine-v4.js
+          node --check app-runtime-v1.js
+          node --check tests/phu-tan-4-6-ga11-23t11.test.cjs
+      - name: Verify source version and GA11 correction
+        run: |
+          grep -Fq 'report-engine-v4.js?v=20261127.1' app-runtime-v1.js
+          node tests/phu-tan-4-6-ga11-23t11.test.cjs
