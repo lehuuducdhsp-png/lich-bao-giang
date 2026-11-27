@@ -15,10 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -82,6 +79,16 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+  # Publish the pages artifact in its own job. This gives the GitHub artifact
+  # API time to index it and lets "Re-run failed jobs" retry deploy without
+  # uploading another artifact named github-pages in the same workflow run.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
