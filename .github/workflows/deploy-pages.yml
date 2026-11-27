@@ -43,6 +43,8 @@ jobs:
           node tests/phu-binh-16t11-duc-nhung-correction.test.cjs
           node tests/grouped-plus-report-safe-v1.test.cjs
           node tests/runtime-responsive-loader-v1.test.cjs
+          node tests/startup-warmup-v2.test.cjs
+          node tests/tkb-lazy-startup-v1.test.cjs
           node tests/production-runtime-performance.test.cjs
       - name: Verify approved GA8 Phu Binh release
         run: |
