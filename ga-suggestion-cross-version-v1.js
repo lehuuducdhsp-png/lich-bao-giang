@@ -220,12 +220,14 @@
     const list=versionList(),active=activeVersionId(),out=[];
     for(const v of list){
       if(v?.id===active&&currentBook){out.push({id:v.id,created:v.created,book:currentBook,active:true});continue}
-      if(!v?.buffer||!root.ExcelJS?.Workbook)continue;
+      if(!root.ExcelJS?.Workbook)continue;
       const key=`${txt(v.id)}|${txt(v.created)}|${txt(v.size)}`;
       let book=cache.get(key);
       if(!book){
+        const record=v?.buffer?v:await root.LBGGetVersionRecord?.(v.id);
+        if(!record?.buffer)continue;
         book=new root.ExcelJS.Workbook();
-        await book.xlsx.load(v.buffer.slice(0));
+        await book.xlsx.load(record.buffer.slice(0));
         cache.set(key,book);
       }
       out.push({id:v.id,created:v.created,book,active:false});
