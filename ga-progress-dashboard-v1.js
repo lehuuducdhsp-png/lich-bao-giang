@@ -195,9 +195,9 @@
     const list=versionsNow(),active=activeVersion(),out=[];
     for(const item of list){
       if(item?.id===active&&book){out.push({id:item.id,created:item.created,book,active:true});continue}
-      if(!item?.buffer||!root.ExcelJS?.Workbook)continue;
+      if(!root.ExcelJS?.Workbook)continue;
       const key=`${txt(item.id)}|${txt(item.created)}|${txt(item.size)}`;let parsed=sourceCache.get(key);
-      if(!parsed){parsed=new root.ExcelJS.Workbook();await parsed.xlsx.load(item.buffer.slice(0));sourceCache.set(key,parsed)}
+      if(!parsed){const full=item?.buffer?item:await root.LBGGetVersionRecord?.(item.id);if(!full?.buffer)continue;parsed=new root.ExcelJS.Workbook();await parsed.xlsx.load(full.buffer.slice(0));sourceCache.set(key,parsed)}
       out.push({id:item.id,created:item.created,book:parsed,active:false});
     }
     if(book&&!out.some(x=>x.book===book))out.push({id:active||'active',created:new Date().toISOString(),book,active:true});
