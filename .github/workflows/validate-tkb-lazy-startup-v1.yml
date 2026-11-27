@@ -1,0 +1,31 @@
+name: Validate fast safe TKB loading
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'index-core.html'
+      - 'startup-warmup-v2.js'
+      - 'cloud-sync-v1.js'
+      - 'ga-progress-dashboard-v1.js'
+      - 'ga-suggestion-cross-version-v1.js'
+      - 'tests/tkb-lazy-startup-v1.test.cjs'
+      - '.github/workflows/validate-tkb-lazy-startup-v1.yml'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test startup and archive integrity
+        run: |
+          node --check startup-warmup-v2.js
+          node --check cloud-sync-v1.js
+          node --check ga-progress-dashboard-v1.js
+          node --check ga-suggestion-cross-version-v1.js
+          node tests/startup-warmup-v2.test.cjs
+          node tests/tkb-lazy-startup-v1.test.cjs
