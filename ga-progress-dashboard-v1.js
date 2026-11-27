@@ -5,7 +5,7 @@
   if(root)root.LBGGaProgressDashboardV1=api;
   if(root&&root.document)api.install();
 })(typeof window!=='undefined'?window:globalThis,function(root){
-  const VERSION='20261122.5';
+  const VERSION='20261127.2';
   const KNS_SEQUENCE=[1,2,4,5,7,8,9,10,11,12,14,15,17,18,19,21,22,24,25,26,28,29,30,31,33,34];
   const STEM_SEQUENCE=[3,6,13,16,20,23,27,32,35];
   const txt=v=>String(v??'').replace(/\r/g,'').trim();
@@ -79,6 +79,10 @@
         if(special){next=null;needsHistoryReview=true;}
       }
     }
+    // Một lớp đã học GA11 trong tuần 23T11 phải lên GA12 ở buổi KNS kế tiếp.
+    // Sau mốc đó dùng tuần tự GA12, GA14...; các lớp chưa có mốc vẫn dò bài thiếu.
+    const hasGa11At23=track==='kns'&&known.some(e=>['23T11','23t11'].includes(txt(e?.sheet))&&Number(e?.ga)===11);
+    if(hasGa11At23&&lastGa>=11){next=nextGa(track,lastGa);needsHistoryReview=false;}
     if(after16&&next===10){next=null;needsHistoryReview=true;}
     return{
       track,count:compact.length,lastGa,nextGa:next,lastSheet:txt(lastEvent?.sheet),lastDate:txt(lastEvent?.dateKey),needsHistoryReview,done:lastGa!==null&&next===null&&!needsHistoryReview,
@@ -343,9 +347,15 @@
     return true;
   }
   function install(){
-    let tries=0,bookSeen=null,autoDone=false;const timer=setInterval(()=>{tries++;if(mount()){
-      const book=bookNow();if(book&&book!==bookSeen){bookSeen=book;populateWeeks(book);q('lbgGpdStatus').textContent='TKB đã sẵn sàng. Đang chuẩn bị tổng hợp…';if(!autoDone){autoDone=true;setTimeout(runAnalysis,120)}}
-    }if(tries>600)clearInterval(timer)},100);
+    // Không quét nhiều workbook khi vừa đăng nhập: người dùng nhấn "Quét tiến độ"
+    // lúc cần. Chỉ cập nhật trạng thái/tuần nhẹ, giảm nhịp polling từ 100ms.
+    let tries=0,bookSeen=null;const tick=()=>{tries++;if(mount()){
+      const book=bookNow();if(book&&book!==bookSeen){
+        bookSeen=book;populateWeeks(book);
+        q('lbgGpdStatus').textContent='TKB đã sẵn sàng. Bấm Quét tiến độ khi cần; không tự quét lúc mở trang.';
+      }
+    }if(tries>120)clearInterval(timer)};
+    const timer=setInterval(tick,1500);tick();
     root.addEventListener?.('beforeunload',()=>clearInterval(timer),{once:true});return true;
   }
   return{VERSION,KNS_SEQUENCE,STEM_SEQUENCE,seqFor,nextGa,classMember,isWholeGradeEvent,specificMembers,locationMeta,compactTrackEvents,summarizeTrack,buildKnownClasses,memberListForEvent,recentRhythm,buildClassProgress,filterRows,summarizeRows,nextStemDistribution,weekSheets,latestWeekName,loadVersionSources,analyzeProgress,install};

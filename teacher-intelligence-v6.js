@@ -350,7 +350,7 @@
   }
   if(typeof module==='object'&&module.exports){module.exports={scheduleAt};return;}
   document.addEventListener('change',event=>{
-    if(['week','teacher','year','weeklyStatsWeek'].includes(event.target?.id))queueStart();
+    if(['week','teacher','year','weeklyStatsWeek','file'].includes(event.target?.id))queueStart();
   },true);
   document.addEventListener('click',event=>{
     if(event.target?.closest?.('#analyze'))setTimeout(queueStart,110);
@@ -358,7 +358,14 @@
   document.addEventListener('lbg-access-ready',queueStart);
   document.addEventListener('lbg-runtime-ready',queueStart);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)queueStart()});
-  const timer=setInterval(()=>{if(!document.hidden)start()},3500);
+  // Chỉ chạy cứu hộ nếu các nút chưa gắn được; không quét lại TKB mỗi 3,5 giây.
+  let retries=0;
+  const timer=setInterval(()=>{
+    if(document.hidden)return;
+    if(q('gaSuggestV6')&&q('weeklyStatsV6')){clearInterval(timer);return;}
+    if(++retries>12){clearInterval(timer);return;}
+    queueStart();
+  },5000);
   start();
   window.addEventListener('beforeunload',()=>clearInterval(timer));
   window.LBGTeacherIntelligenceV6={summaryRoles,scanSheet,buildHistory,scheduleAt,STEM_GA:[...STEM_GA]};

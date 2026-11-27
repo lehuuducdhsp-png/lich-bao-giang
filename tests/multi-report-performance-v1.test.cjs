@@ -64,8 +64,8 @@ assert.match(cacheSource,/__lbgAtomicTeachingV1/,'cache must wait for atomic sem
 assert.match(cacheSource,/__lbgClassTypoFixV1/,'cache must wait for class typo normalization');
 
 // Cache-bust chain for the updated browser modules.
-assert.match(index,/teacher-fix-v2\.js\?v=20261124\.1/);
-assert.match(teacherFix,/analysis-fix-v2\.js\?v=20261124\.1/);
+assert.match(index,/teacher-fix-v2\.js\?v=20261127\.2/);
+assert.match(teacherFix,/analysis-fix-v2\.js\?v=20261127\.2/);
 assert.match(analysisFix,/multi-teacher-v5\.js\?v=20260913\.1/);
 assert.match(analysisFix,/weekly-stats-enhancement-v8\.js\?v=20261122\.1/);
 assert.match(analysisFix,/runner=typeof analyzeNow==='function'\?analyzeNow:safeAnalyze/,'single-teacher analyze must use shared analyzeNow hook');

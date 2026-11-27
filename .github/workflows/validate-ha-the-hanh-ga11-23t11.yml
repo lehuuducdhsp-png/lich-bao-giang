@@ -25,6 +25,6 @@ jobs:
           node --check report-engine-v4.js
           node --check app-runtime-v1.js
           node --check tests/ha-the-hanh-3-4-ga11-23t11.test.cjs
-          grep -Fq 'report-engine-v4.js?v=20261127.1' app-runtime-v1.js
+          grep -Fq 'report-engine-v4.js?v=20261127.2' app-runtime-v1.js
       - name: Verify exact GA11 correction without touching other classes
         run: node tests/ha-the-hanh-3-4-ga11-23t11.test.cjs

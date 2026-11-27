@@ -321,7 +321,12 @@
   function compareLabel(){const b=q('compare');if(!b)return;const label='⇄ So sánh phiên bản TKB',title='So sánh lịch của cùng một giáo viên giữa phiên bản TKB đang dùng và một phiên bản TKB khác.';if(b.textContent!==label)b.textContent=label;if(b.title!==title)b.title=title;if(b.dataset.lbgR4!=='1')b.dataset.lbgR4='1'}
   function weeklyDays(){const select=q('weeklyOffDay');if(!select)return;const weekName=q('weeklyStatsWeek')?.value||q('week')?.value,ws=worksheet(weekName);if(!ws)return;const ds=daysForWorksheet(ws),start=typeof startDate==='function'?startDate(ws.name):null,old=Number(select.value),sig=ds.join(',')+'|'+ws.name;if(select.dataset.lbgR4Days===sig)return;select.dataset.lbgR4Days=sig;select.innerHTML=ds.map(d=>{let label=dayLabel(d);if(start instanceof Date&&!Number.isNaN(start.getTime())){const date=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);date.setDate(date.getDate()+(d===8?6:d-2));label+=` – ${date.toLocaleDateString('vi-VN')}`}return`<option value="${d}">${escHtml(label)}</option>`}).join('');if(ds.includes(old))select.value=String(old);select.disabled=false}
   function install(){style();if(window.renderPreview!==renderPreviewV4)window.renderPreview=renderPreviewV4;window.LBGReportEngineV4={weekHasSunday,daysForWorksheet,daysForReport,renderPreview:renderPreviewV4,addReportSheet,ensureGa,locationList,classReportText,slotEntries,reportTotals,reportTotalText,stemGaOrdinal,reportEntryTrack,locationGaTrack,gaDisplayValue,displaySchoolName,cleanDailySiteText,dailyLocationText};compareLabel();weeklyDays()}
-  function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})}
+  // Giới hạn việc gắn lại UI khi DOM thay đổi liên tục: tối đa 1 lần/400ms.
+  let queueTimer=null;
+  function queue(){
+    if(queueTimer!==null||document.hidden)return;
+    queueTimer=setTimeout(()=>{queueTimer=null;install()},400);
+  }
 
   document.addEventListener('change',event=>{trackSelection(event);if(event.target?.id==='week'){selection.clear();sundayCache.delete(currentWorksheet());setTimeout(queue,40)}if(event.target?.id==='weeklyStatsWeek')setTimeout(()=>{const s=q('weeklyOffDay');if(s)s.dataset.lbgR4Days='';weeklyDays()},20)},true);
   document.addEventListener('click',event=>{trackButtons(event);const button=event.target?.closest?.('#export');if(button){event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();exportUnified()}},true);
